@@ -34,6 +34,56 @@
         @endforeach
     </section>
 
+    @if($certificateOperations)
+        <section class="section-heading dashboard-section-heading">
+            <div>
+                <span class="eyebrow">CERTIFICATE OPERATIONS</span>
+                <h2>{{ __('ui.certificate_ops.title') }}</h2>
+                <p>{{ __('ui.certificate_ops.intro') }}</p>
+            </div>
+            <a class="dashboard-action" href="{{ route('certificates.index', ['locale' => app()->getLocale()]) }}">{{ __('ui.certificate_ops.open_workspace') }} <span aria-hidden="true">→</span></a>
+        </section>
+
+        <section class="operations-kpi-grid" aria-label="{{ __('ui.certificate_ops.title') }}">
+            @foreach([
+                'current' => __('ui.certificate_ops.current'),
+                'issued' => __('ui.certificate_ops.issued'),
+                'review' => __('ui.certificate_ops.review'),
+                'approved' => __('ui.certificate_ops.approved'),
+                'archive' => __('ui.certificate_ops.archive'),
+            ] as $key => $label)
+                <article class="operations-kpi operations-kpi-{{ $key }}">
+                    <span>{{ $label }}</span>
+                    <strong>{{ number_format($certificateOperations['stats'][$key]) }}</strong>
+                </article>
+            @endforeach
+        </section>
+
+        <section class="operations-panel">
+            <header>
+                <div><h3>{{ __('ui.certificate_ops.recent') }}</h3><p>{{ __('ui.certificate_ops.recent_help') }}</p></div>
+                @if($certificateOperations['stats']['review'] || $certificateOperations['stats']['approved'])
+                    <a href="{{ route('certificates.index', ['locale' => app()->getLocale(), 'status' => $certificateOperations['stats']['approved'] ? 'approved' : 'review']) }}">{{ __('ui.certificate_ops.open_queue') }}</a>
+                @endif
+            </header>
+            @if($certificateOperations['recent']->isNotEmpty())
+                <div class="operations-table-wrap"><table class="operations-table">
+                    <thead><tr><th>{{ __('ui.certificate_ops.certificate') }}</th><th>{{ __('ui.certificate_ops.recipient') }}</th><th>{{ __('ui.certificate_ops.organization') }}</th><th>{{ __('ui.certificate_ops.state') }}</th><th>{{ __('ui.certificate_ops.integrity') }}</th><th><span class="sr-only">{{ __('ui.certificate_ops.action') }}</span></th></tr></thead>
+                    <tbody>@foreach($certificateOperations['recent'] as $certificate)<tr>
+                        <td><bdi class="operations-number" dir="ltr">{{ $certificate->certificate_number ?: '—' }}</bdi><small><bdi>{{ $certificate->program_title }}</bdi></small></td>
+                        <td><bdi>{{ $certificate->recipient_name }}</bdi></td>
+                        <td><bdi>{{ $certificate->organization?->display_name }}</bdi></td>
+                        <td><span class="operations-state">{{ __('certificates.states.'.$certificateOperations['statuses'][$certificate->id]) }}</span></td>
+                        <td><span class="operations-integrity operations-integrity-{{ $certificateOperations['integrity'][$certificate->id] ? 'ok' : 'failed' }}">{{ $certificateOperations['integrity'][$certificate->id] ? __('ui.certificate_ops.integrity_ok') : __('ui.certificate_ops.integrity_failed') }}</span></td>
+                        <td><a class="operations-open" href="{{ route('certificates.show', ['locale' => app()->getLocale(), 'certificate' => $certificate->id]) }}">{{ __('ui.certificate_ops.open') }}</a></td>
+                    </tr>@endforeach</tbody>
+                </table></div>
+            @else
+                <p class="operations-empty">{{ __('ui.certificate_ops.empty') }}</p>
+            @endif
+        </section>
+    @endif
+
     <section class="section-heading">
         <div>
             <span class="eyebrow">MODULAR ARCHITECTURE</span>

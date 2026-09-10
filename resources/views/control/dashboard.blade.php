@@ -5,7 +5,7 @@
 @section('content')
     <section class="hero-card">
         <div>
-            <span class="eyebrow">FOUNDATION / 01</span>
+            <span class="eyebrow">EXECUTIVE COMMAND / LIVE</span>
             <h1 class="welcome-title">
                 <span>{{ __('ui.welcome_prefix') }}</span>
                 <bdi class="welcome-name" dir="ltr">{{ auth()->user()->name }}</bdi>
@@ -15,6 +15,12 @@
         <div class="status-panel">
             <span>{{ __('ui.system_status') }}</span>
             <strong><i class="status-dot"></i>{{ __('ui.operational') }}</strong>
+            @if($certificateOperations)
+                <dl class="status-panel-facts">
+                    <div><dt>{{ __('ui.certificate_ops.current') }}</dt><dd>{{ number_format($certificateOperations['stats']['current']) }}</dd></div>
+                    <div><dt>{{ __('ui.certificate_ops.archive') }}</dt><dd>{{ number_format($certificateOperations['stats']['archive']) }}</dd></div>
+                </dl>
+            @endif
         </div>
     </section>
 
@@ -57,6 +63,45 @@
                     <strong>{{ number_format($certificateOperations['stats'][$key]) }}</strong>
                 </article>
             @endforeach
+        </section>
+
+        <section class="operations-assurance" aria-label="{{ __('ui.certificate_ops.assurance_title') }}">
+            <header>
+                <span class="operations-assurance-mark" aria-hidden="true">✓</span>
+                <div>
+                    <span class="eyebrow">ISSUANCE ASSURANCE</span>
+                    <h3>{{ __('ui.certificate_ops.assurance_title') }}</h3>
+                    <p>{{ __('ui.certificate_ops.assurance_help') }}</p>
+                </div>
+            </header>
+            <div class="operations-assurance-grid">
+                @foreach([
+                    'registry' => __('ui.certificate_ops.assurance_registry'),
+                    'history' => __('ui.certificate_ops.assurance_history'),
+                    'verification' => __('ui.certificate_ops.assurance_verification'),
+                    'privacy' => __('ui.certificate_ops.assurance_privacy'),
+                ] as $control => $label)
+                    <div><span aria-hidden="true">✓</span><strong>{{ $label }}</strong><small>{{ __('ui.certificate_ops.assurance_'.$control.'_help') }}</small></div>
+                @endforeach
+            </div>
+        </section>
+
+        <section class="operations-launchpad" aria-labelledby="operations-launchpad-title">
+            <header>
+                <span class="eyebrow">CONTROL DESK</span>
+                <h3 id="operations-launchpad-title">{{ __('ui.certificate_ops.launchpad') }}</h3>
+                <p>{{ __('ui.certificate_ops.launchpad_help') }}</p>
+            </header>
+            <nav aria-label="{{ __('ui.certificate_ops.launchpad') }}">
+                @if(auth()->user()->canDo('certificates.manage'))
+                    <a href="{{ route('certificates.create', ['locale' => app()->getLocale()]) }}"><span>01</span><strong>{{ __('ui.certificate_ops.create') }}</strong><small>{{ __('ui.certificate_ops.create_help') }}</small></a>
+                @endif
+                <a href="{{ route('certificates.batches.index', ['locale' => app()->getLocale()]) }}"><span>02</span><strong>{{ __('ui.certificate_ops.batches') }}</strong><small>{{ __('ui.certificate_ops.batches_help') }}</small></a>
+                <a href="{{ route('certificates.catalog.index', ['locale' => app()->getLocale()]) }}"><span>03</span><strong>{{ __('ui.certificate_ops.catalog') }}</strong><small>{{ __('ui.certificate_ops.catalog_help') }}</small></a>
+                @if(auth()->user()->canDo('certificates.manage'))
+                    <a href="{{ route('certificates.intakes.programs.index', ['locale' => app()->getLocale()]) }}"><span>04</span><strong>{{ __('ui.certificate_ops.intakes') }}</strong><small>{{ __('ui.certificate_ops.intakes_help') }}</small></a>
+                @endif
+            </nav>
         </section>
 
         <section class="operations-panel">

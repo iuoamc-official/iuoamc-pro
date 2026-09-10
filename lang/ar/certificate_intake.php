@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 return [
+    'title' => 'بيانات المشاركين',
     'skip_to_form' => 'الانتقال إلى المحتوى',
     'public_title' => 'تأكيد بيانات شهادة الماستر',
     'public_eyebrow' => 'بيانات الشهادة',

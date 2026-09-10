@@ -93,6 +93,9 @@ final class ProCertificatePdf
             'ar' => [
                 'document' => 'شهادة مؤسسية', 'recipient' => 'تُمنح هذه الشهادة إلى',
                 'specialization' => 'التخصص', 'type_code' => 'كود النوع',
+                'professional_credential' => 'اعتماد مهني', 'certified_programme' => 'البرنامج المهني المعتمد',
+                'authenticity_verification' => 'التحقق من الأصالة', 'secure_qr' => 'امسح رمز QR الآمن أو زُر iuoamc.pro',
+                'program_ip_code' => 'رمز سجل الملكية الفكرية للبرنامج',
                 'program' => 'البرنامج / المناسبة', 'achievement' => 'تاريخ الإنجاز',
                 'issued' => 'تاريخ الإصدار', 'expiry' => 'صالحة حتى', 'no_expiry' => 'دون تاريخ انتهاء محدد',
                 'number' => 'رقم الشهادة', 'registration' => 'رقم تسجيل الجهة',
@@ -104,6 +107,9 @@ final class ProCertificatePdf
             'fr' => [
                 'document' => 'CERTIFICAT INSTITUTIONNEL', 'recipient' => 'Ce certificat est décerné à',
                 'specialization' => 'Spécialité', 'type_code' => 'Code du type',
+                'professional_credential' => 'TITRE PROFESSIONNEL', 'certified_programme' => 'PROGRAMME PROFESSIONNEL CERTIFIÉ',
+                'authenticity_verification' => 'VÉRIFICATION D’AUTHENTICITÉ', 'secure_qr' => 'Scannez le QR sécurisé ou consultez iuoamc.pro',
+                'program_ip_code' => 'CODE DU REGISTRE DE PROPRIÉTÉ INTELLECTUELLE DU PROGRAMME',
                 'program' => 'Programme / Événement', 'achievement' => 'Date de réalisation',
                 'issued' => 'Date de délivrance', 'expiry' => 'Valable jusqu’au', 'no_expiry' => 'Sans date d’expiration définie',
                 'number' => 'Numéro du certificat', 'registration' => 'Immatriculation de l’émetteur',
@@ -115,6 +121,9 @@ final class ProCertificatePdf
             default => [
                 'document' => 'INSTITUTIONAL CERTIFICATE', 'recipient' => 'This certificate is awarded to',
                 'specialization' => 'Specialisation', 'type_code' => 'Type code',
+                'professional_credential' => 'PROFESSIONAL CREDENTIAL', 'certified_programme' => 'CERTIFIED PROFESSIONAL PROGRAMME',
+                'authenticity_verification' => 'AUTHENTICITY VERIFICATION', 'secure_qr' => 'Scan the secure QR code or visit iuoamc.pro',
+                'program_ip_code' => 'PROGRAM INTELLECTUAL PROPERTY REGISTRY CODE',
                 'program' => 'Programme / Event', 'achievement' => 'Achievement date',
                 'issued' => 'Issued on', 'expiry' => 'Valid until', 'no_expiry' => 'No expiry date specified',
                 'number' => 'Certificate number', 'registration' => 'Issuer registration',

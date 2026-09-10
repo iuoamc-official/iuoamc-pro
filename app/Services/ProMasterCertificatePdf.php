@@ -8,12 +8,12 @@ use Mpdf\Mpdf;
 use Mpdf\Output\Destination;
 use RuntimeException;
 
-/** One versioned A4 background, original brand pixels, immutable V2 issuance data. */
+/** One versioned enterprise A4 background, original brand pixels, immutable V2 issuance data. */
 final class ProMasterCertificatePdf
 {
-    public const PRINT_LAYOUT_REVISION = '1.2.5';
+    public const PRINT_LAYOUT_REVISION = '1.3.1';
     public const LAYOUT = 'master_a4_v1';
-    public const BACKGROUND_SHA256 = '40adc332ef7648f5999f10d75129091d1169ef594cc8217dc8e6f0e4ce682731';
+    public const BACKGROUND_SHA256 = '53bba9e3f27b1f80c782449602d027af807ab1e28232c8b6f363f304e9cf51be';
     public const ISSUER_LEGAL_NAME = 'INTERNATIONAL CULINARY & GASTRONOMY ARBITRATION LTD';
     public const LIMITS = [
         'certificate_title' => 120, 'recipient_name' => 180, 'program_title' => 140,
@@ -74,7 +74,7 @@ final class ProMasterCertificatePdf
                 throw new RuntimeException('MASTER_CERTIFICATE_DATE_INVALID');
             }
         }
-        $background = resource_path('certificates/master-a4-v1.2.4.pdf');
+        $background = resource_path('certificates/master-a4-v1.3.1.pdf');
         if (!is_file($background) || is_link($background)
             || !hash_equals(self::BACKGROUND_SHA256, (string) hash_file('sha256', $background))) {
             throw new RuntimeException('MASTER_CERTIFICATE_BACKGROUND_INTEGRITY_FAILED');
@@ -90,7 +90,7 @@ final class ProMasterCertificatePdf
         $mpdf->SetDirectionality($language === 'ar' ? 'rtl' : 'ltr');
         $mpdf->SetTitle($payload['certificate_title']);
         $mpdf->SetAuthor(self::ISSUER_LEGAL_NAME);
-        $mpdf->SetCreator('IUOAMC Pro - master_a4_v1 print revision 1.2.5');
+        $mpdf->SetCreator('IUOAMC Pro - master_a4_v1 print revision '.self::PRINT_LAYOUT_REVISION);
         $mpdf->SetSubject($draft ? 'NOT ISSUED - review draft' : $number);
         if ($mpdf->setSourceFile($background) !== 1) { throw new RuntimeException('MASTER_CERTIFICATE_BACKGROUND_PAGE_COUNT'); }
         $template = $mpdf->importPage(1);
@@ -100,52 +100,52 @@ final class ProMasterCertificatePdf
         $dir = $language === 'ar' ? 'rtl' : 'ltr';
         // Bounded plain-text measurement at a readable minimum precedes mPDF fit-to-box.
         // The source strings stay unchanged; text is neither clipped nor truncated.
-        $this->text($mpdf, $payload['certificate_title'], [24,96,162,27], 23, 15, $dir, true, 'certificate_title', $language);
-        $this->text($mpdf, $labels['recipient'], [25,125,160,8], 10, 9, $dir, false, 'recipient_name', $language, '#6E624A');
-        $this->text($mpdf, $payload['recipient_name'], [24,136,162,27], 24, 14, $dir, true, 'recipient_name', $language);
-        $this->text($mpdf, $payload['program_title'], [25,160,160,10], 13, 9.5, $dir, true, 'program_title', $language);
+        $this->text($mpdf, self::message($language, $draft ? 'draft_band' : 'issued_band'), [16,62.2,178,4], 6.4, 5.8, $dir, true, 'statement', $language, '#B88A2A');
+        $this->text($mpdf, $labels['professional_credential'], [25,73,160,5], 7.2, 6.5, $dir, true, 'certificate_title', $language, '#0C675A');
+        $this->text($mpdf, $payload['certificate_title'], [20,81,170,16], 23, 15, $dir, true, 'certificate_title', $language);
+        $this->text($mpdf, $labels['recipient'], [25,100,160,6], 8, 7.2, $dir, false, 'recipient_name', $language, '#607080');
+        $this->text($mpdf, $payload['recipient_name'], [24,108,162,27], 19, 13, $dir, true, 'recipient_name', $language);
+        $this->text($mpdf, $labels['certified_programme'], [28,148,154,5], 6.6, 6.0, $dir, true, 'program_title', $language, '#0C675A');
+        $this->text($mpdf, $payload['program_title'], [27,155,156,11], 11.5, 8.6, $dir, true, 'program_title', $language);
         if ($payload['specialization'] !== '') {
-            $this->text($mpdf, $labels['specialization'].': '.$payload['specialization'], [25,170,160,7], 9, 8, $dir, false, 'specialization', $language, '#8A6825');
+            $this->text($mpdf, $labels['specialization'].': '.$payload['specialization'], [27,165,156,5], 7.4, 6.6, $dir, false, 'specialization', $language, '#8A6825');
         }
         [$outcome, $wicpRegistration] = $this->splitStatement($payload['statement']);
+        $ipCode = self::programIpCodeFromStatement($wicpRegistration);
+        if ($ipCode === null) {
+            throw ValidationException::withMessages(['statement' => self::message($language, 'ip_required')]);
+        }
         $recognition = match ($language) {
             'ar' => "استوفى بنجاح متطلبات البرنامج والتقييم المهني\nوتمنح له هذه الشهادة تقديرًا للكفاءة التي أثبتها.",
             'fr' => "A satisfait aux exigences du programme et de l'évaluation professionnelle\net reçoit ce certificat en reconnaissance des compétences démontrées.",
             default => "Has successfully fulfilled the programme and professional assessment requirements\nand is awarded this certificate in recognition of demonstrated competence.",
         };
-        $this->text($mpdf, $recognition, [25,180,160,9], 8.4, 7.6, $dir, false, 'statement', $language);
+        $this->text($mpdf, $recognition, [25,171,160,9], 7.5, 6.8, $dir, false, 'statement', $language, '#607080');
         if ($outcome !== '') {
-            $this->text($mpdf, $outcome, [25,191,160,5.2], 8.8, 7.4, $dir, false, 'statement', $language);
-        }
-        if ($wicpRegistration !== '') {
-            $this->text($mpdf, $wicpRegistration, [25,198,160,5.2], 7.8, 6.8, 'ltr', false, 'statement', $language, '#8A6825');
+            $this->text($mpdf, $outcome, [25,182,160,5.2], 8.8, 7.2, $dir, true, 'statement', $language);
         }
         // Metadata uses independent fixed boxes, not a compressed HTML table.
         // This prevents labels, certificate codes and dates from ever colliding.
-        $this->text($mpdf, $labels['number'].':', [28,204,28,3], 6.0, 5.5, $dir, false, 'statement', $language, '#6E624A');
-        $this->text($mpdf, $number, [56,204,70,3], 6.5, 5.8, 'ltr', true, 'statement', $language);
-        $this->text($mpdf, $labels['type_code'].':', [126,204,20,3], 6.0, 5.5, $dir, false, 'statement', $language, '#6E624A');
-        $this->text($mpdf, (string) $catalog['code'], [146,204,36,3], 6.5, 5.8, 'ltr', true, 'statement', $language);
-        $this->text($mpdf, $labels['achievement'].':', [28,208,34,3], 6.0, 5.5, $dir, false, 'statement', $language, '#6E624A');
-        $this->text($mpdf, $achievement, [62,208,44,3], 6.5, 5.8, 'ltr', true, 'statement', $language);
-        $this->text($mpdf, $labels['issued'].':', [106,208,24,3], 6.0, 5.5, $dir, false, 'statement', $language, '#6E624A');
-        $this->text($mpdf, $issued ?? '—', [130,208,52,3], 6.5, 5.8, 'ltr', true, 'statement', $language);
-        $expiryText = $expires === null ? $labels['no_expiry'] : $labels['expiry'].': '.$expires;
-        $this->text($mpdf, $expiryText, [65,212,90,3], 5.5, 5.0, $dir, false, 'statent', $language, '#6E624A');
+        $this->metadata($mpdf, $labels['number'], $number, [24,190.3,75,12], $dir, $language);
+        $this->metadata($mpdf, $labels['type_code'], (string) $catalog['code'], [111,190.3,75,12], $dir, $language);
+        $this->metadata($mpdf, $labels['achievement'], $achievement, [24,208.5,75,12], $dir, $language);
+        $this->metadata($mpdf, $labels['issued'], $issued ?? '-', [111,208.5,75,12], $dir, $language);
         if ($draft) {
-            $this->text($mpdf, "QR\nNOT ACTIVE", [35,219,22,18], 9, 7, 'ltr', true, 'statement', $language);
+            $this->text($mpdf, "QR\nNOT ACTIVE", [22,234,26,24], 8.5, 7, 'ltr', true, 'statement', $language);
             $mpdf->SetWatermarkText('NOT ISSUED', 0.10);
             $mpdf->showWatermarkText = true;
         } else {
             // The only barcode input is the fixed-origin, 256-bit verification token URL.
-            $mpdf->WriteFixedPosHTML('<div style="text-align:center;background:#fff"><barcode code="'.self::escape($url).'" type="QR" error="M" size="0.7" disableborder="0" /></div>', 34, 216, 24, 24, 'auto');
+            $mpdf->WriteFixedPosHTML('<div style="text-align:center;background:#fff"><barcode code="'.self::escape($url).'" type="QR" error="M" size="0.7" disableborder="0" /></div>', 22, 233.5, 26, 26, 'auto');
         }
-        $caption = '<div style="text-align:center;font-size:7pt;color:#102846" dir="ltr">'
-            .($draft ? 'iuoamc.pro' : '<a style="color:#102846;text-decoration:none" href="'.self::escape($url).'">iuoamc.pro</a>').'</div>';
-        $mpdf->WriteFixedPosHTML($caption, 29, 240, 34, 4.5, 'auto');
-        $this->text($mpdf, $payload['signatory_name'], [134,221,52,8], 10, 8.5, $dir, true, 'signatory_name', $language);
-        $this->text($mpdf, $payload['signatory_title'], [134,231,52,11], 8.5, 7, $dir, false, 'signatory_title', $language);
-        $this->text($mpdf, self::message($language, $draft ? 'draft' : 'signed'), [134,244,52,4], 6.6, 6.2, $dir, false, 'statement', $language, '#8A6825');
+        $this->text($mpdf, $labels['authenticity_verification'], [51,237.5,71,5], 6.8, 6.1, $dir, true, 'statement', $language, '#0C675A');
+        $this->text($mpdf, $labels['secure_qr'], [51,244,71,5], 6.1, 5.5, $dir, false, 'statement', $language, '#607080');
+        $expiryText = $expires === null ? $labels['no_expiry'] : $labels['expiry'].': '.$expires;
+        $this->text($mpdf, self::message($language, $draft ? 'draft' : 'signed').' - '.$expiryText, [51,249,71,5], 5.8, 5.1, $dir, false, 'statement', $language, '#607080');
+        $this->text($mpdf, $labels['program_ip_code'], [51,255.5,71,4], 5.8, 5.2, $dir, true, 'statement', $language);
+        $this->text($mpdf, $ipCode, [51,260,71,4], 5.2, 4.8, 'ltr', false, 'statement', $language);
+        $this->text($mpdf, $payload['signatory_name'], [130,228.5,49,7], 8.8, 7.6, $dir, true, 'signatory_name', $language);
+        $this->text($mpdf, $payload['signatory_title'], [130,234.7,49,7], 6.2, 5.4, $dir, false, 'signatory_title', $language, '#607080');
         if ($mpdf->page !== 1) { throw ValidationException::withMessages(['statement' => self::message($language, 'fit')]); }
         $bytes = $mpdf->Output('', Destination::STRING_RETURN);
         if (!is_string($bytes) || !str_starts_with($bytes, '%PDF-') || strlen($bytes) < 1024) {
@@ -170,6 +170,21 @@ final class ProMasterCertificatePdf
         }
 
         return [implode(' ', $outcome), implode(' ', $wicp)];
+    }
+
+    public static function programIpCodeFromStatement(mixed $statement): ?string
+    {
+        return is_string($statement)
+            && preg_match('/\b(WICP-PRO-P-[0-9]{4}-[a-f0-9]{32})\b/i', $statement, $matches) === 1
+            ? $matches[1]
+            : null;
+    }
+
+    private function metadata(Mpdf $mpdf, string $label, string $value, array $box, string $direction, string $language): void
+    {
+        [$x, $y, $width, $height] = $box;
+        $this->text($mpdf, mb_strtoupper($label), [$x, $y, $width, 3.5], 6.1, 5.5, $direction, true, 'statement', $language, '#0C675A');
+        $this->text($mpdf, $value, [$x, $y + 5, $width, $height - 5], 8.7, 6.8, 'ltr', true, 'statement', $language);
     }
 
     private function text(Mpdf $mpdf, string $text, array $box, float $fontSize, float $minimum, string $direction, bool $bold, string $field, string $language, string $colour = '#102846'): void
@@ -225,18 +240,27 @@ final class ProMasterCertificatePdf
                 'issuer' => 'القالب الطولي مخصص لشهادات الماستر المهني الصادرة عن ICGA UK المسجلة برقم 16846998.',
                 'fit' => 'النص أطول من المساحة المقروءة في القالب الطولي. اختصر هذا الحقل ثم أعد المعاينة؛ لا يتم اقتطاع البيانات.',
                 'draft' => 'مسودة للمراجعة · لم تُصدر',
+                'draft_band' => 'نسخة مراجعة | نظام الشهادات المؤسسي V3 | لم تصدر بعد',
+                'issued_band' => 'سجل مهني محمي | نظام الشهادات المؤسسي V3 | إصدار موثق',
+                'ip_required' => 'يجب أن يتضمن بيان شهادة الماستر رمز تسجيل ملكية فكرية للبرنامج بصيغة WICP-PRO-P-YYYY- ثم 32 خانة سداسية.',
                 default => 'سجل إصدار موقّع رقميًا · تحقّق عبر الرمز',
             },
             'fr' => match ($key) {
                 'issuer' => 'Ce modèle portrait est réservé aux certificats de master professionnel émis par ICGA UK, société 16846998.',
                 'fit' => 'Le texte dépasse la zone lisible du modèle portrait. Raccourcissez ce champ puis relancez l’aperçu. Aucune donnée n’est tronquée.',
                 'draft' => 'BROUILLON · NON DÉLIVRÉ',
+                'draft_band' => 'ÉPREUVE | SYSTÈME DE CERTIFICATS ENTREPRISE V3 | NON DÉLIVRÉ',
+                'issued_band' => 'REGISTRE PROFESSIONNEL PROTÉGÉ | SYSTÈME ENTREPRISE V3 | DÉLIVRÉ',
+                'ip_required' => 'La déclaration doit contenir le code de propriété intellectuelle du programme au format WICP-PRO-P-AAAA suivi de 32 caractères hexadécimaux.',
                 default => 'Registre signé numériquement · Vérifier le QR',
             },
             default => match ($key) {
                 'issuer' => 'This portrait layout is reserved for professional master certificates issued by ICGA UK, company 16846998.',
                 'fit' => 'The text exceeds the readable portrait area. Shorten this field and preview again; certificate data is never truncated.',
                 'draft' => 'REVIEW DRAFT · NOT ISSUED',
+                'draft_band' => 'DESIGN PROOF | ENTERPRISE CERTIFICATE SYSTEM V3 | NOT YET ISSUED',
+                'issued_band' => 'PROTECTED PROFESSIONAL RECORD | ENTERPRISE SYSTEM V3 | VERIFIED ISSUE',
+                'ip_required' => 'The master certificate statement must contain a programme intellectual-property code in the format WICP-PRO-P-YYYY- followed by 32 hexadecimal characters.',
                 default => 'Digitally signed record · Verify the QR',
             },
         };

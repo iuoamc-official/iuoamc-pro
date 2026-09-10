@@ -39,6 +39,7 @@ return [
     'language_fr' => 'Français',
     'save_type' => 'Enregistrer le type',
     'specialization' => 'Spécialité',
+    'program_ip_code' => 'Code du registre de propriété intellectuelle du programme',
     'specialization_help' => 'Facultatif. Saisissez la spécialité à afficher sur le certificat et sur la page publique de vérification.',
     'type_version' => 'Version du type',
     'back_catalog' => 'Retour aux types de certificats',

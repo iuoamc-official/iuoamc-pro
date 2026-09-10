@@ -319,6 +319,10 @@ final class ProCertificateRegistry
             $attestation['specialization'] = $certificate->specialization;
             $attestation['catalog'] = ['code' => $certificate->catalog_snapshot['code'],
                 'name' => $certificate->catalog_snapshot['names'][$certificate->language]];
+            $programIpCode = ProMasterCertificatePdf::programIpCodeFromStatement($payload['statement'] ?? null);
+            if ($programIpCode !== null) {
+                $attestation['program_intellectual_property_code'] = $programIpCode;
+            }
         }
         $signer = app(ProCertificateSigner::class);
 

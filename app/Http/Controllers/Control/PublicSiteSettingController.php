@@ -15,7 +15,7 @@ use Illuminate\View\View;
 
 class PublicSiteSettingController extends Controller
 {
-    public function edit(PublicSiteProfile $profile): View
+    public function edit(string $locale, PublicSiteProfile $profile): View
     {
         return view('control.public_pages.settings', [
             'profile' => $profile->get(),
@@ -23,7 +23,7 @@ class PublicSiteSettingController extends Controller
         ]);
     }
 
-    public function update(Request $request, PublicSiteProfile $profile): RedirectResponse
+    public function update(Request $request, string $locale, PublicSiteProfile $profile): RedirectResponse
     {
         $validated = $request->validate([
             'brand_name' => ['required', 'string', 'max:80'],

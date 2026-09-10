@@ -14,21 +14,21 @@ use Illuminate\View\View;
 
 class PublicPageController extends Controller
 {
-    public function index(): View
+    public function index(string $locale): View
     {
         return view('control.public_pages.index', [
             'pages' => PublicPage::query()->orderBy('navigation_order')->get(),
         ]);
     }
 
-    public function edit(PublicPage $public_page): View
+    public function edit(string $locale, PublicPage $public_page): View
     {
         $publicPage = $public_page;
 
         return view('control.public_pages.edit', compact('publicPage'));
     }
 
-    public function update(Request $request, PublicPage $public_page): RedirectResponse
+    public function update(Request $request, string $locale, PublicPage $public_page): RedirectResponse
     {
         $publicPage = $public_page;
         $validated = $request->validate($this->rules());

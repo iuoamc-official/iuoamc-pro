@@ -8,14 +8,14 @@ use Illuminate\View\View;
 
 class PublicSiteController extends Controller
 {
-    public function home(PublicSiteProfile $profile): View
+    public function home(string $locale, PublicSiteProfile $profile): View
     {
         $page = PublicPage::query()->published()->where('slug', 'home')->firstOrFail();
 
         return $this->render($page, $profile);
     }
 
-    public function show(PublicPage $public_page, PublicSiteProfile $profile): View
+    public function show(string $locale, PublicPage $public_page, PublicSiteProfile $profile): View
     {
         $publicPage = $public_page;
         abort_unless($publicPage->status === 'published' && $publicPage->published_at !== null, 404);

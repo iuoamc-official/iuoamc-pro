@@ -44,7 +44,12 @@ final class ProCertificateVerificationController extends Controller
                     'achievement_date' => $record->achievement_date?->format('Y-m-d'),
                     'expires_on' => $record->expires_on?->format('Y-m-d'),
                     'issued_at' => $record->issued_at?->format('Y-m-d'),
-                    'issuer' => data_get($record->issued_payload, 'issuer.display_name')];
+                    'issuer' => data_get($record->issued_payload, 'issuer.display_name'),
+                    'verified_at' => now()->utc()->startOfSecond()->format('Y-m-d H:i:s').' UTC',
+                    'record_uuid' => $record->record_uuid,
+                    'signing_key_id' => $record->signing_key_id,
+                    'pdf_sha256' => $record->pdf_sha256,
+                    'payload_sha256' => $record->payload_sha256];
                 if ((int) $record->schema_version === 2) {
                     $public['type_name'] = data_get($record->issued_payload, 'catalog_snapshot.names.'.$locale);
                     $public['type_code'] = data_get($record->issued_payload, 'catalog_snapshot.code');

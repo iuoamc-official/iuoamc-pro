@@ -31,6 +31,7 @@ return [
     'brand_help' => 'Marques originales fournies. Les marques partenaires sont regroupées dans un angle inférieur du modèle portrait, laissant un espace pour les cachets.',
     'union_role' => 'Union institutionnelle',
     'authority_role' => 'Autorité d’arbitrage culinaire',
+    'titles_authority_role' => 'Autorité mondiale des titres professionnels culinaires',
     'registry_role' => 'Registre des programmes et certificats',
     'layout_help' => 'Le modèle portrait de master professionnel est réservé à ICGA (GB, n° de société 16846998).',
     'issuer_unavailable' => 'L’identité active d’ICGA n’a pas pu être confirmée de manière unique. Examinez le registre institutionnel avant d’utiliser ce modèle.',

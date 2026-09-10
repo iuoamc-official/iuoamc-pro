@@ -31,6 +31,7 @@ return [
     'brand_help' => 'Original supplied marks. Partner marks appear together in the lower corner of the portrait design, leaving room for seals.',
     'union_role' => 'Institutional union',
     'authority_role' => 'Culinary arbitration authority',
+    'titles_authority_role' => 'World authority for professional culinary titles',
     'registry_role' => 'Programme and certificate registry',
     'layout_help' => 'The professional master portrait layout is reserved for ICGA (GB, Company No. 16846998).',
     'issuer_unavailable' => 'The active ICGA issuing identity could not be uniquely confirmed. Review the institutional record before using this design.',

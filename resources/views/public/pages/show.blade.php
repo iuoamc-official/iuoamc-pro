@@ -62,7 +62,18 @@
             <div class="section-heading"><span>{{ __('public_site.entities_eyebrow') }}</span><h2>{{ __('public_site.entities_title') }}</h2></div>
             <div class="entity-logos">
                 @foreach($siteProfile['entities'] as $entity)
-                    <article><img src="{{ asset($entity['logo']) }}" alt="{{ $entity['code'] }}" loading="lazy"><strong>{{ $entity['code'] }}</strong></article>
+                    <article>
+                        <img src="{{ asset($entity['logo']) }}" alt="{{ $entity['legal_name'] }}" loading="lazy">
+                        <strong>{{ $entity['code'] }}@if($entity['registered_mark'] ?? false)<sup aria-label="Registered trademark">®</sup>@endif</strong>
+                        <span class="entity-legal-name" dir="ltr">{{ $entity['legal_name'] }}</span>
+                        @if($entity['registrations'] !== [])
+                            <dl class="entity-registrations" dir="ltr">
+                                @foreach($entity['registrations'] as $label => $number)
+                                    <div><dt>{{ $label }}</dt><dd>{{ $number }}</dd></div>
+                                @endforeach
+                            </dl>
+                        @endif
+                    </article>
                 @endforeach
             </div>
         </section>
@@ -72,7 +83,18 @@
             @if($page->template === 'entities')
                 <div class="entity-logos page-entities">
                     @foreach($siteProfile['entities'] as $entity)
-                        <article><img src="{{ asset($entity['logo']) }}" alt="{{ $entity['code'] }}"><strong>{{ $entity['code'] }}</strong></article>
+                        <article>
+                            <img src="{{ asset($entity['logo']) }}" alt="{{ $entity['legal_name'] }}">
+                            <strong>{{ $entity['code'] }}@if($entity['registered_mark'] ?? false)<sup aria-label="Registered trademark">®</sup>@endif</strong>
+                            <span class="entity-legal-name" dir="ltr">{{ $entity['legal_name'] }}</span>
+                            @if($entity['registrations'] !== [])
+                                <dl class="entity-registrations" dir="ltr">
+                                    @foreach($entity['registrations'] as $label => $number)
+                                        <div><dt>{{ $label }}</dt><dd>{{ $number }}</dd></div>
+                                    @endforeach
+                                </dl>
+                            @endif
+                        </article>
                     @endforeach
                 </div>
             @endif

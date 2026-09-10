@@ -34,9 +34,20 @@
         <aside class="pc-card pc-workflow"><header class="pc-card-heading"><div><h2>{{ __('certificates.workflow') }}</h2><p>{{ __('certificates.workflow_notice') }}</p></div></header>
             <ol class="pc-workflow-steps">@foreach(['draft','review','approved','issued'] as $step)<li @class(['pc-workflow-current'=>$certificate->status===$step])>{{ __('certificates.states.'.$step) }}</li>@endforeach</ol>
             <p class="pc-help">{{ __('certificates.workflow_'.$certificate->status) }}</p>
+            @if($readiness)
+            <section @class(['pc-readiness','pc-readiness-ready'=>$readiness['ready']]) aria-labelledby="pc-readiness-title">
+                <header><div><span class="pc-eyebrow">{{ __('certificates.readiness.eyebrow') }}</span><h3 id="pc-readiness-title">{{ __('certificates.readiness.'.($readiness['ready']?'ready':'blocked')) }}</h3></div><span class="pc-readiness-score" aria-label="{{ __('certificates.readiness.score') }}">{{ collect($readiness['checks'])->filter(fn($check)=>$check===true)->count() }}/{{ collect($readiness['checks'])->reject(fn($check)=>$check===null)->count() }}</span></header>
+                <p>{{ __('certificates.readiness.'.($readiness['ready']?'ready_help':'blocked_help')) }}</p>
+                <ul>
+                    @foreach($readiness['checks'] as $check=>$passed)
+                    <li @class(['pc-check-passed'=>$passed===true,'pc-check-failed'=>$passed===false,'pc-check-na'=>$passed===null])><span aria-hidden="true">{{ $passed===true?'✓':($passed===false?'!':'—') }}</span><div><strong>{{ __('certificates.readiness.checks.'.$check) }}</strong><small>{{ __('certificates.readiness.states.'.($passed===null?'na':($passed?'passed':'failed'))) }}</small></div></li>
+                    @endforeach
+                </ul>
+            </section>
+            @endif
             @if($certificate->status==='draft' && auth()->user()->canDo('certificates.manage'))@include('control.pro_certificates._action',['action'=>'submit'])@endif
             @if($certificate->status==='review' && auth()->user()->canDo('certificates.review'))@include('control.pro_certificates._action',['action'=>'approve'])@include('control.pro_certificates._action',['action'=>'return'])@endif
-            @if($certificate->status==='approved' && auth()->user()->canDo('certificates.issue'))@include('control.pro_certificates._action',['action'=>'issue'])@endif
+            @if($certificate->status==='approved' && auth()->user()->canDo('certificates.issue') && ($readiness['ready']??false))@include('control.pro_certificates._action',['action'=>'issue'])@endif
             @if($certificate->status==='approved' && auth()->user()->canDo('certificates.review'))@include('control.pro_certificates._action',['action'=>'return'])@endif
             @if($certificate->status==='issued' && auth()->user()->canDo('certificates.revoke'))@include('control.pro_certificates._action',['action'=>'revoke'])@endif
             @if($certificate->status==='revoked' && $certificate->last_reason)<div class="pc-notice pc-notice-warning"><strong>{{ __('certificates.reason') }}</strong><p>{{ $certificate->last_reason }}</p></div>@endif

@@ -129,7 +129,7 @@ final class ProCertificateCatalog
             'names.fr' => ['required', 'string', 'max:120', self::plain(false)],
         ]);
         return ! $validation->fails()
-            && (($snapshot['layout'] ?? null) !== 'master_a4_v1' || ($snapshot['category'] ?? null) === 'professional_master');
+            && (($snapshot['layout'] ?? null) !== 'master_a4_v1'\n                || in_array($snapshot['category'] ?? null, ['diploma', 'professional_master'], true));
     }
 
     public function verify(ProCertificateType $type): bool
@@ -180,7 +180,7 @@ final class ProCertificateCatalog
             $rules['statement_'.$locale] = ['required', 'string', 'max:1500', self::plain(true)];
         }
         $result = Validator::make($values, $rules)->validate();
-        if ($result['layout'] === 'master_a4_v1' && $result['category'] !== 'professional_master') {
+        if ($result['layout'] === 'master_a4_v1'\n            && ! in_array($result['category'], ['diploma', 'professional_master'], true)) {
             throw ValidationException::withMessages(['category' => trans('validation.in', ['attribute' => 'category'])]);
         }
         $result['active'] = (bool) $result['active'];

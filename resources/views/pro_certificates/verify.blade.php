@@ -24,6 +24,7 @@
                 <div class="pc-public-full"><dt>{{ __('certificates.number') }}</dt><dd><bdi class="pc-number" dir="ltr">{{ $public['number'] }}</bdi></dd></div>
                 @if(!empty($public['specialization']))<div class="pc-public-full"><dt>{{ __('certificate_catalog.specialization') }}</dt><dd><bdi>{{ $public['specialization'] }}</bdi></dd></div>@endif
                 @if(!empty($public['type_code']))<div><dt>{{ __('certificate_catalog.type_code') }}</dt><dd><bdi dir="ltr">{{ $public['type_code'] }}</bdi></dd></div>@endif
+                @if(!empty($public['program_ip_code']))<div class="pc-public-full"><dt>{{ __('certificate_catalog.program_ip_code') }}</dt><dd><bdi class="pc-number" dir="ltr">{{ $public['program_ip_code'] }}</bdi></dd></div>@endif
                 <div><dt>{{ __('certificates.achievement_date') }}</dt><dd><bdi dir="ltr">{{ $public['achievement_date'] }}</bdi></dd></div>
                 <div><dt>{{ __('certificates.issued_at') }}</dt><dd><bdi dir="ltr">{{ $public['issued_at'] }}</bdi></dd></div>
                 <div><dt>{{ __('certificates.expires_on') }}</dt><dd><bdi dir="ltr">{{ $public['expires_on'] ?: __('certificates.no_expiry') }}</bdi></dd></div>

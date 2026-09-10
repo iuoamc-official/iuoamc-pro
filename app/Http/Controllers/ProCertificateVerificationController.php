@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Services\ProCertificateRegistry;
+use App\Services\ProMasterCertificatePdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -48,6 +49,9 @@ final class ProCertificateVerificationController extends Controller
                     $public['type_name'] = data_get($record->issued_payload, 'catalog_snapshot.names.'.$locale);
                     $public['type_code'] = data_get($record->issued_payload, 'catalog_snapshot.code');
                     $public['specialization'] = $record->specialization;
+                    $public['program_ip_code'] = ProMasterCertificatePdf::programIpCodeFromStatement(
+                        data_get($record->issued_payload, 'statement')
+                    );
                 }
             }
         } catch (Throwable $exception) {

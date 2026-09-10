@@ -39,6 +39,7 @@ return [
     'language_fr' => 'French',
     'save_type' => 'Save certificate type',
     'specialization' => 'Specialization',
+    'program_ip_code' => 'Program intellectual property registry code',
     'specialization_help' => 'Optional. Enter the specialization to display on the certificate and public verification page.',
     'type_version' => 'Type version',
     'back_catalog' => 'Back to certificate types',

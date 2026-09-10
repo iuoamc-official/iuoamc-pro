@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 return [
+    'title' => 'Données des participants',
     'skip_to_form' => 'Aller au contenu',
     'public_title' => 'Confirmez les informations de votre certificat Master',
     'public_eyebrow' => 'INFORMATIONS DU CERTIFICAT',

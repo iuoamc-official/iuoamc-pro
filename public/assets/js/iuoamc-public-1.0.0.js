@@ -21,6 +21,11 @@
     const aiClose = document.querySelector('[data-ai-close]');
     const aiForm = document.querySelector('[data-ai-form]');
     const aiMessages = document.querySelector('[data-ai-messages]');
+    const aiQuestion = aiForm?.querySelector('textarea');
+
+    const cleanAiText = (text) => String(text || '')
+        .replace(/\\([@*_\[\]()])/g, '$1')
+        .replace(/\*\*(.*?)\*\*/g, '$1');
 
     const toggleAi = (open) => {
         if (!aiPanel || !aiLauncher) return;
@@ -35,7 +40,7 @@
         const badge = document.createElement('span');
         badge.textContent = role === 'assistant' ? 'AI' : 'YOU';
         const paragraph = document.createElement('p');
-        paragraph.textContent = text;
+        paragraph.textContent = cleanAiText(text);
         article.append(badge, paragraph);
         if (sources.length) {
             const list = document.createElement('nav');
@@ -57,6 +62,13 @@
     aiClose?.addEventListener('click', () => toggleAi(false));
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && aiPanel && !aiPanel.hidden) toggleAi(false);
+    });
+
+    aiQuestion?.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+            event.preventDefault();
+            aiForm.requestSubmit();
+        }
     });
 
     aiForm?.addEventListener('submit', async (event) => {

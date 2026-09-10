@@ -50,6 +50,14 @@ final class ProCertificatePdf
             if (!is_file($authorityLogo) || is_link($authorityLogo)) {
                 throw new RuntimeException('CERTIFICATE_AUTHORITY_ASSET_MISSING');
             }
+            $authorityAsset = file_get_contents($authorityLogo);
+            if (!is_string($authorityAsset)
+                || !preg_match('~data:image/png;base64,([A-Za-z0-9+/=]+)~', $authorityAsset, $authorityMatch)) {
+                throw new RuntimeException('CERTIFICATE_AUTHORITY_ASSET_INVALID');
+            }
+            // mPDF does not consistently paint embedded raster images inside SVG files.
+            // Supplying the same transparent PNG payload directly is deterministic.
+            $authorityLogo = 'data:image/png;base64,'.$authorityMatch[1];
         }
         $temporary = realpath(storage_path('app'));
         if ($temporary === false) {

@@ -41,7 +41,19 @@ class SecurityHeaders
         if ($request->routeIs('pro-certificates.*')) {
             $response->headers->set('Referrer-Policy', 'no-referrer');
             $response->headers->set('X-Robots-Tag', 'noindex, nofollow, noarchive');
-            $response->headers->set('Content-Security-Policy', "default-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; script-src 'none'; connect-src 'none'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'");
+            $response->headers->set('X-Frame-Options', 'DENY');
+            $response->headers->set('Cross-Origin-Opener-Policy', 'same-origin');
+            $response->headers->set('Cross-Origin-Resource-Policy', 'same-origin');
+            $response->headers->set(
+                'Permissions-Policy',
+                'camera=(), geolocation=(), microphone=(), payment=(), usb=()'
+            );
+            $response->headers->set(
+                'Content-Security-Policy',
+                "default-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; " .
+                "script-src 'none'; connect-src 'none'; media-src 'none'; object-src 'none'; " .
+                "frame-src 'none'; worker-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+            );
         }
         // IUOAMC_CERTIFICATE_DATA_FORM_1_0_0
         if ($request->is('*/certificate-data/*', '*/control/certificates/data-confirmations', '*/control/certificates/data-confirmations/*')) {

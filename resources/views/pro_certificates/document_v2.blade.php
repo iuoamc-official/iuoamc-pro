@@ -7,8 +7,8 @@
 <html lang="{{ $language }}" dir="{{ $language === 'ar' ? 'rtl' : 'ltr' }}">
 <head><meta charset="utf-8"><style>
 body { color:#112b43; font-family:dejavusans; font-size:10pt; }
-.frame { border:{{ $diploma ? '1.1' : '0.5' }}mm solid #b89943; padding:5mm 7mm; }
-.inside { border:0.2mm solid #e6dac1; padding:4mm 5mm; }
+.frame { border:{{ $diploma ? '1.1' : '0.5' }}mm solid #b89943; padding:{{ $diploma ? '3mm 5mm' : '5mm 7mm' }}; }
+.inside { border:0.2mm solid #e6dac1; padding:{{ $diploma ? '2.5mm 4mm' : '4mm 5mm' }}; }
 table { border-collapse:collapse; width:100%; }
 td { vertical-align:middle; }
 .brand { width:45%; }
@@ -18,21 +18,21 @@ td { vertical-align:middle; }
 .issuer { width:38%; text-align:{{ $language === 'ar' ? 'left' : 'right' }}; font-size:9pt; line-height:1.45; }
 .muted { color:#63788b; font-size:7.5pt; }
 .masthead { border-bottom:0.2mm solid #e6dac1; }
-.masthead td { padding-bottom:3mm; }
-.eyebrow { margin:3mm 0 1mm; text-align:center; color:#8e712a; font-size:8.5pt; }
-.title { margin:1mm 0 2mm; text-align:center; font-weight:bold; font-size:{{ mb_strlen($payload['certificate_title']) > 65 ? 20 : ($diploma ? 28 : 25) }}pt; line-height:1.2; }
-.recipient-label { text-align:center; color:#63788b; font-size:9pt; margin:2mm 0 1mm; }
-.recipient { text-align:center; font-size:{{ $longName ? 18 : 23 }}pt; font-weight:bold; margin:1mm 0 2mm; line-height:1.25; }
-.program { text-align:center; font-size:11.5pt; font-weight:bold; margin:2mm 0 1mm; line-height:1.3; }
-.specialization { text-align:center; color:#8e712a; font-size:10.5pt; margin:1mm 0 2mm; line-height:1.3; }
-.statement { text-align:center; font-size:10pt; line-height:1.4; margin:2mm 5mm 3mm; }
+.masthead td { padding-bottom:{{ $diploma ? '1.5mm' : '3mm' }}; }
+.eyebrow { margin:{{ $diploma ? '1.5mm 0 0.5mm' : '3mm 0 1mm' }}; text-align:center; color:#8e712a; font-size:8.5pt; }
+.title { margin:{{ $diploma ? '0.5mm 0 1mm' : '1mm 0 2mm' }}; text-align:center; font-weight:bold; font-size:{{ mb_strlen($payload['certificate_title']) > 65 ? ($diploma ? 18 : 20) : ($diploma ? 24 : 25) }}pt; line-height:1.15; }
+.recipient-label { text-align:center; color:#63788b; font-size:{{ $diploma ? '8' : '9' }}pt; margin:{{ $diploma ? '1mm 0 0.5mm' : '2mm 0 1mm' }}; }
+.recipient { text-align:center; font-size:{{ $longName ? 18 : ($diploma ? 21 : 23) }}pt; font-weight:bold; margin:{{ $diploma ? '0.5mm 0 1mm' : '1mm 0 2mm' }}; line-height:1.2; }
+.program { text-align:center; font-size:{{ $diploma ? '10.5' : '11.5' }}pt; font-weight:bold; margin:{{ $diploma ? '1mm 0 0.5mm' : '2mm 0 1mm' }}; line-height:1.25; }
+.specialization { text-align:center; color:#8e712a; font-size:{{ $diploma ? '9.5' : '10.5' }}pt; margin:{{ $diploma ? '0.5mm 0 1mm' : '1mm 0 2mm' }}; line-height:1.25; }
+.statement { text-align:center; font-size:{{ $diploma ? '8.5' : '10' }}pt; line-height:{{ $diploma ? '1.25' : '1.4' }}; margin:{{ $diploma ? '1mm 3mm 1.5mm' : '2mm 5mm 3mm' }}; }
 .dates { border-top:0.2mm solid #e6dac1; border-bottom:0.2mm solid #e6dac1; }
-.dates td { padding:2mm; text-align:center; font-size:8pt; width:33.333%; }
-.footer-grid { margin-top:3mm; }
+.dates td { padding:{{ $diploma ? '1.2mm' : '2mm' }}; text-align:center; font-size:8pt; width:33.333%; }
+.footer-grid { margin-top:{{ $diploma ? '1.5mm' : '3mm' }}; }
 .footer-grid td { width:33.333%; }
 .signatory { font-size:10pt; font-weight:bold; border-top:0.3mm solid #b89943; padding-top:2mm; }
 .number { text-align:center; font-size:8.5pt; line-height:1.6; }
-.foot { font-size:6.8pt; line-height:1.4; color:#63788b; margin-top:2mm; text-align:center; }
+.foot { font-size:{{ $diploma ? '6.4' : '6.8' }}pt; line-height:1.3; color:#63788b; margin-top:{{ $diploma ? '1mm' : '2mm' }}; text-align:center; }
 .draft { text-align:center; color:#805e16; font-size:8pt; margin-bottom:2mm; }
 .code { direction:ltr; font-family:dejavusans; }
 </style></head>

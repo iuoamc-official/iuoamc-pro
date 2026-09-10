@@ -14,6 +14,9 @@
     @if(auth()->user()?->status === 'active' && auth()->user()->canDo('certificates.view'))
         <a href="{{ route('certificates.index',['locale'=>app()->getLocale()]) }}" class="{{ request()->routeIs('certificates.*')?'active':'' }}"><span class="module-sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" focusable="false"><path d="M6 3h12v12H6zM9 7h6M9 10h4"/><circle cx="12" cy="16" r="3"/><path d="m10 18-1 4 3-2 3 2-1-4"/></svg></span>{{ __('certificates.title') }}</a>
     @endif
+    @if(auth()->user()?->status === 'active' && auth()->user()->canDo('public-content.manage'))
+        <a href="{{ route('public-content.pages.index',['locale'=>app()->getLocale()]) }}" class="{{ request()->routeIs('public-content.*')?'active':'' }}"><span class="module-sidebar-icon">@include('control.navigation._icon',['icon'=>'public-content'])</span>{{ __('public_site.control.title') }}</a>
+    @endif
 
     {{-- IUOAMC_WICP_SIDEBAR_1_0_0_BEGIN --}}
     @if(\Illuminate\Support\Facades\Route::has('wicp.index') && auth()->check() && auth()->user()->canDo('wicp.view'))

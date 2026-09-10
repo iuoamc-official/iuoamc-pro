@@ -24,6 +24,8 @@ class InstitutionalCoreSeeder extends Seeder
                 ['core.users.manage', 'core'],
                 ['core.roles.manage', 'core'],
                 ['core.audit.view', 'core'],
+                ['public-content.manage', 'public-content'],
+                ['public-content.publish', 'public-content'],
             ];
 
             foreach ($definitions as [$code, $module]) {
@@ -46,6 +48,7 @@ class InstitutionalCoreSeeder extends Seeder
                     'core.dashboard.view', 'core.users.view', 'core.users.manage',
                     'core.roles.view', 'organizations.view', 'organizations.manage',
                     'core.audit.view',
+                    'public-content.manage',
                 ],
                 'auditor' => [
                     'core.dashboard.view', 'core.users.view', 'core.roles.view',

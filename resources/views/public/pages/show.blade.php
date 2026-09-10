@@ -10,8 +10,8 @@
                 <p>{{ $page->localized('summary') }}</p>
                 @if($page->slug === 'home')
                     <div class="hero-actions">
-                        <a class="gold-action" href="{{ route('public.pages.show', ['locale' => app()->getLocale(), 'publicPage' => 'about']) }}">{{ __('public_site.discover') }}</a>
-                        <a class="quiet-action" href="{{ route('public.pages.show', ['locale' => app()->getLocale(), 'publicPage' => 'programmes']) }}">{{ __('public_site.explore_programmes') }}</a>
+                        <a class="gold-action" href="{{ route('public.pages.show', ['locale' => app()->getLocale(), 'public_page' => 'about']) }}">{{ __('public_site.discover') }}</a>
+                        <a class="quiet-action" href="{{ route('public.pages.show', ['locale' => app()->getLocale(), 'public_page' => 'programmes']) }}">{{ __('public_site.explore_programmes') }}</a>
                     </div>
                 @endif
             </div>

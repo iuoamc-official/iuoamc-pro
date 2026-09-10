@@ -11,7 +11,7 @@
     <meta property="og:url" content="{{ url()->current() }}">
     <link rel="canonical" href="{{ url()->current() }}">
     @foreach(['ar', 'en', 'fr'] as $language)
-        <link rel="alternate" hreflang="{{ $language }}" href="{{ $page->slug === 'home' ? route('public.home', ['locale' => $language]) : route('public.pages.show', ['locale' => $language, 'publicPage' => $page]) }}">
+        <link rel="alternate" hreflang="{{ $language }}" href="{{ $page->slug === 'home' ? route('public.home', ['locale' => $language]) : route('public.pages.show', ['locale' => $language, 'public_page' => $page]) }}">
     @endforeach
     <title>{{ $page->localized('seo_title') }}</title>
     <link rel="stylesheet" href="{{ asset('assets/css/iuoamc-public-1.0.0.css') }}?v={{ filemtime(public_path('assets/css/iuoamc-public-1.0.0.css')) }}">
@@ -39,13 +39,13 @@
             <nav id="public-navigation" class="public-navigation" aria-label="{{ __('public_site.navigation') }}" data-navigation>
                 <a class="{{ $page->slug === 'home' ? 'active' : '' }}" href="{{ route('public.home', ['locale' => app()->getLocale()]) }}">{{ __('public_site.home') }}</a>
                 @foreach($navigation as $item)
-                    <a class="{{ $page->is($item) ? 'active' : '' }}" href="{{ route('public.pages.show', ['locale' => app()->getLocale(), 'publicPage' => $item]) }}">{{ $item->localized('navigation_label') }}</a>
+                    <a class="{{ $page->is($item) ? 'active' : '' }}" href="{{ route('public.pages.show', ['locale' => app()->getLocale(), 'public_page' => $item]) }}">{{ $item->localized('navigation_label') }}</a>
                 @endforeach
             </nav>
             <div class="header-tools">
                 <nav class="public-languages" aria-label="{{ __('public_site.languages') }}">
                     @foreach(['ar' => 'ع', 'en' => 'EN', 'fr' => 'FR'] as $language => $label)
-                        <a class="{{ app()->getLocale() === $language ? 'active' : '' }}" hreflang="{{ $language }}" href="{{ $page->slug === 'home' ? route('public.home', ['locale' => $language]) : route('public.pages.show', ['locale' => $language, 'publicPage' => $page]) }}">{{ $label }}</a>
+                        <a class="{{ app()->getLocale() === $language ? 'active' : '' }}" hreflang="{{ $language }}" href="{{ $page->slug === 'home' ? route('public.home', ['locale' => $language]) : route('public.pages.show', ['locale' => $language, 'public_page' => $page]) }}">{{ $label }}</a>
                     @endforeach
                 </nav>
                 @auth

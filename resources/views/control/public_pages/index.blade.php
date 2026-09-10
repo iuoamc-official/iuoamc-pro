@@ -17,7 +17,7 @@
         <div class="data-card-header"><div><h2>{{ __('public_site.control.pages') }}</h2><p>{{ __('public_site.control.pages_help') }}</p></div></div>
         <div class="table-wrap"><table><thead><tr><th>{{ __('public_site.control.page') }}</th><th>{{ __('public_site.control.slug') }}</th><th>{{ __('public_site.control.status') }}</th><th>{{ __('public_site.control.revision') }}</th><th>{{ __('public_site.control.updated') }}</th><th>{{ __('public_site.control.action') }}</th></tr></thead><tbody>
             @foreach($pages as $page)
-                <tr><td><strong>{{ $page->localized('title') }}</strong><small class="table-note">{{ $page->localized('navigation_label') }}</small></td><td><code>{{ $page->slug }}</code></td><td><span class="status-badge status-{{ $page->status }}">{{ __('public_site.control.'.$page->status) }}</span></td><td>V{{ $page->revision }}</td><td>{{ $page->updated_at?->format('Y-m-d H:i') }}</td><td><a class="table-action" href="{{ route('public-content.pages.edit', ['locale' => app()->getLocale(), 'publicPage' => $page]) }}">{{ __('public_site.control.edit') }}</a></td></tr>
+                <tr><td><strong>{{ $page->localized('title') }}</strong><small class="table-note">{{ $page->localized('navigation_label') }}</small></td><td><code>{{ $page->slug }}</code></td><td><span class="status-badge status-{{ $page->status }}">{{ __('public_site.control.'.$page->status) }}</span></td><td>V{{ $page->revision }}</td><td>{{ $page->updated_at?->format('Y-m-d H:i') }}</td><td><a class="table-action" href="{{ route('public-content.pages.edit', ['locale' => app()->getLocale(), 'public_page' => $page]) }}">{{ __('public_site.control.edit') }}</a></td></tr>
             @endforeach
         </tbody></table></div>
     </section>

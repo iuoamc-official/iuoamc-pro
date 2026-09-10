@@ -65,7 +65,7 @@ class PublicPageController extends Controller
         });
 
         return redirect()
-            ->route('public-content.pages.edit', ['locale' => $request->route('locale'), 'publicPage' => $publicPage])
+            ->route('public-content.pages.edit', ['locale' => $request->route('locale'), 'public_page' => $publicPage])
             ->with('success', trans('public_site.control.saved'));
     }
 

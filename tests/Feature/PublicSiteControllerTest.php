@@ -41,6 +41,18 @@ final class PublicSiteControllerTest extends TestCase
             $table->timestamps();
             $table->primary(['role_id', 'user_id']);
         });
+        Schema::create('permissions', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name');
+            $table->string('code')->unique();
+            $table->string('module');
+            $table->timestamps();
+        });
+        Schema::create('permission_role', function (Blueprint $table): void {
+            $table->unsignedBigInteger('permission_id');
+            $table->unsignedBigInteger('role_id');
+            $table->primary(['permission_id', 'role_id']);
+        });
         Schema::create('organizations', function (Blueprint $table): void {
             $table->id();
             $table->boolean('is_root')->default(false);

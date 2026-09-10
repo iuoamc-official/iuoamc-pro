@@ -105,14 +105,14 @@ Route::prefix('{locale}')
                             Route::get('/', [PublicPageController::class, 'index'])->name('pages.index');
                             Route::get('/settings', [PublicSiteSettingController::class, 'edit'])->name('settings.edit');
                             Route::put('/settings', [PublicSiteSettingController::class, 'update'])->name('settings.update');
-                            Route::get('/{publicPage}/edit', [PublicPageController::class, 'edit'])->name('pages.edit');
-                            Route::put('/{publicPage}', [PublicPageController::class, 'update'])->name('pages.update');
+                            Route::get('/{public_page}/edit', [PublicPageController::class, 'edit'])->name('pages.edit');
+                            Route::put('/{public_page}', [PublicPageController::class, 'update'])->name('pages.update');
                         });
                 });
         });
 
-        Route::get('/{publicPage:slug}', [PublicSiteController::class, 'show'])
-            ->where('publicPage', 'about|governance|entities|programmes|contact')
+        Route::get('/{public_page:slug}', [PublicSiteController::class, 'show'])
+            ->where('public_page', 'about|governance|entities|programmes|contact')
             ->name('public.pages.show');
     });
 

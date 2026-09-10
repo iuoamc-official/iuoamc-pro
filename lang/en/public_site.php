@@ -12,7 +12,7 @@ return [
         ['title' => 'Arbitration & rights', 'body' => 'Programme, professional title and intellectual-property documentation within explicit mandates.'],
     ],
     'verify' => ['eyebrow' => 'Public verification', 'title' => 'Trust begins with evidence', 'body' => 'Check the secure reference printed on a credential to reach its official record and integrity evidence.', 'label' => 'Secure verification token', 'action' => 'Verify now', 'help' => 'Do not enter a name or email address; use the verification token only.'],
-    'entities_eyebrow' => 'Institutional architecture', 'entities_title' => 'Specialist identities within one system',
+    'entities_eyebrow' => 'Institutional architecture', 'entities_title' => 'Specialist identities within one system', 'view_entity' => 'Explore entity', 'entity_profile' => 'Institutional profile', 'all_entities' => 'View all entities', 'official_registry' => 'Public registry details', 'registry_managed' => 'Registry details are managed through the institutional record.',
     'footer_statement' => 'An institutional system for education, documentation, verification and professional arbitration.', 'registry' => 'Institutional registry', 'contact' => 'Contact', 'secure_access' => 'Secure staff access', 'integrity_line' => 'Public Experience · Privacy by Design · Auditable Governance', 'official_email' => 'Official institutional email',
     'control' => [
         'title' => 'Public site & content', 'intro' => 'Manage the institutional public presence and multilingual publishing from one governed source.', 'preview' => 'Preview site', 'identity' => 'Identity & settings', 'identity_help' => 'Centrally control the name, logo, contact, registry reference and public announcement.',

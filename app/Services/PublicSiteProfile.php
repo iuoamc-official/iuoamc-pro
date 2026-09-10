@@ -40,6 +40,7 @@ final class PublicSiteProfile
             'entities' => [
                 [
                     'code' => 'IUOAMC',
+                    'slug' => 'iuoamc',
                     'legal_name' => 'INTERNATIONAL UNION OF ARAB MASTER CHEFS LTD',
                     'logo' => 'assets/brand/master-v1/iuoamc-original.png',
                     'registrations' => [
@@ -52,6 +53,7 @@ final class PublicSiteProfile
                 ],
                 [
                     'code' => 'ICGA',
+                    'slug' => 'icga',
                     'registered_mark' => true,
                     'legal_name' => 'INTERNATIONAL CULINARY & GASTRONOMY ARBITRATION LTD',
                     'logo' => 'assets/brand/master-v1/icga-original.jpg',
@@ -65,24 +67,28 @@ final class PublicSiteProfile
                 ],
                 [
                     'code' => 'WSA-CA',
+                    'slug' => 'wsa-ca',
                     'legal_name' => 'WORLD SUPREME AUTHORITY FOR CULINARY ARBITRATION LTD',
                     'logo' => 'assets/brand/master-v1/wsaca-authority-seal-v3.webp',
                     'registrations' => ['Company No.' => '16896300', 'ICO' => 'ZC207157'],
                 ],
                 [
                     'code' => 'WSACT',
+                    'slug' => 'wsact',
                     'legal_name' => 'WORLD SUPREME AUTHORITY FOR CULINARY TITLES LTD',
                     'logo' => 'assets/brand/master-v1/wsact-titles-authority-seal-v1.webp',
                     'registrations' => [],
                 ],
                 [
                     'code' => 'IUOAMC TV',
+                    'slug' => 'iuoamc-tv',
                     'legal_name' => 'IUOAMC MEDIA DIVISION',
                     'logo' => 'assets/brand/master-v1/iuoamc-tv-seal-v1.webp',
                     'registrations' => ['Parent Company No.' => '16649793'],
                 ],
                 [
                     'code' => 'WICP',
+                    'slug' => 'wicp',
                     'legal_name' => 'WORLD CENTRE FOR INTELLECTUAL PROTECTION LTD',
                     'logo' => 'assets/brand/master-v1/wicp-original.webp',
                     'registrations' => ['Company No.' => 'SC882611'],

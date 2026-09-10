@@ -111,6 +111,10 @@ Route::prefix('{locale}')
                 });
         });
 
+        Route::get('/entities/{entity}', [PublicSiteController::class, 'entity'])
+            ->where('entity', 'iuoamc|icga|wsa-ca|wsact|iuoamc-tv|wicp')
+            ->name('public.entities.show');
+
         Route::get('/{public_page:slug}', [PublicSiteController::class, 'show'])
             ->where('public_page', 'about|governance|entities|programmes|contact')
             ->name('public.pages.show');

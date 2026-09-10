@@ -24,7 +24,22 @@ class PublicSiteController extends Controller
         return $this->render($publicPage, $profile);
     }
 
-    private function render(PublicPage $page, PublicSiteProfile $profile): View
+    public function entity(string $locale, string $entity, PublicSiteProfile $profile): View
+    {
+        $siteProfile = $profile->get();
+        $entityProfile = collect($siteProfile['entities'])->firstWhere('slug', $entity);
+        abort_if($entityProfile === null, 404);
+
+        $page = PublicPage::query()
+            ->published()
+            ->where('slug', 'entity-'.$entity)
+            ->firstOrFail();
+
+        return $this->render($page, $profile, ['entity' => $entityProfile]);
+    }
+
+    /** @param array<string, mixed> $extra */
+    private function render(PublicPage $page, PublicSiteProfile $profile, array $extra = []): View
     {
         $navigation = PublicPage::query()
             ->published()
@@ -32,10 +47,10 @@ class PublicSiteController extends Controller
             ->orderBy('navigation_order')
             ->get();
 
-        return view('public.pages.show', [
+        return view($page->template === 'entity' ? 'public.entities.show' : 'public.pages.show', array_merge([
             'page' => $page,
             'navigation' => $navigation,
             'siteProfile' => $profile->get(),
-        ]);
+        ], $extra));
     }
 }

@@ -90,6 +90,7 @@ final class PublicSiteControllerTest extends TestCase
 
         $this->createPage('home', false);
         $this->createPage('about', true);
+        $this->createEntityPage('icga');
     }
 
     public function test_renders_published_home_in_arabic(): void
@@ -103,13 +104,7 @@ final class PublicSiteControllerTest extends TestCase
             ->assertSee('®')
             ->assertSee('WSACT')
             ->assertSee('IUOAMC TV')
-            ->assertSee('16896300')
-            ->assertSee('ZC207157')
-            ->assertSee('10101250')
-            ->assertSee('1001411175')
-            ->assertSee('2025-001773195')
-            ->assertSee('10604085')
-            ->assertSee('UK00004350642')
+            ->assertSee('/ar/entities/icga', false)
             ->assertSee('info@iuoamc.uk')
             ->assertSee('hreflang="en"', false)
             ->assertSee('"@context":"https://schema.org"', false)
@@ -126,6 +121,22 @@ final class PublicSiteControllerTest extends TestCase
             ->assertOk()
             ->assertSee('Une union professionnelle')
             ->assertSee('protection des données');
+    }
+
+    public function test_renders_an_entity_profile_with_public_registry_details(): void
+    {
+        $this->get('/en/entities/icga')
+            ->assertOk()
+            ->assertSee('International Culinary & Gastronomy Arbitration')
+            ->assertSee('ICGA')
+            ->assertSee('®')
+            ->assertSee('16846998')
+            ->assertSee('10101250')
+            ->assertSee('ZC146889')
+            ->assertSee('UK00004350642')
+            ->assertSee('10604085')
+            ->assertSee('/ar/entities/icga', false)
+            ->assertSee('/fr/entities/icga', false);
     }
 
     public function test_returns_not_found_for_a_draft_page(): void
@@ -210,6 +221,32 @@ final class PublicSiteControllerTest extends TestCase
             'seo_description' => $copy,
             'navigation_order' => $slug === 'home' ? 0 : 10,
             'show_in_navigation' => $navigation,
+            'status' => 'published',
+            'revision' => 1,
+            'published_at' => now(),
+        ]);
+    }
+
+    private function createEntityPage(string $slug): void
+    {
+        $copy = [
+            'ar' => 'التحكيم المهني',
+            'en' => 'International Culinary & Gastronomy Arbitration',
+            'fr' => 'Arbitrage international culinaire et gastronomique',
+        ];
+
+        PublicPage::query()->create([
+            'slug' => 'entity-'.$slug,
+            'template' => 'entity',
+            'navigation_label' => $copy,
+            'eyebrow' => $copy,
+            'title' => $copy,
+            'summary' => $copy,
+            'body' => $copy,
+            'seo_title' => $copy,
+            'seo_description' => $copy,
+            'navigation_order' => 500,
+            'show_in_navigation' => false,
             'status' => 'published',
             'revision' => 1,
             'published_at' => now(),

@@ -6,9 +6,9 @@
 <!doctype html>
 <html lang="{{ $language }}" dir="{{ $language === 'ar' ? 'rtl' : 'ltr' }}">
 <head><meta charset="utf-8"><style>
-body { color:#112b43; font-family:dejavusans; font-size:10pt; }
-.frame { border:{{ $diploma ? '1.1' : '0.5' }}mm solid #b89943; padding:{{ $diploma ? '3mm 5mm' : '5mm 7mm' }}; }
-.inside { border:0.2mm solid #e6dac1; padding:{{ $diploma ? '2.5mm 4mm' : '4mm 5mm' }}; }
+body { color:#112b43; font-family:dejavusans; font-size:10pt; margin:0; padding:0; }
+.frame { border:{{ $diploma ? '1.1' : '0.5' }}mm solid #b89943; padding:{{ $diploma ? '3mm 5mm' : '5mm 7mm' }}; {{ $diploma ? 'height:187mm;' : '' }} }
+.inside { border:0.2mm solid #e6dac1; padding:{{ $diploma ? '2.5mm 4mm' : '4mm 5mm' }}; {{ $diploma ? 'height:181mm;' : '' }} }
 table { border-collapse:collapse; width:100%; }
 td { vertical-align:middle; }
 .brand { width:45%; }
@@ -28,10 +28,19 @@ td { vertical-align:middle; }
 .statement { text-align:center; font-size:{{ $diploma ? '8.5' : '10' }}pt; line-height:{{ $diploma ? '1.25' : '1.4' }}; margin:{{ $diploma ? '1mm 3mm 1.5mm' : '2mm 5mm 3mm' }}; }
 .dates { border-top:0.2mm solid #e6dac1; border-bottom:0.2mm solid #e6dac1; }
 .dates td { padding:{{ $diploma ? '1.2mm' : '2mm' }}; text-align:center; font-size:8pt; width:33.333%; }
-.footer-grid { margin-top:{{ $diploma ? '1.5mm' : '3mm' }}; }
-.footer-grid td { width:33.333%; }
+.footer-grid { margin-top:{{ $diploma ? '2.5mm' : '3mm' }}; }
+.footer-grid > tbody > tr > td { vertical-align:middle; }
+.footer-signatory { width:28%; }
+.footer-number { width:25%; }
+.footer-seal { width:31%; text-align:center; }
+.footer-qr { width:16%; text-align:center; }
 .signatory { font-size:10pt; font-weight:bold; border-top:0.3mm solid #b89943; padding-top:2mm; }
 .number { text-align:center; font-size:8.5pt; line-height:1.6; }
+.authority-seal-crop { width:32mm; height:32mm; margin:0 auto; border-radius:16mm; overflow:hidden; }
+.authority-seal-crop img { width:32mm; height:32mm; }
+.physical-seal-zone { width:40mm; height:40mm; border:0.25mm dashed #c7a23e; border-radius:20mm; }
+.nfc-cell { width:13mm; text-align:center; color:#b58b24; font-size:6.5pt; line-height:1.15; }
+.nfc-mark { color:#b58b24; font-size:19pt; line-height:0.8; font-weight:bold; }
 .foot { font-size:{{ $diploma ? '6.4' : '6.8' }}pt; line-height:1.3; color:#63788b; margin-top:{{ $diploma ? '1mm' : '2mm' }}; text-align:center; }
 .draft { text-align:center; color:#805e16; font-size:8pt; margin-bottom:2mm; }
 .code { direction:ltr; font-family:dejavusans; }
@@ -41,7 +50,7 @@ td { vertical-align:middle; }
 <table class="masthead"><tr>
 @if($diploma && $arbitrationLogo !== null && $authorityLogo !== null)
 <td class="arbitration-brand"><img src="{{ $arbitrationLogo }}" style="width:40mm;height:auto" alt="ICGA — International Culinary &amp; Gastronomy Arbitration"></td>
-<td class="authority-brand"><img src="{{ $authorityLogo }}" style="width:32mm;height:auto" alt="WSA-CA — World Supreme Authority for Culinary Arbitration"></td>
+<td class="authority-brand"><div class="authority-seal-crop"><img src="{{ $authorityLogo }}" alt="WSA-CA — World Supreme Authority for Culinary Arbitration"></div></td>
 <td class="system-brand"><img src="{{ $logo }}" style="width:42mm;height:auto" alt="IUOAMC"></td>
 @else
 <td class="brand"><img src="{{ $logo }}" style="width:65mm;height:auto" alt="IUOAMC"></td>
@@ -63,9 +72,12 @@ td { vertical-align:middle; }
 <td>@if($payload['expires_on'])<span class="muted">{{ $labels['expiry'] }}</span><br><span dir="ltr">{{ $payload['expires_on'] }}</span>@else{{ $labels['no_expiry'] }}@endif</td>
 </tr></table>
 <table class="footer-grid"><tr>
-<td><div class="signatory">{{ $payload['signatory_name'] }}</div><div class="muted">{{ $payload['signatory_title'] }}</div></td>
-<td class="number"><span class="muted">{{ $labels['number'] }}</span><br><span class="code" dir="ltr">{{ $payload['certificate_number'] }}</span><br><span class="muted">{{ $labels['type_code'] }}: <span dir="ltr">{{ $payload['catalog_snapshot']['code'] }}</span></span></td>
-<td style="text-align:center">@if(!$draft)<barcode code="{{ $payload['verification_url'] }}" type="QR" error="M" size="0.75" disableborder="0" /><div class="muted">{{ $labels['verify'] }}</div>@else<div class="muted">{{ $labels['draft'] }}</div>@endif</td>
+<td class="footer-signatory"><div class="signatory">{{ $payload['signatory_name'] }}</div><div class="muted">{{ $payload['signatory_title'] }}</div></td>
+<td class="footer-number number"><span class="muted">{{ $labels['number'] }}</span><br><span class="code" dir="ltr">{{ $payload['certificate_number'] }}</span><br><span class="muted">{{ $labels['type_code'] }}: <span dir="ltr">{{ $payload['catalog_snapshot']['code'] }}</span></span></td>
+@if($diploma)
+<td class="footer-seal"><table><tr><td class="nfc-cell"><div class="nfc-mark">◉)))</div><strong>NFC</strong><br>SECURED</td><td><div class="physical-seal-zone"></div></td></tr></table></td>
+@endif
+<td class="footer-qr">@if(!$draft)<barcode code="{{ $payload['verification_url'] }}" type="QR" error="M" size="0.68" disableborder="0" /><div class="muted">{{ $labels['verify'] }}</div>@else<div class="muted">{{ $labels['draft'] }}</div>@endif</td>
 </tr></table>
 <div class="foot">{{ $draft ? $labels['draft'] : $labels['footer'] }}</div>
 </div></div></body></html>

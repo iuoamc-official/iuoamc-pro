@@ -15,7 +15,7 @@
                     >
                 </div>
                 <figcaption>
-                    <strong>Master Chef Ahmad Maadarani</strong>
+                    <strong>{{ $page->localized('title') }}</strong>
                     <span>{{ __('public_site.leadership.role_value') }}</span>
                 </figcaption>
             </figure>
@@ -40,10 +40,11 @@
             <span>{{ __('public_site.leadership.credentials') }}</span>
             <dl>
                 <div><dt>{{ __('public_site.leadership.role') }}</dt><dd>{{ __('public_site.leadership.role_value') }}</dd></div>
-                <div><dt>{{ __('public_site.leadership.education') }}</dt><dd>2002 · 2005</dd></div>
+                <div><dt>{{ __('public_site.leadership.field') }}</dt><dd>{{ __('public_site.leadership.field_value') }}</dd></div>
+                <div><dt>{{ __('public_site.leadership.distinction') }}</dt><dd>{{ __('public_site.leadership.distinction_value') }}</dd></div>
+                <div><dt>{{ __('public_site.leadership.publications') }}</dt><dd>{{ __('public_site.leadership.publications_value') }}</dd></div>
                 <div><dt>{{ __('public_site.leadership.master_chef') }}</dt><dd>2015</dd></div>
                 <div><dt>{{ __('public_site.leadership.judge') }}</dt><dd>2017</dd></div>
-                <div><dt>{{ __('public_site.leadership.digital_verification') }}</dt><dd>2019</dd></div>
             </dl>
             <a href="mailto:{{ $siteProfile['contact_email'] }}">{{ $siteProfile['contact_email'] }}</a>
         </aside>

@@ -8,8 +8,8 @@ use App\Models\PublicPage;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 final class PublicSiteControllerTest extends TestCase
@@ -145,9 +145,13 @@ final class PublicSiteControllerTest extends TestCase
     {
         $this->get('/en/leadership')
             ->assertOk()
-            ->assertSee('Master Chef Ahmad Maadarani')
+            ->assertSee('Engineer &amp; Master Chef Ahmad Maadarani', false)
             ->assertSee('President General &amp; Authorised Signatory', false)
-            ->assertSee('Telecommunications engineering and hotel management')
+            ->assertSee('International Arbitration in Culinary Arts and Gastronomy')
+            ->assertSee('first initiative to codify the field')
+            ->assertSee('The 17 Signals of Flavour')
+            ->assertDontSee('telecommunications engineering')
+            ->assertDontSee('hotel management')
             ->assertSee('assets/brand/leadership/ahmad-maadarani-president-general-v1.webp', false)
             ->assertSee('"@type":"Person"', false)
             ->assertSee('/ar/leadership', false)
@@ -184,7 +188,8 @@ final class PublicSiteControllerTest extends TestCase
                 && $request['store'] === false
                 && str_contains($request['instructions'], 'official public information assistant')
                 && str_contains($request['input'], 'OFFICIAL KNOWLEDGE')
-                && str_contains($request['input'], 'Telecommunications engineering and hotel management')
+                && str_contains($request['input'], 'first initiative to codify the field')
+                && str_contains($request['input'], 'The 17 Signals of Flavour')
                 && str_contains($request['input'], '/en/leadership')
                 && $request->hasHeader('Authorization', 'Bearer test-project-key');
         });
@@ -318,15 +323,15 @@ final class PublicSiteControllerTest extends TestCase
     private function createLeadershipPage(): void
     {
         $title = [
-            'ar' => 'ماستر شيف أحمد المعدراني',
-            'en' => 'Master Chef Ahmad Maadarani',
-            'fr' => 'Master Chef Ahmad Maadarani',
+            'ar' => 'المهندس وماستر شيف أحمد المعدراني',
+            'en' => 'Engineer & Master Chef Ahmad Maadarani',
+            'fr' => 'Ingénieur & Master Chef Ahmad Maadarani',
         ];
 
         $body = [
-            'ar' => 'هندسة الاتصالات وإدارة الفندقة',
-            'en' => 'Telecommunications engineering and hotel management',
-            'fr' => 'Ingénierie des télécommunications et gestion hôtelière',
+            'ar' => 'صاحب المبادرة الأولى لتقنين المجال ومؤلف الإشارات الـ17 للنكهة',
+            'en' => 'Originator of the first initiative to codify the field and author of The 17 Signals of Flavour',
+            'fr' => 'Initiateur de la première démarche de codification du domaine et auteur des 17 signaux de la saveur',
         ];
 
         PublicPage::query()->create([

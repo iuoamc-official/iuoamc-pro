@@ -38,7 +38,9 @@
             chr(64).'context' => 'https://schema.org',
             '@type' => 'Person',
             'name' => 'Ahmad Maadarani',
-            'jobTitle' => 'President General and Authorised Signatory',
+            'honorificPrefix' => 'Engineer & Master Chef',
+            'jobTitle' => 'President General, Authorised Signatory, Founder and Principal Codifier of International Arbitration in Culinary Arts and Gastronomy',
+            'knowsAbout' => ['International Arbitration in Culinary Arts and Gastronomy', 'Professional tasting', 'Sensory analysis', 'Culinary standards'],
             'url' => url()->current(),
             'image' => asset('assets/brand/leadership/ahmad-maadarani-president-general-v1.webp'),
             'worksFor' => [

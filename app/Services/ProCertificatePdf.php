@@ -68,10 +68,13 @@ final class ProCertificatePdf
             throw new RuntimeException('CERTIFICATE_PDF_TEMP_NOT_PRIVATE');
         }
         $labels = self::labels($language);
+        $diplomaLayout = $isCatalog && $payload['catalog_snapshot']['layout'] === 'diploma';
         $mpdf = new Mpdf([
             'mode' => 'utf-8', 'format' => 'A4-L',
-            'margin_left' => 15, 'margin_right' => 15,
-            'margin_top' => 12, 'margin_bottom' => 13,
+            'margin_left' => $diplomaLayout ? 7 : 15,
+            'margin_right' => $diplomaLayout ? 7 : 15,
+            'margin_top' => $diplomaLayout ? 7 : 12,
+            'margin_bottom' => $diplomaLayout ? 7 : 13,
             'margin_header' => 0, 'margin_footer' => 5,
             'default_font' => 'dejavusans', 'default_font_size' => 11,
             'tempDir' => $temporary,

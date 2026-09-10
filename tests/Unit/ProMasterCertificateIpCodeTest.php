@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Tests\Unit;
 
 use App\Services\ProMasterCertificatePdf;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 final class ProMasterCertificateIpCodeTest extends TestCase
 {
@@ -28,5 +28,10 @@ final class ProMasterCertificateIpCodeTest extends TestCase
             'WICP-PRO-P-2026-not-a-secure-registration'
         ));
         self::assertNull(ProMasterCertificatePdf::programIpCodeFromStatement(null));
+    }
+
+    public function testTheVersionedPrintMasterPassesItsPinnedIntegrityCheck(): void
+    {
+        self::assertTrue(ProMasterCertificatePdf::backgroundIsValid());
     }
 }

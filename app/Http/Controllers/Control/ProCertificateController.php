@@ -160,6 +160,9 @@ final class ProCertificateController extends Controller
         $certificate = $this->record($request);
         $integrity = $this->registry()->verify($certificate);
         $status = $integrity ? $this->registry()->effectiveStatus($certificate) : 'unavailable';
+        $readiness = $integrity && in_array($certificate->status, ['draft', 'review', 'approved'], true)
+            ? $this->registry()->issuanceReadiness($request->user(), $certificate)
+            : null;
         $history = AuditLog::query()->where('auditable_type', $certificate->getMorphClass())->where('auditable_id', $certificate->id)
             ->with('actor:id,name')->orderByDesc('sequence_number')->paginate(15);
         $reasons = [];
@@ -167,7 +170,7 @@ final class ProCertificateController extends Controller
             try { $reasons[$event->id] = isset($event->metadata['reason_encrypted']) ? Crypt::decryptString($event->metadata['reason_encrypted']) : null; }
             catch (Throwable) { $reasons[$event->id] = __('certificates.unreadable'); }
         }
-        return $this->page('control.pro_certificates.show', compact('certificate', 'integrity', 'status', 'history', 'reasons'));
+        return $this->page('control.pro_certificates.show', compact('certificate', 'integrity', 'status', 'readiness', 'history', 'reasons'));
     }
 
     public function transition(Request $request): RedirectResponse

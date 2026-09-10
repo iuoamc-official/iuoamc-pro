@@ -23,9 +23,9 @@
     <circle cx="500" cy="500" r="343" fill="#0A2B43" stroke="url(#gold)" stroke-width="6"/>
   </g>
 
-  <g fill="#F6E8B4" font-family="Georgia, 'Times New Roman', serif" font-weight="700" letter-spacing="8">
-    <text font-size="48"><textPath xlink:href="#topArc" startOffset="50%" text-anchor="middle">WORLD SUPREME AUTHORITY</textPath></text>
-    <text font-size="31"><textPath xlink:href="#bottomArc" startOffset="50%" text-anchor="middle">FOR CULINARY ARBITRATION</textPath></text>
+  <g fill="#FFF1BE" font-family="Georgia, 'Times New Roman', serif" font-weight="700">
+    <text font-size="48" letter-spacing="6"><textPath xlink:href="#topArc" startOffset="50%" text-anchor="middle">WORLD SUPREME AUTHORITY</textPath></text>
+    <text font-size="35" letter-spacing="3.5"><textPath xlink:href="#bottomArc" startOffset="50%" text-anchor="middle">FOR CULINARY ARBITRATION</textPath></text>
   </g>
 
   <g fill="url(#gold)">
@@ -72,6 +72,6 @@
   </g>
 
   <g text-anchor="middle" font-family="Arial, Helvetica, sans-serif">
-    <text x="500" y="710" fill="#F6E8B4" font-size="43" font-weight="800" letter-spacing="11">WSA-CA</text>
+    <text x="500" y="705" fill="#FFF1BE" font-size="48" font-weight="800" letter-spacing="9">WSA-CA</text>
   </g>
 </svg>

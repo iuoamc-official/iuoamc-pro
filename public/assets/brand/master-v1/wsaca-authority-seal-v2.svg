@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1000 1000" role="img" aria-labelledby="title desc">
+  <title id="title">World Supreme Authority for Culinary Arbitration</title>
+  <desc id="desc">Sovereign navy and gold seal featuring scales of justice, culinary tools, a star, and laurel branches.</desc>
+  <defs>
+    <path id="topArc" d="M 132 500 A 368 368 0 0 1 868 500"/>
+    <path id="bottomArc" d="M 155 585 A 358 358 0 0 0 845 585"/>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F8E7A6"/>
+      <stop offset="0.28" stop-color="#DDB654"/>
+      <stop offset="0.62" stop-color="#B88723"/>
+      <stop offset="1" stop-color="#F1D579"/>
+    </linearGradient>
+    <g id="leaf">
+      <path d="M0 0 C-18-10-29-29-24-50 C-5-43 8-27 8-7 Z" fill="url(#gold)"/>
+    </g>
+  </defs>
+
+  <g>
+    <circle cx="500" cy="500" r="474" fill="#071F33"/>
+    <circle cx="500" cy="500" r="454" fill="none" stroke="url(#gold)" stroke-width="8"/>
+    <circle cx="500" cy="500" r="425" fill="none" stroke="#D8AF4B" stroke-width="2" opacity=".85"/>
+    <circle cx="500" cy="500" r="343" fill="#0A2B43" stroke="url(#gold)" stroke-width="6"/>
+  </g>
+
+  <g fill="#F6E8B4" font-family="Georgia, 'Times New Roman', serif" font-weight="700" letter-spacing="8">
+    <text font-size="48"><textPath xlink:href="#topArc" startOffset="50%" text-anchor="middle">WORLD SUPREME AUTHORITY</textPath></text>
+    <text font-size="31"><textPath xlink:href="#bottomArc" startOffset="50%" text-anchor="middle">FOR CULINARY ARBITRATION</textPath></text>
+  </g>
+
+  <g fill="url(#gold)">
+    <circle cx="125" cy="500" r="7"/>
+    <circle cx="875" cy="500" r="7"/>
+  </g>
+
+  <g transform="translate(75 65) scale(.85)" fill="none" stroke="url(#gold)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M500 243 L513 271 L544 275 L521 297 L527 328 L500 313 L473 328 L479 297 L456 275 L487 271 Z" fill="url(#gold)" stroke="none"/>
+    <path d="M500 348 V620" stroke-width="24"/>
+    <path d="M435 620 H565 M414 646 H586" stroke-width="18"/>
+    <path d="M349 405 Q500 334 651 405" stroke-width="17"/>
+    <path d="M367 406 L315 528 M633 406 L685 528" stroke-width="7"/>
+    <path d="M320 528 H414 Q403 581 367 581 Q331 581 320 528 Z" fill="url(#gold)" stroke="none"/>
+    <path d="M586 528 H680 Q669 581 633 581 Q597 581 586 528 Z" fill="url(#gold)" stroke="none"/>
+    <circle cx="349" cy="405" r="11" fill="url(#gold)" stroke="none"/>
+    <circle cx="651" cy="405" r="11" fill="url(#gold)" stroke="none"/>
+  </g>
+
+  <g transform="translate(75 65) scale(.85)" stroke="url(#gold)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M355 720 L494 581" stroke-width="20"/>
+    <path d="M343 732 L374 701" stroke-width="28"/>
+    <path d="M645 720 L506 581" stroke-width="20"/>
+    <path d="M657 732 L626 701" stroke-width="28"/>
+    <path d="M492 583 L463 554 M503 572 L474 543 M514 561 L485 532" stroke-width="8"/>
+    <path d="M506 581 L554 533 Q572 515 584 523 Q592 535 574 553 L526 601" stroke-width="10"/>
+  </g>
+
+  <g transform="translate(100 85) scale(.8)" opacity=".98">
+    <path d="M286 678 Q210 565 263 433" fill="none" stroke="#DDB654" stroke-width="6"/>
+    <use xlink:href="#leaf" transform="translate(286 678) rotate(-141)"/>
+    <use xlink:href="#leaf" transform="translate(260 638) rotate(-126)"/>
+    <use xlink:href="#leaf" transform="translate(241 594) rotate(-111)"/>
+    <use xlink:href="#leaf" transform="translate(231 547) rotate(-96)"/>
+    <use xlink:href="#leaf" transform="translate(232 500) rotate(-81)"/>
+    <use xlink:href="#leaf" transform="translate(243 456) rotate(-65)"/>
+    <path d="M714 678 Q790 565 737 433" fill="none" stroke="#DDB654" stroke-width="6"/>
+    <use xlink:href="#leaf" transform="translate(714 678) scale(-1 1) rotate(-141)"/>
+    <use xlink:href="#leaf" transform="translate(740 638) scale(-1 1) rotate(-126)"/>
+    <use xlink:href="#leaf" transform="translate(759 594) scale(-1 1) rotate(-111)"/>
+    <use xlink:href="#leaf" transform="translate(769 547) scale(-1 1) rotate(-96)"/>
+    <use xlink:href="#leaf" transform="translate(768 500) scale(-1 1) rotate(-81)"/>
+    <use xlink:href="#leaf" transform="translate(757 456) scale(-1 1) rotate(-65)"/>
+  </g>
+
+  <g text-anchor="middle" font-family="Arial, Helvetica, sans-serif">
+    <text x="500" y="710" fill="#F6E8B4" font-size="43" font-weight="800" letter-spacing="11">WSA-CA</text>
+  </g>
+</svg>

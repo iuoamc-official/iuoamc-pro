@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\Organization;
 use App\Models\ProCertificate;
 use App\Models\ProCertificateStudent;
+use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -13,6 +15,34 @@ use RuntimeException;
 
 final class ProCertificateStudentArchive
 {
+    /**
+     * Prepare an authorized private batch template without choosing public display names.
+     *
+     * @return array{count:int, tsv:string}
+     */
+    public function batchTemplate(User $actor, int $organizationId): array
+    {
+        app(ProCertificateRegistry::class)->requirePermission($actor, 'certificates.manage');
+        $organization = Organization::query()->findOrFail($organizationId);
+        app(InstitutionalAccess::class)->authorizeOrganization($actor, $organization);
+
+        $students = ProCertificateStudent::query()
+            ->where('organization_id', $organizationId)
+            ->orderBy('id')
+            ->get(['private_name']);
+        $lines = ["recipient_name\tpublic_name\tspecialization"];
+
+        foreach ($students as $student) {
+            $name = $student->private_name;
+            if (! is_string($name) || trim($name) === '' || preg_match('/[\x00-\x1F\x7F]/u', $name) !== 0) {
+                throw new RuntimeException('PRESERVED_CERTIFICATE_STUDENT_NAME_INVALID');
+            }
+            $lines[] = trim($name)."\t\t";
+        }
+
+        return ['count' => $students->count(), 'tsv' => implode("\n", $lines)."\n"];
+    }
+
     /**
      * Return aggregate inventory only. Student names never leave this service.
      *

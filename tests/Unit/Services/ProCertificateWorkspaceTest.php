@@ -5,7 +5,7 @@ namespace Tests\Unit\Services;
 
 use App\Models\ProCertificate;
 use App\Services\ProCertificateWorkspace;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 final class ProCertificateWorkspaceTest extends TestCase
 {

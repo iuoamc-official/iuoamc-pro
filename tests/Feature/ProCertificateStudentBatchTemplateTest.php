@@ -46,11 +46,23 @@ final class ProCertificateStudentBatchTemplateTest extends TestCase
             $table->string('slug')->unique();
             $table->timestamps();
         });
+        Schema::create('permissions', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name');
+            $table->string('code')->unique();
+            $table->string('module');
+            $table->timestamps();
+        });
         Schema::create('role_user', function (Blueprint $table): void {
             $table->unsignedBigInteger('role_id');
             $table->unsignedBigInteger('user_id');
             $table->timestamps();
             $table->primary(['role_id', 'user_id']);
+        });
+        Schema::create('permission_role', function (Blueprint $table): void {
+            $table->unsignedBigInteger('permission_id');
+            $table->unsignedBigInteger('role_id');
+            $table->primary(['permission_id', 'role_id']);
         });
         Schema::create('pro_certificate_students', function (Blueprint $table): void {
             $table->id();

@@ -1,7 +1,14 @@
 @extends('layouts.control')
 @section('title', __('public_site.control.edit_page'))
 @section('content')
-    <section class="page-heading compact-heading"><div><span class="eyebrow">PUBLIC EXPERIENCE / {{ strtoupper($publicPage->slug) }} / V{{ $publicPage->revision }}</span><h1>{{ __('public_site.control.edit_page') }}</h1><p>{{ __('public_site.control.edit_help') }}</p></div><div class="heading-actions"><a class="secondary-action" href="{{ route('public-content.pages.index', ['locale' => app()->getLocale()]) }}">{{ __('public_site.control.back') }}</a>@if($publicPage->status === 'published')<a class="primary-action" target="_blank" rel="noopener" href="{{ $publicPage->slug === 'home' ? route('public.home', ['locale' => app()->getLocale()]) : route('public.pages.show', ['locale' => app()->getLocale(), 'public_page' => $publicPage]) }}">{{ __('public_site.control.preview') }}</a>@endif</div></section>
+    @php
+        $previewUrl = $publicPage->slug === 'home'
+            ? route('public.home', ['locale' => app()->getLocale()])
+            : ($publicPage->template === 'entity'
+                ? route('public.entities.show', ['locale' => app()->getLocale(), 'entity' => str($publicPage->slug)->after('entity-')])
+                : route('public.pages.show', ['locale' => app()->getLocale(), 'public_page' => $publicPage]));
+    @endphp
+    <section class="page-heading compact-heading"><div><span class="eyebrow">PUBLIC EXPERIENCE / {{ strtoupper($publicPage->slug) }} / V{{ $publicPage->revision }}</span><h1>{{ __('public_site.control.edit_page') }}</h1><p>{{ __('public_site.control.edit_help') }}</p></div><div class="heading-actions"><a class="secondary-action" href="{{ route('public-content.pages.index', ['locale' => app()->getLocale()]) }}">{{ __('public_site.control.back') }}</a>@if($publicPage->status === 'published')<a class="primary-action" target="_blank" rel="noopener" href="{{ $previewUrl }}">{{ __('public_site.control.preview') }}</a>@endif</div></section>
     @if($errors->any())<div class="alert alert-error" role="alert"><strong>{{ $errors->first() }}</strong></div>@endif
     <form class="institutional-form" method="post" action="{{ route('public-content.pages.update', ['locale' => app()->getLocale(), 'public_page' => $publicPage]) }}">
         @csrf @method('put')

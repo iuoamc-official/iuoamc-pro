@@ -60,21 +60,17 @@
 
         <section class="public-section public-container entity-stage">
             <div class="section-heading"><span>{{ __('public_site.entities_eyebrow') }}</span><h2>{{ __('public_site.entities_title') }}</h2></div>
-            <div class="entity-logos">
-                @foreach($siteProfile['entities'] as $entity)
-                    <article>
+            <div class="entity-marquee" aria-label="{{ __('public_site.entities_title') }}">
+                <div class="entity-track">
+                @foreach(array_merge($siteProfile['entities'], $siteProfile['entities']) as $index => $entity)
+                    <a class="entity-card entity-card-compact" href="{{ route('public.entities.show', ['locale' => app()->getLocale(), 'entity' => $entity['slug']]) }}" @if($index >= count($siteProfile['entities'])) aria-hidden="true" tabindex="-1" @endif>
                         <img src="{{ asset($entity['logo']) }}" alt="{{ $entity['legal_name'] }}" loading="lazy">
                         <strong>{{ $entity['code'] }}@if($entity['registered_mark'] ?? false)<sup aria-label="Registered trademark">®</sup>@endif</strong>
                         <span class="entity-legal-name" dir="ltr">{{ $entity['legal_name'] }}</span>
-                        @if($entity['registrations'] !== [])
-                            <dl class="entity-registrations" dir="ltr">
-                                @foreach($entity['registrations'] as $label => $number)
-                                    <div><dt>{{ $label }}</dt><dd>{{ $number }}</dd></div>
-                                @endforeach
-                            </dl>
-                        @endif
-                    </article>
+                        <span class="entity-card-action">{{ __('public_site.view_entity') }} <b aria-hidden="true">↗</b></span>
+                    </a>
                 @endforeach
+                </div>
             </div>
         </section>
     @else
@@ -83,7 +79,7 @@
             @if($page->template === 'entities')
                 <div class="entity-logos page-entities">
                     @foreach($siteProfile['entities'] as $entity)
-                        <article>
+                        <a class="entity-card" href="{{ route('public.entities.show', ['locale' => app()->getLocale(), 'entity' => $entity['slug']]) }}">
                             <img src="{{ asset($entity['logo']) }}" alt="{{ $entity['legal_name'] }}">
                             <strong>{{ $entity['code'] }}@if($entity['registered_mark'] ?? false)<sup aria-label="Registered trademark">®</sup>@endif</strong>
                             <span class="entity-legal-name" dir="ltr">{{ $entity['legal_name'] }}</span>
@@ -94,7 +90,8 @@
                                     @endforeach
                                 </dl>
                             @endif
-                        </article>
+                            <span class="entity-card-action">{{ __('public_site.view_entity') }} <b aria-hidden="true">↗</b></span>
+                        </a>
                     @endforeach
                 </div>
             @endif

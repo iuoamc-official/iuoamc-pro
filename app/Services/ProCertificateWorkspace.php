@@ -9,7 +9,7 @@ use Illuminate\Support\Collection;
 final class ProCertificateWorkspace
 {
     /**
-     * Separate the newest certificate for each recipient and programme from its preserved history.
+     * Separate the newest certificate for each recipient, catalog type and achievement from its history.
      *
      * @param  Collection<int, ProCertificate>  $certificates
      * @return array{current: Collection<int, ProCertificate>, archive: Collection<int, ProCertificate>}
@@ -38,10 +38,14 @@ final class ProCertificateWorkspace
 
     private function displayKey(ProCertificate $certificate): string
     {
+        $typeIdentity = $certificate->catalog_type_id !== null
+            ? 'catalog:'.$certificate->catalog_type_id
+            : 'legacy:'.$certificate->certificate_type.'|'.$this->normalize($certificate->program_title);
+
         return implode('|', [
             (string) $certificate->organization_id,
-            (string) $certificate->certificate_type,
-            $this->normalize($certificate->program_title),
+            $typeIdentity,
+            $certificate->achievement_date?->toDateString() ?? '',
             $this->normalize($certificate->recipient_name ?: $certificate->public_name),
         ]);
     }

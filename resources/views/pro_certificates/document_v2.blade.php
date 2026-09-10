@@ -39,7 +39,7 @@ td { vertical-align:middle; }
 @if($draft)<div class="draft">{{ $labels['draft'] }}</div>@endif
 <table class="masthead"><tr>
 @if($diploma && $authorityLogo !== null)
-<td class="authority-brand"><img src="{{ $authorityLogo }}" style="width:72mm;height:auto" alt="WSA-CA — World Supreme Authority for Culinary Arbitration"></td>
+<td class="authority-brand"><img src="{{ $authorityLogo }}" style="width:40mm;height:auto" alt="ICGA — International Culinary &amp; Gastronomy Arbitration"></td>
 <td class="system-brand"><img src="{{ $logo }}" style="width:48mm;height:auto" alt="IUOAMC"></td>
 @else
 <td class="brand"><img src="{{ $logo }}" style="width:65mm;height:auto" alt="IUOAMC"></td>

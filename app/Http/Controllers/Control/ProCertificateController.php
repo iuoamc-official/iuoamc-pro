@@ -59,8 +59,8 @@ final class ProCertificateController extends Controller
         ]);
         $base = $this->registry()->query($request->user());
         $workspaceRecords = $workspace->partition((clone $base)->latest('id')->get([
-            'id', 'organization_id', 'certificate_type', 'program_title', 'recipient_name', 'public_name',
-            'status', 'expires_on',
+            'id', 'organization_id', 'catalog_type_id', 'certificate_type', 'program_title', 'recipient_name',
+            'public_name', 'achievement_date', 'status', 'expires_on',
         ]));
         $currentRecords = $workspaceRecords['current'];
         $archiveRecords = $workspaceRecords['archive'];

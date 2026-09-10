@@ -21,13 +21,16 @@ class PublicPageController extends Controller
         ]);
     }
 
-    public function edit(PublicPage $publicPage): View
+    public function edit(PublicPage $public_page): View
     {
+        $publicPage = $public_page;
+
         return view('control.public_pages.edit', compact('publicPage'));
     }
 
-    public function update(Request $request, PublicPage $publicPage): RedirectResponse
+    public function update(Request $request, PublicPage $public_page): RedirectResponse
     {
+        $publicPage = $public_page;
         $validated = $request->validate($this->rules());
 
         if ($validated['status'] !== $publicPage->status && ! $request->user()->canDo('public-content.publish')) {

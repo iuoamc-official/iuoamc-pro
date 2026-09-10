@@ -6,6 +6,7 @@ use App\Models\ProCertificate;
 use App\Services\ProCertificateCatalog;
 use App\Services\ProCertificateRegistry;
 use App\Services\ProCertificateBatchRegistry;
+use App\Services\ProCertificateStudentArchive;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\RedirectResponse;
@@ -34,13 +35,20 @@ final class ProCertificateBatchController extends Controller
     }
     public function create(Request $request): Response {
         $this->registry()->requirePermission($request->user(),'certificates.manage');
-        $choice=$request->validate(['type_id'=>['nullable','integer','min:1'],'language'=>['nullable','in:ar,en,fr']]);
-        $types=$this->types($request);$selectedType=null;$common=[];
+        $choice=$request->validate(['type_id'=>['nullable','integer','min:1'],'language'=>['nullable','in:ar,en,fr'],
+            'source'=>['nullable','in:preserved_students']]);
+        $types=$this->types($request);$selectedType=null;$common=[];$preservedTemplate=null;
         if (!empty($choice['type_id'])) {
             $selectedType=$types->firstWhere('id',(int)$choice['type_id']);abort_unless($selectedType,404);
             $common=$this->catalog()->defaults($request->user(),(int)$selectedType->id,$choice['language']??app()->getLocale());
+            if (($choice['source']??null)==='preserved_students') {
+                $preservedTemplate=app(ProCertificateStudentArchive::class)->batchTemplate(
+                    $request->user(),(int)$selectedType->organization_id
+                );
+            }
         }
-        return $this->page('form',compact('types','selectedType','common')+['rows'=>null,'ticket'=>null,'requestKey'=>(string)Str::uuid()]);
+        return $this->page('form',compact('types','selectedType','common','preservedTemplate')
+            +['rows'=>null,'ticket'=>null,'requestKey'=>(string)Str::uuid()]);
     }
     private function parseRows(string $text): array {
         if(preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/',$text))throw ValidationException::withMessages(['recipient_rows'=>__('certificate_catalog.errors.rows_control')]);
@@ -85,7 +93,8 @@ final class ProCertificateBatchController extends Controller
             $ticket=Crypt::encryptString(json_encode(['actor'=>(int)$request->user()->id,'expires'=>time()+1800,'digest'=>$digest],JSON_THROW_ON_ERROR));
             // Flash values only into this request so the explicit preview accurately preserves every field.
             $request->session()->flashInput($request->except(['_token','preview_ticket']));
-            return $this->page('form',compact('types','selectedType','common','rows','ticket')+['requestKey'=>$input['request_key']]);
+            return $this->page('form',compact('types','selectedType','common','rows','ticket')
+                +['preservedTemplate'=>null,'requestKey'=>$input['request_key']]);
         }
         try{$proof=json_decode(Crypt::decryptString($input['preview_ticket']??''),true,8,JSON_THROW_ON_ERROR);}
         catch(Throwable){throw ValidationException::withMessages(['recipient_rows'=>__('certificate_catalog.errors.preview_required')]);}

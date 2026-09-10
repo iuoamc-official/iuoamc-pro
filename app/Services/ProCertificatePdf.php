@@ -40,8 +40,13 @@ final class ProCertificatePdf
             throw new RuntimeException('CERTIFICATE_BRAND_ASSET_MISSING');
         }
         $authorityLogo = null;
+        $arbitrationLogo = null;
         if ($isCatalog && $payload['catalog_snapshot']['layout'] === 'diploma') {
-            $authorityLogo = public_path('assets/brand/master-v1/wsaca-original.webp');
+            $arbitrationLogo = public_path('assets/brand/master-v1/icga-original.jpg');
+            $authorityLogo = public_path('assets/brand/master-v1/wsaca-authority-seal-v3.webp');
+            if (!is_file($arbitrationLogo) || is_link($arbitrationLogo)) {
+                throw new RuntimeException('CERTIFICATE_ARBITRATION_ASSET_MISSING');
+            }
             if (!is_file($authorityLogo) || is_link($authorityLogo)) {
                 throw new RuntimeException('CERTIFICATE_AUTHORITY_ASSET_MISSING');
             }
@@ -83,7 +88,7 @@ final class ProCertificatePdf
         }
         // Only the fixed, escaped Blade document is rendered. No remote assets/user HTML.
         $view = $isCatalog ? 'pro_certificates.document_v2' : 'pro_certificates.document';
-        $mpdf->WriteHTML(view($view, compact('payload', 'language', 'labels', 'logo', 'authorityLogo', 'draft'))->render());
+        $mpdf->WriteHTML(view($view, compact('payload', 'language', 'labels', 'logo', 'authorityLogo', 'arbitrationLogo', 'draft'))->render());
         if ($mpdf->page !== 1) {
             throw ValidationException::withMessages(['statement' => $labels['too_long']]);
         }

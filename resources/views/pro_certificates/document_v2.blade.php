@@ -18,17 +18,17 @@ td { vertical-align:middle; }
 .issuer { width:38%; text-align:{{ $language === 'ar' ? 'left' : 'right' }}; font-size:9pt; line-height:1.45; }
 .muted { color:#63788b; font-size:7.5pt; }
 .masthead { border-bottom:0.2mm solid #e6dac1; }
-.masthead td { padding-bottom:{{ $diploma ? '1.5mm' : '3mm' }}; }
-.eyebrow { margin:{{ $diploma ? '1.5mm 0 0.5mm' : '3mm 0 1mm' }}; text-align:center; color:#8e712a; font-size:8.5pt; }
-.title { margin:{{ $diploma ? '0.5mm 0 1mm' : '1mm 0 2mm' }}; text-align:center; font-weight:bold; font-size:{{ mb_strlen($payload['certificate_title']) > 65 ? ($diploma ? 18 : 20) : ($diploma ? 24 : 25) }}pt; line-height:1.15; }
-.recipient-label { text-align:center; color:#63788b; font-size:{{ $diploma ? '8' : '9' }}pt; margin:{{ $diploma ? '1mm 0 0.5mm' : '2mm 0 1mm' }}; }
-.recipient { text-align:center; font-size:{{ $longName ? 18 : ($diploma ? 21 : 23) }}pt; font-weight:bold; margin:{{ $diploma ? '0.5mm 0 1mm' : '1mm 0 2mm' }}; line-height:1.2; }
-.program { text-align:center; font-size:{{ $diploma ? '10.5' : '11.5' }}pt; font-weight:bold; margin:{{ $diploma ? '1mm 0 0.5mm' : '2mm 0 1mm' }}; line-height:1.25; }
-.specialization { text-align:center; color:#8e712a; font-size:{{ $diploma ? '9.5' : '10.5' }}pt; margin:{{ $diploma ? '0.5mm 0 1mm' : '1mm 0 2mm' }}; line-height:1.25; }
-.statement { text-align:center; font-size:{{ $diploma ? '8.5' : '10' }}pt; line-height:{{ $diploma ? '1.25' : '1.4' }}; margin:{{ $diploma ? '1mm 3mm 1.5mm' : '2mm 5mm 3mm' }}; }
+.masthead td { padding-bottom:{{ $diploma ? '0.5mm' : '3mm' }}; }
+.eyebrow { margin:{{ $diploma ? '0.5mm 0 0.2mm' : '3mm 0 1mm' }}; text-align:center; color:#8e712a; font-size:8.5pt; }
+.title { margin:{{ $diploma ? '0.2mm 0 0.4mm' : '1mm 0 2mm' }}; text-align:center; font-weight:bold; font-size:{{ mb_strlen($payload['certificate_title']) > 65 ? ($diploma ? 16 : 20) : ($diploma ? 21 : 25) }}pt; line-height:{{ $diploma ? '1.05' : '1.15' }}; }
+.recipient-label { text-align:center; color:#63788b; font-size:{{ $diploma ? '7.5' : '9' }}pt; margin:{{ $diploma ? '0.4mm 0 0.2mm' : '2mm 0 1mm' }}; }
+.recipient { text-align:center; font-size:{{ $longName ? 16 : ($diploma ? 18.5 : 23) }}pt; font-weight:bold; margin:{{ $diploma ? '0.2mm 0 0.4mm' : '1mm 0 2mm' }}; line-height:{{ $diploma ? '1.08' : '1.2' }}; }
+.program { text-align:center; font-size:{{ $diploma ? '9.2' : '11.5' }}pt; font-weight:bold; margin:{{ $diploma ? '0.3mm 0 0.2mm' : '2mm 0 1mm' }}; line-height:{{ $diploma ? '1.1' : '1.25' }}; }
+.specialization { text-align:center; color:#8e712a; font-size:{{ $diploma ? '8.5' : '10.5' }}pt; margin:{{ $diploma ? '0.2mm 0 0.4mm' : '1mm 0 2mm' }}; line-height:{{ $diploma ? '1.1' : '1.25' }}; }
+.statement { text-align:center; font-size:{{ $diploma ? '7.8' : '10' }}pt; line-height:{{ $diploma ? '1.1' : '1.4' }}; margin:{{ $diploma ? '0.4mm 3mm 0.6mm' : '2mm 5mm 3mm' }}; }
 .dates { border-top:0.2mm solid #e6dac1; border-bottom:0.2mm solid #e6dac1; }
-.dates td { padding:{{ $diploma ? '1.2mm' : '2mm' }}; text-align:center; font-size:8pt; width:33.333%; }
-.footer-grid { margin-top:{{ $diploma ? '2.5mm' : '3mm' }}; }
+.dates td { padding:{{ $diploma ? '0.7mm' : '2mm' }}; text-align:center; font-size:{{ $diploma ? '7.5' : '8' }}pt; width:33.333%; }
+.footer-grid { margin-top:{{ $diploma ? '0.5mm' : '3mm' }}; }
 .footer-grid > tbody > tr > td { vertical-align:middle; }
 .footer-signatory { width:28%; }
 .footer-number { width:25%; }
@@ -41,7 +41,7 @@ td { vertical-align:middle; }
 .physical-seal-zone { width:40mm; height:40mm; border:0.25mm dashed #c7a23e; border-radius:20mm; }
 .nfc-cell { width:13mm; text-align:center; color:#b58b24; font-size:6.5pt; line-height:1.15; }
 .nfc-mark { color:#b58b24; font-size:19pt; line-height:0.8; font-weight:bold; }
-.foot { font-size:{{ $diploma ? '6.4' : '6.8' }}pt; line-height:1.3; color:#63788b; margin-top:{{ $diploma ? '1mm' : '2mm' }}; text-align:center; }
+.foot { font-size:{{ $diploma ? '6' : '6.8' }}pt; line-height:1.2; color:#63788b; margin-top:{{ $diploma ? '0.4mm' : '2mm' }}; text-align:center; }
 .draft { text-align:center; color:#805e16; font-size:8pt; margin-bottom:2mm; }
 .code { direction:ltr; font-family:dejavusans; }
 </style></head>

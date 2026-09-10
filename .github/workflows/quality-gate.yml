@@ -1,0 +1,58 @@
+name: Enterprise quality gate
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  application:
+    name: PHP 8.3 / Laravel
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Configure PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          extensions: bcmath, ctype, dom, fileinfo, gd, intl, mbstring, pdo_sqlite, sodium, sqlite3, xml
+
+      - name: Validate Composer metadata
+        run: composer validate --strict --no-check-publish
+
+      - name: Install locked dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist --optimize-autoloader
+
+      - name: Prepare isolated test environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          touch database/database.sqlite
+
+      - name: Lint PHP source
+        shell: bash
+        run: |
+          while IFS= read -r -d '' file; do
+            php -l "$file" >/dev/null
+          done < <(find app bootstrap config database routes tests -type f -name '*.php' -print0)
+
+      - name: Compile routes and views
+        run: |
+          php artisan route:list --except-vendor
+          php artisan view:cache
+
+      - name: Run automated tests
+        run: composer test

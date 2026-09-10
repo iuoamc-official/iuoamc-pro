@@ -99,6 +99,8 @@ final class PublicSiteControllerTest extends TestCase
             ->assertSee('منظومة مؤسسية عالمية')
             ->assertSee('QR + NFC')
             ->assertSee('WSA-CA')
+            ->assertSee('ICGA')
+            ->assertSee('®')
             ->assertSee('WSACT')
             ->assertSee('IUOAMC TV')
             ->assertSee('16896300')

@@ -64,7 +64,7 @@
                 @foreach($siteProfile['entities'] as $entity)
                     <article>
                         <img src="{{ asset($entity['logo']) }}" alt="{{ $entity['legal_name'] }}" loading="lazy">
-                        <strong>{{ $entity['code'] }}</strong>
+                        <strong>{{ $entity['code'] }}@if($entity['registered_mark'] ?? false)<sup aria-label="Registered trademark">®</sup>@endif</strong>
                         <span class="entity-legal-name" dir="ltr">{{ $entity['legal_name'] }}</span>
                         @if($entity['registrations'] !== [])
                             <dl class="entity-registrations" dir="ltr">
@@ -85,7 +85,7 @@
                     @foreach($siteProfile['entities'] as $entity)
                         <article>
                             <img src="{{ asset($entity['logo']) }}" alt="{{ $entity['legal_name'] }}">
-                            <strong>{{ $entity['code'] }}</strong>
+                            <strong>{{ $entity['code'] }}@if($entity['registered_mark'] ?? false)<sup aria-label="Registered trademark">®</sup>@endif</strong>
                             <span class="entity-legal-name" dir="ltr">{{ $entity['legal_name'] }}</span>
                             @if($entity['registrations'] !== [])
                                 <dl class="entity-registrations" dir="ltr">

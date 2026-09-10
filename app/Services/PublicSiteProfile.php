@@ -52,6 +52,7 @@ final class PublicSiteProfile
                 ],
                 [
                     'code' => 'ICGA',
+                    'registered_mark' => true,
                     'legal_name' => 'INTERNATIONAL CULINARY & GASTRONOMY ARBITRATION LTD',
                     'logo' => 'assets/brand/master-v1/icga-original.jpg',
                     'registrations' => [

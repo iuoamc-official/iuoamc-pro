@@ -7,8 +7,8 @@
 <html lang="{{ $language }}" dir="{{ $language === 'ar' ? 'rtl' : 'ltr' }}">
 <head><meta charset="utf-8"><style>
 body { color:#112b43; font-family:dejavusans; font-size:10pt; margin:0; padding:0; }
-.frame { border:{{ $diploma ? '1.1' : '0.5' }}mm solid #b89943; padding:{{ $diploma ? '3mm 5mm' : '5mm 7mm' }}; {{ $diploma ? 'height:187mm;' : '' }} }
-.inside { border:0.2mm solid #e6dac1; padding:{{ $diploma ? '2.5mm 4mm' : '4mm 5mm' }}; {{ $diploma ? 'height:181mm;' : '' }} }
+.frame { border:{{ $diploma ? '1.1' : '0.5' }}mm solid #b89943; padding:{{ $diploma ? '3mm 5mm' : '5mm 7mm' }}; }
+.inside { border:0.2mm solid #e6dac1; padding:{{ $diploma ? '2.5mm 4mm' : '4mm 5mm' }}; }
 table { border-collapse:collapse; width:100%; }
 td { vertical-align:middle; }
 .brand { width:45%; }

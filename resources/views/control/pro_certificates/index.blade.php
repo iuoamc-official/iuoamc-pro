@@ -7,9 +7,17 @@
     </header>
     @include('control.pro_certificates._tabs')
     @include('control.pro_certificates._messages')
-    <div class="pc-stats"><div><span>{{ __('certificates.total') }}</span><strong>{{ number_format($stats['total']) }}</strong></div><div><span>{{ __('certificates.awaiting_review') }}</span><strong>{{ number_format($stats['review']) }}</strong></div><div><span>{{ __('certificates.issued_total') }}</span><strong>{{ number_format($stats['issued']) }}</strong></div></div>
+    <div class="pc-stats"><div><span>{{ __('certificates.total') }}</span><strong>{{ number_format($stats['total']) }}</strong></div><div><span>{{ __('certificates.awaiting_review') }}</span><strong>{{ number_format($stats['review']) }}</strong></div><div><span>{{ __('certificates.issued_total') }}</span><strong>{{ number_format($stats['issued']) }}</strong></div><div><span>{{ __('certificates.archive_total') }}</span><strong>{{ number_format($stats['archived']) }}</strong></div></div>
+    @php($scopeQuery = request()->except(['page', 'scope']))
+    <nav class="pc-scope-tabs" aria-label="{{ __('certificates.scope') }}">
+        @foreach(['current', 'archive', 'all'] as $workspaceScope)
+            <a href="{{ route('certificates.index', array_merge(['locale' => app()->getLocale(), 'scope' => $workspaceScope], $scopeQuery)) }}" @if($scope === $workspaceScope) aria-current="page" @endif>{{ __('certificates.scope_'.$workspaceScope) }}</a>
+        @endforeach
+    </nav>
+    @if($scope === 'archive')<div class="pc-notice pc-notice-warning" role="status">{{ __('certificates.archive_notice') }}</div>@endif
     <section class="pc-card">
         <form class="pc-filters" method="get" action="{{ route('certificates.index',['locale'=>app()->getLocale()]) }}">
+            <input type="hidden" name="scope" value="{{ $scope }}">
             <label class="pc-field pc-search"><span>{{ __('certificates.search') }}</span><input type="search" name="q" maxlength="120" value="{{ request('q') }}" placeholder="{{ __('certificates.search_placeholder') }}"></label>
             <label class="pc-field"><span>{{ __('certificates.organization') }}</span><select name="organization_id"><option value="">{{ __('certificates.all_organizations') }}</option>@foreach($organizations as $organization)<option value="{{ $organization->id }}" @selected((string)request('organization_id')===(string)$organization->id)>{{ $organization->display_name }}</option>@endforeach</select></label>
             <label class="pc-field"><span>{{ __('certificates.status') }}</span><select name="status"><option value="">{{ __('certificates.all_statuses') }}</option>@foreach(['draft','review','approved','issued','expired','revoked'] as $state)<option value="{{ $state }}" @selected(request('status')===$state)>{{ __('certificates.states.'.$state) }}</option>@endforeach</select></label>

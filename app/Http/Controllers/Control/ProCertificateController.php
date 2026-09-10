@@ -8,13 +8,13 @@ use App\Models\AuditLog;
 use App\Models\Organization;
 use App\Models\ProCertificate;
 use App\Services\InstitutionalAccess;
-use App\Services\ProCertificatePdf;
 use App\Services\ProCertificateCatalog;
+use App\Services\ProCertificatePdf;
 use App\Services\ProCertificateRegistry;
+use App\Services\ProCertificateWorkspace;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -48,45 +48,41 @@ final class ProCertificateController extends Controller
             ->findOrFail((int) $request->route('certificate'));
     }
 
-    public function index(Request $request): Response
+    public function index(Request $request, ProCertificateWorkspace $workspace): Response
     {
         $organizations = $this->organizations($request);
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:120'],
             'organization_id' => ['nullable', 'integer', Rule::in($organizations->pluck('id')->all())],
             'status' => ['nullable', Rule::in(['draft', 'review', 'approved', 'issued', 'expired', 'revoked'])],
+            'scope' => ['nullable', Rule::in(['current', 'archive', 'all'])],
         ]);
         $base = $this->registry()->query($request->user());
-        // IUOAMC_UNIQUE_RECIPIENT_LIST_V1: display only the latest certificate for each recipient/program.
-        $displayKey = static function (ProCertificate $record): string {
-            $normalize = static function ($value): string {
-                $value = preg_replace('/\s+/u', ' ', trim((string) $value)) ?? '';
-                return mb_strtolower($value, 'UTF-8');
-            };
-
-            return implode('|', [
-                (string) $record->organization_id,
-                (string) $record->certificate_type,
-                $normalize($record->program_title),
-                $normalize($record->recipient_name ?: $record->public_name),
-            ]);
-        };
-
-        $displayRecords = (clone $base)->latest('id')->get()->unique($displayKey)->values();
+        $workspaceRecords = $workspace->partition((clone $base)->latest('id')->get([
+            'id', 'organization_id', 'certificate_type', 'program_title', 'recipient_name', 'public_name',
+            'status', 'expires_on',
+        ]));
+        $currentRecords = $workspaceRecords['current'];
+        $archiveRecords = $workspaceRecords['archive'];
         $stats = [
-            'total' => $displayRecords->count(),
-            'review' => $displayRecords->where('status', 'review')->count(),
-            'issued' => $displayRecords->filter(static fn (ProCertificate $record): bool =>
+            'total' => $currentRecords->count(),
+            'review' => $currentRecords->where('status', 'review')->count(),
+            'issued' => $currentRecords->filter(static fn (ProCertificate $record): bool =>
                 $record->status === 'issued'
                 && ($record->expires_on === null || $record->expires_on->toDateString() >= today('UTC')->toDateString())
             )->count(),
+            'archived' => $archiveRecords->count(),
         ];
+        $scope = $filters['scope'] ?? 'current';
         $query = $base->with('organization')
             ->when($filters['q'] ?? null, fn ($query, $value) => $query->where(fn ($sub) => $sub
                 ->where('recipient_name', 'like', '%'.$value.'%')->orWhere('public_name', 'like', '%'.$value.'%')
                 ->orWhere('program_title', 'like', '%'.$value.'%')->orWhere('certificate_number', 'like', '%'.$value.'%')
                 ->orWhere('record_uuid', $value)))
             ->when($filters['organization_id'] ?? null, fn ($query, $value) => $query->where('organization_id', $value));
+        if ($scope !== 'all') {
+            $query->whereIn('id', $workspaceRecords[$scope]->pluck('id'));
+        }
         $state = $filters['status'] ?? null;
         if ($state === 'expired') {
             $query->where('status', 'issued')->whereDate('expires_on', '<', today('UTC'));
@@ -95,20 +91,17 @@ final class ProCertificateController extends Controller
         } elseif ($state) {
             $query->where('status', $state);
         }
-        $displayRecords = $query->latest('id')->get()->unique($displayKey)->values();
-        $perPage = 20;
-        $page = LengthAwarePaginator::resolveCurrentPage();
-
-        $certificates = new LengthAwarePaginator(
-            $displayRecords->forPage($page, $perPage)->values(),
-            $displayRecords->count(),
-            $perPage,
-            $page,
-            ['path' => $request->url(), 'query' => $request->query()]
-        );
+        $certificates = $query->latest('id')->paginate(20)->withQueryString();
         $checks = $certificates->getCollection()->mapWithKeys(fn ($record) => [$record->id => $this->registry()->verify($record)]);
         $statuses = $certificates->getCollection()->mapWithKeys(fn ($record) => [$record->id => $this->registry()->effectiveStatus($record)]);
-        return $this->page('control.pro_certificates.index', compact('certificates', 'organizations', 'stats', 'checks', 'statuses'));
+        return $this->page('control.pro_certificates.index', compact(
+            'certificates',
+            'organizations',
+            'stats',
+            'checks',
+            'statuses',
+            'scope',
+        ));
     }
 
     public function create(Request $request): Response

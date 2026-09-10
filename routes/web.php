@@ -10,6 +10,7 @@ use App\Http\Controllers\Control\AuditLogController;
 use App\Http\Controllers\Control\PublicPageController;
 use App\Http\Controllers\Control\PublicSiteSettingController;
 use App\Http\Controllers\PublicSiteController;
+use App\Http\Controllers\PublicAiConciergeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -21,6 +22,9 @@ Route::prefix('{locale}')
     ->middleware('locale')
     ->group(function (): void {
         Route::get('/', [PublicSiteController::class, 'home'])->name('public.home');
+        Route::post('/ai/ask', [PublicAiConciergeController::class, 'ask'])
+            ->middleware('throttle:12,1')
+            ->name('public.ai.ask');
 
         Route::middleware('guest')->group(function (): void {
             Route::get('/login', [AuthenticatedSessionController::class, 'create'])

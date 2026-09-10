@@ -97,6 +97,11 @@ final class ProCertificatePdf
         // Only the fixed, escaped Blade document is rendered. No remote assets/user HTML.
         $view = $isCatalog ? 'pro_certificates.document_v2' : 'pro_certificates.document';
         $mpdf->WriteHTML(view($view, compact('payload', 'language', 'labels', 'logo', 'authorityLogo', 'arbitrationLogo', 'draft'))->render());
+        if ($diplomaLayout && $mpdf->page > 1) {
+            // mPDF can allocate an otherwise empty trailing page for fixed decorative
+            // overlays. Diploma artwork is explicitly dimensioned to the first A4 sheet.
+            $mpdf->DeletePages(2, $mpdf->page);
+        }
         if ($mpdf->page !== 1) {
             throw ValidationException::withMessages(['statement' => $labels['too_long']]);
         }

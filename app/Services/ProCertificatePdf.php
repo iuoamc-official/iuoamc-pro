@@ -80,6 +80,11 @@ final class ProCertificatePdf
             'tempDir' => $temporary,
             'autoScriptToLang' => true, 'autoLangToFont' => true,
         ]);
+        if ($diplomaLayout) {
+            // This layout is dimensioned in millimetres for one physical A4 sheet.
+            // Prevent mPDF from creating a second page for fixed security overlays.
+            $mpdf->SetAutoPageBreak(false, 0);
+        }
         $mpdf->SetDirectionality($language === 'ar' ? 'rtl' : 'ltr');
         $mpdf->SetTitle((string) ($payload['certificate_title'] ?? $labels['document']));
         $mpdf->SetAuthor((string) ($payload['issuer']['legal_name'] ?? 'IUOAMC'));

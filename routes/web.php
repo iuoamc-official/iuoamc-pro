@@ -120,7 +120,7 @@ Route::prefix('{locale}')
             ->name('public.entities.show');
 
         Route::get('/{public_page:slug}', [PublicSiteController::class, 'show'])
-            ->where('public_page', 'about|governance|entities|programmes|contact')
+            ->where('public_page', 'about|leadership|governance|entities|programmes|contact')
             ->name('public.pages.show');
     });
 

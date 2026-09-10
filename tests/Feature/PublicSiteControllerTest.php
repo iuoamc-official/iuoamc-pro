@@ -91,6 +91,7 @@ final class PublicSiteControllerTest extends TestCase
 
         $this->createPage('home', false);
         $this->createPage('about', true);
+        $this->createLeadershipPage();
         $this->createEntityPage('icga');
     }
 
@@ -140,10 +141,24 @@ final class PublicSiteControllerTest extends TestCase
             ->assertSee('/fr/entities/icga', false);
     }
 
+    public function test_renders_the_official_leadership_profile_as_structured_public_knowledge(): void
+    {
+        $this->get('/en/leadership')
+            ->assertOk()
+            ->assertSee('Master Chef Ahmad Maadarani')
+            ->assertSee('President General &amp; Authorised Signatory', false)
+            ->assertSee('Telecommunications engineering and hotel management')
+            ->assertSee('assets/brand/leadership/ahmad-maadarani-president-general-v1.webp', false)
+            ->assertSee('"@type":"Person"', false)
+            ->assertSee('/ar/leadership', false)
+            ->assertSee('/fr/leadership', false);
+    }
+
     public function test_ai_concierge_uses_only_the_public_knowledge_request(): void
     {
         config()->set('services.openai.api_key', 'test-project-key');
         config()->set('services.openai.model', 'gpt-5-mini');
+        Http::preventStrayRequests();
         Http::fake([
             'api.openai.com/v1/responses' => Http::response([
                 'id' => 'resp_test_iuoamc',
@@ -157,7 +172,7 @@ final class PublicSiteControllerTest extends TestCase
             ]),
         ]);
 
-        $this->postJson('/en/ai/ask', ['question' => 'What is IUOAMC?'])
+        $this->postJson('/en/ai/ask', ['question' => 'Who is Ahmad Maadarani?'])
             ->assertOk()
             ->assertJsonPath('answer', 'IUOAMC is the system lead entity. [SOURCE 1]')
             ->assertJsonPath('request_id', 'resp_test_iuoamc')
@@ -169,6 +184,8 @@ final class PublicSiteControllerTest extends TestCase
                 && $request['store'] === false
                 && str_contains($request['instructions'], 'official public information assistant')
                 && str_contains($request['input'], 'OFFICIAL KNOWLEDGE')
+                && str_contains($request['input'], 'Telecommunications engineering and hotel management')
+                && str_contains($request['input'], '/en/leadership')
                 && $request->hasHeader('Authorization', 'Bearer test-project-key');
         });
     }
@@ -292,6 +309,38 @@ final class PublicSiteControllerTest extends TestCase
             'seo_description' => $copy,
             'navigation_order' => 500,
             'show_in_navigation' => false,
+            'status' => 'published',
+            'revision' => 1,
+            'published_at' => now(),
+        ]);
+    }
+
+    private function createLeadershipPage(): void
+    {
+        $title = [
+            'ar' => 'ماستر شيف أحمد المعدراني',
+            'en' => 'Master Chef Ahmad Maadarani',
+            'fr' => 'Master Chef Ahmad Maadarani',
+        ];
+
+        $body = [
+            'ar' => 'هندسة الاتصالات وإدارة الفندقة',
+            'en' => 'Telecommunications engineering and hotel management',
+            'fr' => 'Ingénierie des télécommunications et gestion hôtelière',
+        ];
+
+        PublicPage::query()->create([
+            'slug' => 'leadership',
+            'template' => 'leadership',
+            'navigation_label' => ['ar' => 'القيادة', 'en' => 'Leadership', 'fr' => 'Direction'],
+            'eyebrow' => $title,
+            'title' => $title,
+            'summary' => $title,
+            'body' => $body,
+            'seo_title' => $title,
+            'seo_description' => $body,
+            'navigation_order' => 15,
+            'show_in_navigation' => true,
             'status' => 'published',
             'revision' => 1,
             'published_at' => now(),

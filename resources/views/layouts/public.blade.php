@@ -33,6 +33,21 @@
         'logo' => asset($siteProfile['primary_logo']),
         'email' => $siteProfile['contact_email'],
     ];
+    if ($page->template === 'leadership') {
+        $structuredData = [
+            chr(64).'context' => 'https://schema.org',
+            '@type' => 'Person',
+            'name' => 'Ahmad Maadarani',
+            'jobTitle' => 'President General and Authorised Signatory',
+            'url' => url()->current(),
+            'image' => asset('assets/brand/leadership/ahmad-maadarani-president-general-v1.webp'),
+            'worksFor' => [
+                '@type' => 'Organization',
+                'name' => $siteProfile['legal_name'],
+                'url' => route('public.home', ['locale' => app()->getLocale()]),
+            ],
+        ];
+    }
     @endphp
     <script type="application/ld+json" nonce="{{ request()->attributes->get('csp_nonce') }}">{!! json_encode($structuredData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
 </head>

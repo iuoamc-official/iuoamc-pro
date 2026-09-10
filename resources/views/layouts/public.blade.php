@@ -15,15 +15,18 @@
     @endforeach
     <title>{{ $page->localized('seo_title') }}</title>
     <link rel="stylesheet" href="{{ asset('assets/css/iuoamc-public-1.0.0.css') }}?v={{ filemtime(public_path('assets/css/iuoamc-public-1.0.0.css')) }}">
-    <script type="application/ld+json" nonce="{{ $cspNonce }}">{!! json_encode([
-        '@context' => 'https://schema.org',
+    @php
+    $structuredData = [
+        chr(64).'context' => 'https://schema.org',
         '@type' => 'Organization',
         'name' => $siteProfile['legal_name'],
         'alternateName' => $siteProfile['brand_name'],
         'url' => route('public.home', ['locale' => app()->getLocale()]),
         'logo' => asset($siteProfile['primary_logo']),
         'email' => $siteProfile['contact_email'],
-    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
+    ];
+    @endphp
+    <script type="application/ld+json" nonce="{{ request()->attributes->get('csp_nonce') }}">{!! json_encode($structuredData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
 </head>
 <body>
     <a class="skip-link" href="#main">{{ __('public_site.skip') }}</a>

@@ -349,6 +349,61 @@ final class ProCertificateRegistry
         ]);
     }
 
+    /**
+     * Report the same non-mutating prerequisites consulted by the authoritative issue transition.
+     *
+     * @return array{ready: bool, checks: array<string, bool|null>}
+     */
+    public function issuanceReadiness(User $actor, ProCertificate $certificate): array
+    {
+        $this->requirePermission($actor, 'certificates.view');
+        $current = $this->query($actor)->with('organization')->findOrFail($certificate->getKey());
+        $integrity = $this->verify($current);
+        $version = $this->version($current);
+        $catalog = null;
+
+        if ($integrity && $version === 2) {
+            try {
+                app(ProCertificateCatalog::class)->snapshotFor(
+                    $actor,
+                    (int) $current->catalog_type_id,
+                    (int) $current->organization_id,
+                );
+                $catalog = true;
+            } catch (Throwable) {
+                $catalog = false;
+            }
+        }
+
+        $programIp = null;
+        $catalogSnapshot = is_array($current->catalog_snapshot) ? $current->catalog_snapshot : [];
+        if ($version === 2 && ($catalogSnapshot['category'] ?? null) === 'professional_master') {
+            $programIp = ProMasterCertificatePdf::programIpCodeFromStatement($current->statement) !== null;
+        }
+
+        $printAsset = is_file(public_path('assets/brand/iuoamc-pro-logo.png'))
+            && ! is_link(public_path('assets/brand/iuoamc-pro-logo.png'));
+        if ($version === 2 && ($catalogSnapshot['layout'] ?? null) === ProMasterCertificatePdf::LAYOUT) {
+            $printAsset = ProMasterCertificatePdf::backgroundIsValid();
+        }
+
+        $checks = [
+            'integrity' => $integrity,
+            'approved' => $current->status === 'approved',
+            'organization' => $current->organization?->status === 'active',
+            'catalog' => $catalog,
+            'program_ip' => $programIp,
+            'print_asset' => $printAsset,
+            'authorization' => $actor->canDo('certificates.issue'),
+        ];
+        $requiredChecks = array_filter($checks, static fn (mixed $check): bool => $check !== null);
+
+        return [
+            'ready' => ! in_array(false, $requiredChecks, true),
+            'checks' => $checks,
+        ];
+    }
+
     private function locked(User $actor, int $id, int $lockVersion, string $permission): ProCertificate
     {
         $this->requirePermission($actor, $permission);

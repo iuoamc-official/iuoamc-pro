@@ -47,7 +47,13 @@ class PublicSiteController extends Controller
             ->orderBy('navigation_order')
             ->get();
 
-        return view($page->template === 'entity' ? 'public.entities.show' : 'public.pages.show', array_merge([
+        $view = match ($page->template) {
+            'entity' => 'public.entities.show',
+            'leadership' => 'public.leadership.show',
+            default => 'public.pages.show',
+        };
+
+        return view($view, array_merge([
             'page' => $page,
             'navigation' => $navigation,
             'siteProfile' => $profile->get(),

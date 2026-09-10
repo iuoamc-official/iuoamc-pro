@@ -41,7 +41,7 @@ final class ProCertificatePdf
         }
         $authorityLogo = null;
         if ($isCatalog && $payload['catalog_snapshot']['layout'] === 'diploma') {
-            $authorityLogo = public_path('assets/brand/master-v1/wsaca-original.webp');
+            $authorityLogo = public_path('assets/brand/master-v1/icga-original.jpg');
             if (!is_file($authorityLogo) || is_link($authorityLogo)) {
                 throw new RuntimeException('CERTIFICATE_AUTHORITY_ASSET_MISSING');
             }

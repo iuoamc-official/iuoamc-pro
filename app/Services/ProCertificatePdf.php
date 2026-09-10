@@ -43,7 +43,7 @@ final class ProCertificatePdf
         $arbitrationLogo = null;
         if ($isCatalog && $payload['catalog_snapshot']['layout'] === 'diploma') {
             $arbitrationLogo = public_path('assets/brand/master-v1/icga-original.jpg');
-            $authorityLogo = public_path('assets/brand/master-v1/wsaca-authority-seal-v3.webp');
+            $authorityLogo = public_path('assets/brand/master-v1/wsaca-authority-seal-transparent.svg');
             if (!is_file($arbitrationLogo) || is_link($arbitrationLogo)) {
                 throw new RuntimeException('CERTIFICATE_ARBITRATION_ASSET_MISSING');
             }
@@ -95,13 +95,10 @@ final class ProCertificatePdf
             $mpdf->showWatermarkText = true;
         }
         // Only the fixed, escaped Blade document is rendered. No remote assets/user HTML.
-        $view = $isCatalog ? 'pro_certificates.document_v2' : 'pro_certificates.document';
+        $view = $diplomaLayout
+            ? 'pro_certificates.diploma_a4'
+            : ($isCatalog ? 'pro_certificates.document_v2' : 'pro_certificates.document');
         $mpdf->WriteHTML(view($view, compact('payload', 'language', 'labels', 'logo', 'authorityLogo', 'arbitrationLogo', 'draft'))->render());
-        if ($diplomaLayout && $mpdf->page > 1) {
-            // mPDF can allocate an otherwise empty trailing page for fixed decorative
-            // overlays. Diploma artwork is explicitly dimensioned to the first A4 sheet.
-            $mpdf->DeletePages(2, $mpdf->page);
-        }
         if ($mpdf->page !== 1) {
             throw ValidationException::withMessages(['statement' => $labels['too_long']]);
         }

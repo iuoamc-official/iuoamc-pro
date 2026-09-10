@@ -9,6 +9,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 final class PublicSiteControllerTest extends TestCase
@@ -137,6 +138,50 @@ final class PublicSiteControllerTest extends TestCase
             ->assertSee('10604085')
             ->assertSee('/ar/entities/icga', false)
             ->assertSee('/fr/entities/icga', false);
+    }
+
+    public function test_ai_concierge_uses_only_the_public_knowledge_request(): void
+    {
+        config()->set('services.openai.api_key', 'test-project-key');
+        config()->set('services.openai.model', 'gpt-5-mini');
+        Http::fake([
+            'api.openai.com/v1/responses' => Http::response([
+                'id' => 'resp_test_iuoamc',
+                'output' => [[
+                    'type' => 'message',
+                    'content' => [[
+                        'type' => 'output_text',
+                        'text' => 'IUOAMC is the system lead entity. [SOURCE 1]',
+                    ]],
+                ]],
+            ]),
+        ]);
+
+        $this->postJson('/en/ai/ask', ['question' => 'What is IUOAMC?'])
+            ->assertOk()
+            ->assertJsonPath('answer', 'IUOAMC is the system lead entity. [SOURCE 1]')
+            ->assertJsonPath('request_id', 'resp_test_iuoamc')
+            ->assertJsonStructure(['sources' => [['title', 'url']]]);
+
+        Http::assertSent(function ($request): bool {
+            return $request->url() === 'https://api.openai.com/v1/responses'
+                && $request['model'] === 'gpt-5-mini'
+                && $request['store'] === false
+                && str_contains($request['instructions'], 'official public information assistant')
+                && str_contains($request['input'], 'OFFICIAL KNOWLEDGE')
+                && $request->hasHeader('Authorization', 'Bearer test-project-key');
+        });
+    }
+
+    public function test_ai_concierge_fails_safely_without_a_server_key(): void
+    {
+        config()->set('services.openai.api_key', null);
+
+        $this->postJson('/ar/ai/ask', ['question' => 'ما هي المنظومة؟'])
+            ->assertStatus(503)
+            ->assertJsonPath('message', 'المساعد غير متاح مؤقتاً. يرجى التواصل عبر info@iuoamc.uk.');
+
+        Http::assertNothingSent();
     }
 
     public function test_returns_not_found_for_a_draft_page(): void

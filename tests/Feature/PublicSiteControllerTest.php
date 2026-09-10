@@ -94,12 +94,17 @@ final class PublicSiteControllerTest extends TestCase
 
     public function test_renders_published_home_in_arabic(): void
     {
-        $this->get('/ar')
+        $response = $this->get('/ar')
             ->assertOk()
             ->assertSee('منظومة مؤسسية عالمية')
             ->assertSee('QR + NFC')
             ->assertSee('hreflang="en"', false)
+            ->assertSee('"@context":"https://schema.org"', false)
+            ->assertDontSee('__contextArgs', false)
             ->assertDontSee('لوحة التحكم');
+
+        self::assertSame(1, preg_match('/nonce="([^"]+)"/', (string) $response->getContent(), $nonce));
+        self::assertStringContainsString("'nonce-{$nonce[1]}'", (string) $response->headers->get('Content-Security-Policy'));
     }
 
     public function test_renders_the_french_edition_of_a_public_page(): void

@@ -12,6 +12,7 @@ class SecurityHeaders
     public function handle(Request $request, Closure $next): Response
     {
         $cspNonce = base64_encode(random_bytes(18));
+        $request->attributes->set('csp_nonce', $cspNonce);
         View::share('cspNonce', $cspNonce);
         $response = $next($request);
 

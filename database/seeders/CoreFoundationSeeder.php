@@ -69,6 +69,8 @@ class CoreFoundationSeeder extends Seeder
                 ['magazine.manage', 'magazine'],
                 ['research.view', 'research'],
                 ['research.manage', 'research'],
+                ['public-content.manage', 'public-content'],
+                ['public-content.publish', 'public-content'],
             ];
 
             foreach ($permissionDefinitions as [$code, $module]) {

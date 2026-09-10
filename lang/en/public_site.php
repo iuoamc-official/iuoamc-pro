@@ -1,0 +1,27 @@
+<?php
+
+return [
+    'skip' => 'Skip to content', 'menu' => 'Menu', 'navigation' => 'Primary navigation', 'languages' => 'Languages', 'home' => 'Home', 'control_center' => 'Control centre',
+    'discover' => 'Discover the system', 'explore_programmes' => 'Explore programmes', 'trust_protocol' => 'Institutional trust protocol', 'trust_title' => 'Evidence-backed credentials', 'system_operational' => 'Verification system operational',
+    'trust_items' => ['audit' => 'Chained audit trail', 'verify' => 'Public digital verification', 'privacy' => 'Privacy by design'],
+    'proof' => ['digital' => 'Smart credentials', 'integrity' => 'Integrity fingerprint', 'languages' => 'Multilingual presence', 'verification' => 'Continuous public verification'],
+    'capabilities_eyebrow' => 'Connected institutional capabilities', 'capabilities_title' => 'One system, clear responsibilities',
+    'capabilities' => [
+        ['title' => 'Education & development', 'body' => 'Professional programmes with documented outcomes and assessment requirements.'],
+        ['title' => 'Credentials & verification', 'body' => 'Digitally signed records with QR and inspectable integrity evidence.'],
+        ['title' => 'Arbitration & rights', 'body' => 'Programme, professional title and intellectual-property documentation within explicit mandates.'],
+    ],
+    'verify' => ['eyebrow' => 'Public verification', 'title' => 'Trust begins with evidence', 'body' => 'Check the secure reference printed on a credential to reach its official record and integrity evidence.', 'label' => 'Secure verification token', 'action' => 'Verify now', 'help' => 'Do not enter a name or email address; use the verification token only.'],
+    'entities_eyebrow' => 'Institutional architecture', 'entities_title' => 'Specialist identities within one system',
+    'footer_statement' => 'An institutional system for education, documentation, verification and professional arbitration.', 'registry' => 'Institutional registry', 'contact' => 'Contact', 'secure_access' => 'Secure staff access', 'integrity_line' => 'Public Experience · Privacy by Design · Auditable Governance', 'official_email' => 'Official institutional email',
+    'control' => [
+        'title' => 'Public site & content', 'intro' => 'Manage the institutional public presence and multilingual publishing from one governed source.', 'preview' => 'Preview site', 'identity' => 'Identity & settings', 'identity_help' => 'Centrally control the name, logo, contact, registry reference and public announcement.',
+        'governance_title' => 'Institutional publishing controls', 'governance_help' => 'Every change is permission-controlled and audit-recorded before it reaches the public.', 'pages' => 'Public pages', 'pages_help' => 'Edit content and choose draft or published. Pages cannot be deleted from the control interface.',
+        'page' => 'Page', 'slug' => 'Path', 'status' => 'Status', 'revision' => 'Revision', 'updated' => 'Last updated', 'action' => 'Action', 'edit' => 'Edit', 'edit_page' => 'Edit page', 'edit_help' => 'Synchronised Arabic, English and French editing with independent SEO metadata.', 'back' => 'Back to content',
+        'draft' => 'Draft', 'published' => 'Published', 'conflict' => 'This page changed in another session. Reload it before saving so the newer edit is not lost.', 'saved' => 'The page was saved and recorded in the audit trail.', 'settings_saved' => 'Public identity and settings were saved.', 'language_complete' => 'All fields are required to keep the public edition complete.',
+        'publication' => 'Publishing & visibility', 'publication_help' => 'Drafts stay private; published content becomes publicly available immediately.', 'order' => 'Navigation order', 'show_navigation' => 'Show this page in primary navigation', 'audit_notice' => 'This action will be recorded in the audit trail', 'save' => 'Save edition',
+        'brand_name' => 'Short name', 'legal_name' => 'Institutional name', 'logo' => 'Primary logo', 'email' => 'Official email', 'registration_label' => 'Registry label', 'registration_number' => 'Registration number', 'announcement' => 'Announcement bar', 'announcement_help' => 'Leave every field empty to hide the announcement bar.',
+        'assurance' => ['languages' => 'Three coordinated languages', 'workflow' => 'Draft & publish', 'audit' => 'Audit trail', 'security' => 'Safe output'],
+        'fields' => ['navigation_label' => 'Navigation label', 'eyebrow' => 'Eyebrow', 'title' => 'Primary title', 'summary' => 'Summary', 'body' => 'Full content', 'seo_title' => 'Search title', 'seo_description' => 'Search description'],
+    ],
+];

@@ -4,12 +4,15 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\View;
 use Symfony\Component\HttpFoundation\Response;
 
 class SecurityHeaders
 {
     public function handle(Request $request, Closure $next): Response
     {
+        $cspNonce = base64_encode(random_bytes(18));
+        View::share('cspNonce', $cspNonce);
         $response = $next($request);
 
         $response->headers->set('X-Content-Type-Options', 'nosniff');
@@ -19,7 +22,7 @@ class SecurityHeaders
         $response->headers->set(
             'Content-Security-Policy',
             "default-src 'self'; img-src 'self' data:; style-src 'self'; " .
-            "script-src 'self'; font-src 'self'; connect-src 'self'; " .
+            "script-src 'self' 'nonce-{$cspNonce}'; font-src 'self'; connect-src 'self'; " .
             "frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
         );
 
@@ -32,6 +35,11 @@ class SecurityHeaders
         if ($request->routeIs('memberships.*')) {
             $response->headers->set('Cache-Control', 'no-store, private, max-age=0');
             $response->headers->set('Pragma', 'no-cache');
+        }
+        if ($request->routeIs('public-content.*')) {
+            $response->headers->set('Cache-Control', 'no-store, private, max-age=0');
+            $response->headers->set('Pragma', 'no-cache');
+            $response->headers->set('X-Robots-Tag', 'noindex, nofollow, noarchive');
         }
         // IUOAMC_PRO_CERTIFICATE_HEADERS_1_0_0
         if ($request->routeIs('certificates.*', 'pro-certificates.*')) {

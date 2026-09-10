@@ -1,0 +1,27 @@
+<?php
+
+return [
+    'skip' => 'Aller au contenu', 'menu' => 'Menu', 'navigation' => 'Navigation principale', 'languages' => 'Langues', 'home' => 'Accueil', 'control_center' => 'Centre de contrôle',
+    'discover' => 'Découvrir le système', 'explore_programmes' => 'Explorer les programmes', 'trust_protocol' => 'Protocole de confiance institutionnelle', 'trust_title' => 'Titres fondés sur des preuves', 'system_operational' => 'Système de vérification opérationnel',
+    'trust_items' => ['audit' => 'Piste d’audit chaînée', 'verify' => 'Vérification numérique publique', 'privacy' => 'Protection dès la conception'],
+    'proof' => ['digital' => 'Titres intelligents', 'integrity' => 'Empreinte d’intégrité', 'languages' => 'Présence multilingue', 'verification' => 'Vérification publique continue'],
+    'capabilities_eyebrow' => 'Capacités institutionnelles connectées', 'capabilities_title' => 'Un système, des responsabilités claires',
+    'capabilities' => [
+        ['title' => 'Formation et développement', 'body' => 'Programmes professionnels avec résultats et exigences d’évaluation documentés.'],
+        ['title' => 'Titres et vérification', 'body' => 'Registres signés numériquement avec QR et preuves d’intégrité vérifiables.'],
+        ['title' => 'Arbitrage et droits', 'body' => 'Documentation des programmes, titres professionnels et propriété intellectuelle selon des mandats explicites.'],
+    ],
+    'verify' => ['eyebrow' => 'Vérification publique', 'title' => 'La confiance commence par la preuve', 'body' => 'Utilisez la référence sécurisée du titre pour consulter son registre officiel et ses preuves d’intégrité.', 'label' => 'Jeton de vérification sécurisé', 'action' => 'Vérifier', 'help' => 'Ne saisissez ni nom ni e-mail ; utilisez uniquement le jeton de vérification.'],
+    'entities_eyebrow' => 'Architecture institutionnelle', 'entities_title' => 'Des identités spécialisées dans un même système',
+    'footer_statement' => 'Un système institutionnel de formation, documentation, vérification et arbitrage professionnel.', 'registry' => 'Registre institutionnel', 'contact' => 'Contact', 'secure_access' => 'Accès sécurisé du personnel', 'integrity_line' => 'Public Experience · Privacy by Design · Auditable Governance', 'official_email' => 'E-mail institutionnel officiel',
+    'control' => [
+        'title' => 'Site public et contenus', 'intro' => 'Gérez la présence institutionnelle publique et la publication multilingue depuis une source gouvernée.', 'preview' => 'Aperçu du site', 'identity' => 'Identité et réglages', 'identity_help' => 'Contrôlez de manière centralisée le nom, le logo, le contact, le registre et l’annonce publique.',
+        'governance_title' => 'Contrôles de publication', 'governance_help' => 'Chaque modification est soumise aux droits et inscrite dans la piste d’audit.', 'pages' => 'Pages publiques', 'pages_help' => 'Modifiez puis choisissez brouillon ou publié. La suppression n’est pas proposée.',
+        'page' => 'Page', 'slug' => 'Chemin', 'status' => 'Statut', 'revision' => 'Révision', 'updated' => 'Mise à jour', 'action' => 'Action', 'edit' => 'Modifier', 'edit_page' => 'Modifier la page', 'edit_help' => 'Édition coordonnée en arabe, anglais et français avec métadonnées SEO.', 'back' => 'Retour aux contenus',
+        'draft' => 'Brouillon', 'published' => 'Publié', 'conflict' => 'Cette page a changé dans une autre session. Rechargez-la pour ne pas perdre la version récente.', 'saved' => 'La page a été enregistrée dans la piste d’audit.', 'settings_saved' => 'L’identité et les réglages ont été enregistrés.', 'language_complete' => 'Tous les champs sont requis pour une édition publique complète.',
+        'publication' => 'Publication et visibilité', 'publication_help' => 'Les brouillons restent privés ; la publication rend la version immédiatement publique.', 'order' => 'Ordre de navigation', 'show_navigation' => 'Afficher dans la navigation principale', 'audit_notice' => 'Cette action sera inscrite dans la piste d’audit', 'save' => 'Enregistrer la version',
+        'brand_name' => 'Nom court', 'legal_name' => 'Nom institutionnel', 'logo' => 'Logo principal', 'email' => 'E-mail officiel', 'registration_label' => 'Libellé du registre', 'registration_number' => 'Numéro d’enregistrement', 'announcement' => 'Bandeau d’annonce', 'announcement_help' => 'Laissez tous les champs vides pour masquer le bandeau.',
+        'assurance' => ['languages' => 'Trois langues coordonnées', 'workflow' => 'Brouillon et publication', 'audit' => 'Piste d’audit', 'security' => 'Sortie sécurisée'],
+        'fields' => ['navigation_label' => 'Libellé de navigation', 'eyebrow' => 'Surtitre', 'title' => 'Titre principal', 'summary' => 'Résumé', 'body' => 'Contenu complet', 'seo_title' => 'Titre de recherche', 'seo_description' => 'Description de recherche'],
+    ],
+];

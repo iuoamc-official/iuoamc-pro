@@ -7,21 +7,21 @@ use App\Http\Controllers\Control\OrganizationController;
 use App\Http\Controllers\Control\UserController;
 use App\Http\Controllers\Control\RoleController;
 use App\Http\Controllers\Control\AuditLogController;
+use App\Http\Controllers\Control\PublicPageController;
+use App\Http\Controllers\Control\PublicSiteSettingController;
+use App\Http\Controllers\PublicSiteController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    $locale = auth()->user()?->preferred_locale ?: 'ar';
-
-    return redirect()->route(
-        auth()->check() ? 'dashboard' : 'login',
-        ['locale' => $locale]
-    );
+    return redirect()->route('public.home', ['locale' => auth()->user()?->preferred_locale ?: 'ar']);
 });
 
 Route::prefix('{locale}')
     ->where(['locale' => 'ar|en|fr'])
     ->middleware('locale')
     ->group(function (): void {
+        Route::get('/', [PublicSiteController::class, 'home'])->name('public.home');
+
         Route::middleware('guest')->group(function (): void {
             Route::get('/login', [AuthenticatedSessionController::class, 'create'])
                 ->name('login');
@@ -97,8 +97,23 @@ Route::prefix('{locale}')
                     Route::get('/audit/{auditLog}', [AuditLogController::class, 'show'])
                         ->middleware('permission:core.audit.view')
                         ->name('audit.show');
+
+                    Route::prefix('public-content')
+                        ->middleware('permission:public-content.manage')
+                        ->name('public-content.')
+                        ->group(function (): void {
+                            Route::get('/', [PublicPageController::class, 'index'])->name('pages.index');
+                            Route::get('/settings', [PublicSiteSettingController::class, 'edit'])->name('settings.edit');
+                            Route::put('/settings', [PublicSiteSettingController::class, 'update'])->name('settings.update');
+                            Route::get('/{publicPage}/edit', [PublicPageController::class, 'edit'])->name('pages.edit');
+                            Route::put('/{publicPage}', [PublicPageController::class, 'update'])->name('pages.update');
+                        });
                 });
         });
+
+        Route::get('/{publicPage:slug}', [PublicSiteController::class, 'show'])
+            ->where('publicPage', 'about|governance|entities|programmes|contact')
+            ->name('public.pages.show');
     });
 
 // IUOAMC_MEMBERSHIP_ROUTES_1_0_0

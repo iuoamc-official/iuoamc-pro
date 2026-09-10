@@ -8,9 +8,9 @@ use Tests\TestCase;
 
 final class ExampleTest extends TestCase
 {
-    public function test_home_redirects_guests_to_the_default_localized_login(): void
+    public function test_root_redirects_guests_to_the_default_localized_public_home(): void
     {
         $this->get('/')
-            ->assertRedirect(route('login', ['locale' => 'ar']));
+            ->assertRedirect(route('public.home', ['locale' => 'ar']));
     }
 }

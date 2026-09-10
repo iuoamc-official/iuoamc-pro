@@ -29,6 +29,16 @@ final class ProMasterCertificatePdf
             && ($issuer['legal_name'] ?? null) === self::ISSUER_LEGAL_NAME;
     }
 
+    public static function backgroundIsValid(): bool
+    {
+        $background = resource_path('certificates/master-a4-v1.3.1.pdf');
+
+        return is_file($background)
+            && is_readable($background)
+            && ! is_link($background)
+            && hash_equals(self::BACKGROUND_SHA256, (string) hash_file('sha256', $background));
+    }
+
     public function render(array $payload): string
     {
         $language = $payload['language'] ?? null;
@@ -75,8 +85,7 @@ final class ProMasterCertificatePdf
             }
         }
         $background = resource_path('certificates/master-a4-v1.3.1.pdf');
-        if (!is_file($background) || is_link($background)
-            || !hash_equals(self::BACKGROUND_SHA256, (string) hash_file('sha256', $background))) {
+        if (! self::backgroundIsValid()) {
             throw new RuntimeException('MASTER_CERTIFICATE_BACKGROUND_INTEGRITY_FAILED');
         }
         $temporary = $this->temporaryDirectory();

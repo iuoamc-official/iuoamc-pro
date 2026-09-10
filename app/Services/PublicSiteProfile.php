@@ -36,7 +36,7 @@ final class PublicSiteProfile
             'entities' => [
                 ['code' => 'IUOAMC', 'logo' => 'assets/brand/master-v1/iuoamc-original.png'],
                 ['code' => 'ICGA', 'logo' => 'assets/brand/master-v1/icga-original.jpg'],
-                ['code' => 'WSACA', 'logo' => 'assets/brand/master-v1/wsaca-original.webp'],
+                ['code' => 'WSACA', 'logo' => 'assets/brand/master-v1/wsaca-authority-seal-v2-outlined.svg'],
                 ['code' => 'WICP', 'logo' => 'assets/brand/master-v1/wicp-original.webp'],
             ],
         ];

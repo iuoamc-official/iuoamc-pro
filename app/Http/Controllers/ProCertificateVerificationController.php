@@ -13,10 +13,18 @@ final class ProCertificateVerificationController extends Controller
 {
     private function headers(): array
     {
-        return ['Cache-Control' => 'private, no-store, max-age=0', 'Pragma' => 'no-cache',
-            'X-Robots-Tag' => 'noindex, nofollow, noarchive', 'Referrer-Policy' => 'no-referrer',
+        return [
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'Pragma' => 'no-cache',
+            'X-Robots-Tag' => 'noindex, nofollow, noarchive',
+            'Referrer-Policy' => 'no-referrer',
             'X-Content-Type-Options' => 'nosniff',
-            'Content-Security-Policy' => "default-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; script-src 'none'; connect-src 'none'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"];
+            'X-Frame-Options' => 'DENY',
+            'Cross-Origin-Opener-Policy' => 'same-origin',
+            'Cross-Origin-Resource-Policy' => 'same-origin',
+            'Permissions-Policy' => 'camera=(), geolocation=(), microphone=(), payment=(), usb=()',
+            'Content-Security-Policy' => "default-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; script-src 'none'; connect-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'",
+        ];
     }
 
     private function locale(Request $request): string

@@ -12,9 +12,10 @@ body { color:#112b43; font-family:dejavusans; font-size:10pt; }
 table { border-collapse:collapse; width:100%; }
 td { vertical-align:middle; }
 .brand { width:45%; }
-.authority-brand { width:40%; text-align:{{ $language === 'ar' ? 'right' : 'left' }}; }
-.system-brand { width:28%; text-align:center; }
-.issuer { width:32%; text-align:{{ $language === 'ar' ? 'left' : 'right' }}; font-size:9pt; line-height:1.45; }
+.arbitration-brand { width:22%; text-align:{{ $language === 'ar' ? 'right' : 'left' }}; }
+.authority-brand { width:18%; text-align:center; }
+.system-brand { width:22%; text-align:center; }
+.issuer { width:38%; text-align:{{ $language === 'ar' ? 'left' : 'right' }}; font-size:9pt; line-height:1.45; }
 .muted { color:#63788b; font-size:7.5pt; }
 .masthead { border-bottom:0.2mm solid #e6dac1; }
 .masthead td { padding-bottom:3mm; }
@@ -38,9 +39,10 @@ td { vertical-align:middle; }
 <body><div class="frame"><div class="inside">
 @if($draft)<div class="draft">{{ $labels['draft'] }}</div>@endif
 <table class="masthead"><tr>
-@if($diploma && $authorityLogo !== null)
-<td class="authority-brand"><img src="{{ $authorityLogo }}" style="width:40mm;height:auto" alt="ICGA — International Culinary &amp; Gastronomy Arbitration"></td>
-<td class="system-brand"><img src="{{ $logo }}" style="width:48mm;height:auto" alt="IUOAMC"></td>
+@if($diploma && $arbitrationLogo !== null && $authorityLogo !== null)
+<td class="arbitration-brand"><img src="{{ $arbitrationLogo }}" style="width:40mm;height:auto" alt="ICGA — International Culinary &amp; Gastronomy Arbitration"></td>
+<td class="authority-brand"><img src="{{ $authorityLogo }}" style="width:32mm;height:auto" alt="WSA-CA — World Supreme Authority for Culinary Arbitration"></td>
+<td class="system-brand"><img src="{{ $logo }}" style="width:42mm;height:auto" alt="IUOAMC"></td>
 @else
 <td class="brand"><img src="{{ $logo }}" style="width:65mm;height:auto" alt="IUOAMC"></td>
 @endif

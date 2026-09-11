@@ -44,7 +44,15 @@
             @if($translation?->subtitle)<p class="journal-subtitle">{{ $translation->subtitle }}</p>@endif
             <div class="journal-author-list">
                 @foreach($article->authors as $author)
-                    <div><strong>{{ $author->name }}</strong>@if($author->orcid)<a dir="ltr" rel="external noopener" href="https://orcid.org/{{ $author->orcid }}">ORCID {{ $author->orcid }}</a>@endif@if($author->pivot->affiliation_name)<span>{{ $author->pivot->affiliation_name }}</span>@endif</div>
+                    <div>
+                        <strong>{{ $author->name }}</strong>
+                        @if ($author->orcid)
+                            <a dir="ltr" rel="external noopener" href="https://orcid.org/{{ $author->orcid }}">ORCID {{ $author->orcid }}</a>
+                        @endif
+                        @if ($author->pivot->affiliation_name)
+                            <span>{{ $author->pivot->affiliation_name }}</span>
+                        @endif
+                    </div>
                 @endforeach
             </div>
         </header>

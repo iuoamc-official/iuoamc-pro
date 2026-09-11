@@ -48,6 +48,7 @@ return [
     'collections_help' => 'Operationally matching certificates and batches are presented together without changing any batch, certificate, PDF or digital signature.',
     'collection_batches' => 'Source batches',
     'collection_certificates' => 'Certificates in collection',
+    'download_print_folder' => 'Download print image folder',
     'open_collection' => 'Open unified collection',
     'collection_integrity_notice' => 'This is an operational collection view only. Certificate numbers, PDFs, hashes and original signed batch records remain unchanged.',
     'source_batches' => 'Preserved source batches',
@@ -113,6 +114,8 @@ return [
     'run_nojs' => 'Enable JavaScript to start or resume batch processing. Any previously completed actions remain saved.',
     'batch_save_confirm' => 'I have reviewed every row and explicitly approve the names selected for public verification before creating these drafts.',
     'errors' => [
+        'archive_unavailable' => 'The print image folder could not be prepared. Check the ZIP and image conversion services, then try again.',
+        'archive_limit' => 'A print image collection must contain between 1 and 100 certificates.',
         'batch_integrity' => 'The batch integrity check failed. Processing is unavailable until the saved records have been reviewed.',
         'batch_request' => 'This submission reference was already used for different details. Reopen the batch form and review your list before submitting again.',
         'batch_action' => 'This action is not available for the batch.',

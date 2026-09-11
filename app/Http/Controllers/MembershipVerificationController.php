@@ -107,4 +107,3 @@ final class MembershipVerificationController extends Controller
         return response()->json(['message' => trans('memberships.verification_unavailable')], 404, $this->headers());
     }
 }
-}

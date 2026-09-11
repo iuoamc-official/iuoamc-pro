@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Account\AccountController;
 use App\Http\Controllers\Account\MembershipApplicationController;
+use App\Http\Middleware\EnsureVerifiedAccountEmail;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('{locale}/account')->where(['locale' => 'ar|en|fr'])
-    ->middleware(['locale', 'auth', 'active', 'verified'])
+    ->middleware(['locale', 'auth', 'active', EnsureVerifiedAccountEmail::class])
     ->name('account.')->group(function (): void {
         Route::get('/', [AccountController::class, 'index'])->name('dashboard');
         Route::patch('/profile', [AccountController::class, 'updateProfile'])

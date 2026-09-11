@@ -211,7 +211,7 @@ final class MembershipCredentialRegistry
         $card = $signer->sign($pdf->renderCard($payload, $photoPath));
         $certificate = $signer->sign($pdf->renderCertificate($payload, $photoPath));
         $base = 'memberships/credentials/'.preg_replace('/[^A-Za-z0-9_-]/', '-', (string) $membership->membership_number)
-            .'/v'.(int) $period->version;
+            .'/v'.(int) $period->version.'-'.substr($token, 0, 16);
         $cardPath = $base.'/membership-card.pdf';
         $certificatePath = $base.'/membership-certificate.pdf';
 

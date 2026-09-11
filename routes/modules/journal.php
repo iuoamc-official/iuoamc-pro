@@ -18,6 +18,8 @@ Route::prefix('{locale}/journal')->where(['locale' => 'ar|en|fr'])->middleware([
     Route::get('/issues', [JournalPublicController::class, 'issues'])->name('issues.index');
     Route::get('/issues/{issue:slug}', [JournalPublicController::class, 'issue'])->name('issues.show');
     Route::get('/articles/{article:slug}', [JournalPublicController::class, 'show'])->name('articles.show');
+    Route::get('/articles/{article:slug}/pdf', [JournalPublicController::class, 'downloadPdf'])->middleware('throttle:60,1')->name('articles.pdf');
+    Route::get('/registry/wicp/{registration}', [JournalPublicController::class, 'registry'])->name('registry.show');
     Route::get('/policies', [JournalPublicController::class, 'policies'])->name('policies');
     Route::get('/author-guidelines', [JournalPublicController::class, 'authorGuidelines'])->name('author-guidelines');
     Route::get('/editorial-governance', [JournalPublicController::class, 'editorialGovernance'])->name('editorial-governance');
@@ -37,6 +39,7 @@ Route::prefix('{locale}/control/journal')->where(['locale' => 'ar|en|fr'])
         Route::get('/articles/{article}', [JournalArticleController::class, 'show'])->whereNumber('article')->name('articles.show');
         Route::get('/articles/{article}/edit', [JournalArticleController::class, 'edit'])->whereNumber('article')->middleware('permission:journal.manage')->name('articles.edit');
         Route::put('/articles/{article}', [JournalArticleController::class, 'update'])->whereNumber('article')->middleware(['permission:journal.manage', 'throttle:30,1'])->name('articles.update');
+        Route::post('/articles/{article}/publication-assets', [JournalArticleController::class, 'publicationAssets'])->whereNumber('article')->middleware(['permission:journal.manage', 'throttle:10,1'])->name('articles.publication-assets');
         Route::post('/articles/{article}/transition', [JournalArticleController::class, 'transition'])->whereNumber('article')->middleware('throttle:30,1')->name('articles.transition');
         Route::post('/articles/{article}/corrections', [JournalArticleController::class, 'correction'])->whereNumber('article')->middleware(['permission:journal.publish', 'throttle:10,1'])->name('articles.corrections.store');
         Route::post('/articles/{article}/reviews', [JournalReviewController::class, 'store'])->whereNumber('article')->middleware(['permission:journal.review', 'throttle:20,1'])->name('reviews.store');

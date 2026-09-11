@@ -8,14 +8,19 @@ use App\Models\Journal;
 use App\Models\JournalArticle;
 use App\Models\JournalAuthor;
 use App\Models\JournalIssue;
+use App\Models\JournalEditorialMember;
+use App\Models\JournalNotificationOutbox;
 use App\Models\JournalReview;
 use App\Models\JournalSubmission;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\JournalWorkflow;
+use App\Services\JournalNotificationService;
+use App\Mail\JournalWorkflowMail;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -35,6 +40,7 @@ final class JournalPublishingTest extends TestCase
             '2026_09_10_060000_create_public_site_content.php',
             '2026_09_11_150000_create_scientific_journal_core.php',
             '2026_09_11_160000_create_journal_submission_pipeline.php',
+            '2026_09_11_170000_create_journal_prelaunch_operations.php',
         ] as $migrationFile) {
             $migration = require database_path('migrations/'.$migrationFile);
             $migration->up();
@@ -43,6 +49,7 @@ final class JournalPublishingTest extends TestCase
 
     public function test_public_catalog_separates_research_from_professional_articles_and_hides_drafts(): void
     {
+        $this->enablePublicLaunch();
         $research = $this->createArticle('peer_reviewed_research', 'published', 'Circular Tasting Research');
         $professional = $this->createArticle('professional_article', 'published', 'Restaurant Tasting Practice');
         $draft = $this->createArticle('peer_reviewed_research', 'draft', 'Hidden Research Draft');
@@ -64,6 +71,7 @@ final class JournalPublishingTest extends TestCase
 
     public function test_author_submission_resources_are_public_but_the_intake_form_is_not_indexable(): void
     {
+        $this->enablePublicLaunch();
         $this->get('/en/journal/author-guidelines')
             ->assertOk()
             ->assertSee('Originality and authorship');
@@ -204,6 +212,7 @@ final class JournalPublishingTest extends TestCase
     public function test_public_submission_is_private_encrypted_and_fingerprinted(): void
     {
         $this->installIntegrityKeys();
+        $this->enablePublicLaunch();
         Storage::fake('local');
 
         $response = $this->post('/en/journal/submit', $this->validSubmissionPayload());
@@ -215,10 +224,17 @@ final class JournalPublishingTest extends TestCase
         $this->assertSame(64, strlen($submission->file_sha256));
         Storage::disk('local')->assertExists($submission->manuscript_path);
         $this->assertDatabaseMissing('journal_articles', ['slug' => Str::slug($submission->title)]);
+        $this->assertDatabaseHas('journal_notification_outbox', [
+            'event' => 'submission_received',
+            'status' => 'pending',
+            'subject_type' => $submission->getMorphClass(),
+            'subject_id' => $submission->id,
+        ]);
     }
 
     public function test_public_research_intake_rejects_professional_articles(): void
     {
+        $this->enablePublicLaunch();
         Storage::fake('local');
         $payload = $this->validSubmissionPayload();
         $payload['type'] = 'professional_article';
@@ -232,6 +248,7 @@ final class JournalPublishingTest extends TestCase
     public function test_submission_tracking_requires_the_private_token(): void
     {
         $this->installIntegrityKeys();
+        $this->enablePublicLaunch();
         Storage::fake('local');
         $response = $this->post('/en/journal/submit', $this->validSubmissionPayload());
         $receipt = session('journal_submission_receipt');
@@ -250,6 +267,7 @@ final class JournalPublishingTest extends TestCase
     public function test_editor_can_convert_a_screened_submission_into_a_draft_record(): void
     {
         $this->installIntegrityKeys();
+        $this->enablePublicLaunch();
         Storage::fake('local');
         $this->post('/en/journal/submit', $this->validSubmissionPayload());
         $submission = JournalSubmission::query()->firstOrFail();
@@ -266,6 +284,156 @@ final class JournalPublishingTest extends TestCase
             'status' => 'draft',
             'type' => 'peer_reviewed_research',
         ]);
+    }
+
+    public function test_anonymous_public_access_returns_404_before_explicit_launch(): void
+    {
+        $this->get('/en/journal')->assertNotFound();
+        $this->get('/en/journal/submit')->assertNotFound();
+    }
+
+    public function test_launch_remains_blocked_when_mandatory_real_world_checks_are_missing(): void
+    {
+        $editor = $this->superAdmin();
+
+        $this->actingAs($editor)->post('/en/control/journal/operations/public-launch')
+            ->assertSessionHasErrors('launch');
+
+        $this->assertFalse(Journal::query()->firstOrFail()->isPubliclyLaunched());
+    }
+
+    public function test_authorised_launch_succeeds_only_after_every_preflight_check_passes(): void
+    {
+        $this->installIntegrityKeys();
+        config(['mail.default' => 'smtp', 'mail.from.address' => 'journal@iuoamc.pro']);
+        File::ensureDirectoryExists((string) config('filesystems.disks.local.root'));
+        $editor = $this->superAdmin();
+        $this->createArticle('professional_article', 'published', 'Inaugural professional record');
+        $journal = Journal::query()->firstOrFail();
+        foreach (['editor_in_chief', 'managing_editor', 'section_editor'] as $position => $role) {
+            JournalEditorialMember::query()->create([
+                'record_uuid' => (string) Str::uuid(),
+                'journal_id' => $journal->id,
+                'name' => 'Consented Editor '.($position + 1),
+                'role' => $role,
+                'status' => 'active',
+                'sort_order' => $position + 1,
+                'consented_at' => now(),
+                'created_by' => $editor->id,
+                'updated_by' => $editor->id,
+            ]);
+        }
+        $journal->update(['settings' => array_merge($journal->settings ?? [], [
+            'contact_email' => 'journal@iuoamc.pro',
+            'publication_frequency' => 'continuous',
+            'fee_policy' => 'no_fees',
+            'backup_verified_at' => now()->toIso8601String(),
+            'backup_reference' => 'restore-test-2026-09-11',
+            'public_launch_enabled' => false,
+        ])]);
+
+        $this->actingAs($editor)->post('/en/control/journal/operations/public-launch')
+            ->assertRedirect();
+
+        $this->assertTrue(Journal::query()->firstOrFail()->isPubliclyLaunched());
+        $this->assertDatabaseHas('audit_logs', ['event' => 'journal.operations.launched']);
+    }
+
+    public function test_empty_issue_cannot_be_published(): void
+    {
+        $editor = $this->superAdmin();
+        $journal = Journal::query()->firstOrFail();
+        $issue = JournalIssue::query()->create([
+            'journal_id' => $journal->id,
+            'volume' => 1,
+            'number' => 1,
+            'slug' => 'empty-inaugural-issue',
+            'title' => ['ar' => 'عدد فارغ', 'en' => 'Empty issue', 'fr' => 'Numéro vide'],
+            'status' => 'draft',
+            'created_by' => $editor->id,
+            'updated_by' => $editor->id,
+        ]);
+
+        $this->actingAs($editor)->post('/en/control/journal/issues/'.$issue->id.'/publish')
+            ->assertSessionHasErrors('issue');
+
+        $this->assertSame('draft', $issue->fresh()->status);
+    }
+
+    public function test_active_editorial_appointment_requires_recorded_consent(): void
+    {
+        $editor = $this->superAdmin();
+
+        $this->actingAs($editor)->post('/en/control/journal/editorial-members', [
+            'name' => 'Verified Editor',
+            'role' => 'editor_in_chief',
+            'status' => 'active',
+            'sort_order' => 1,
+        ])->assertSessionHasErrors('consent_confirmed');
+
+        $this->assertDatabaseCount('journal_editorial_members', 0);
+    }
+
+    public function test_consented_editorial_appointment_is_published_without_private_drafts(): void
+    {
+        $this->installIntegrityKeys();
+        $this->enablePublicLaunch();
+        $editor = $this->superAdmin();
+        $payload = [
+            'name' => 'Verified Editor',
+            'role' => 'editor_in_chief',
+            'status' => 'active',
+            'sort_order' => 1,
+            'affiliation_en' => 'Verified Culinary Institute',
+            'consent_confirmed' => '1',
+        ];
+
+        $this->actingAs($editor)->post('/en/control/journal/editorial-members', $payload)->assertRedirect();
+        JournalEditorialMember::query()->create([
+            'record_uuid' => (string) Str::uuid(),
+            'journal_id' => Journal::query()->firstOrFail()->id,
+            'name' => 'Private Draft Name',
+            'role' => 'section_editor',
+            'status' => 'draft',
+            'sort_order' => 2,
+            'created_by' => $editor->id,
+            'updated_by' => $editor->id,
+        ]);
+
+        $this->get('/en/journal/editorial-governance')
+            ->assertOk()
+            ->assertSee('Verified Editor')
+            ->assertSee('Verified Culinary Institute')
+            ->assertDontSee('Private Draft Name');
+    }
+
+    public function test_notification_outbox_dispatches_mail_and_seals_delivery_state(): void
+    {
+        $this->installIntegrityKeys();
+        $this->enablePublicLaunch();
+        Storage::fake('local');
+        Mail::fake();
+        $this->post('/en/journal/submit', $this->validSubmissionPayload());
+
+        $result = app(JournalNotificationService::class)->dispatchPending();
+
+        $this->assertSame(['sent' => 1, 'failed' => 0], $result);
+        Mail::assertSent(JournalWorkflowMail::class, fn (JournalWorkflowMail $mail): bool => $mail->outbox->event === 'submission_received');
+        $this->assertSame('sent', JournalNotificationOutbox::query()->firstOrFail()->status);
+    }
+
+    public function test_author_facing_rejection_is_permanent_and_queued_for_delivery(): void
+    {
+        $this->installIntegrityKeys();
+        $article = $this->createArticle('peer_reviewed_research', 'under_review', 'Rejected research');
+        $article->authors->first()->update(['email' => 'author@research.org']);
+        $editor = $this->superAdmin();
+
+        $rejected = app(JournalWorkflow::class)->transition($editor, $article->id, $article->lock_version, 'reject', 'The methods do not support the stated conclusion.');
+
+        $this->assertSame('rejected', $rejected->status);
+        $this->assertDatabaseHas('journal_editorial_decisions', ['journal_article_id' => $article->id, 'decision' => 'rejected']);
+        $this->assertDatabaseHas('journal_notification_outbox', ['event' => 'article_rejected', 'status' => 'pending']);
     }
 
     private function createArticle(string $type, string $status, string $englishTitle): JournalArticle
@@ -372,5 +540,11 @@ final class JournalPublishingTest extends TestCase
         File::ensureDirectoryExists($directory);
         File::put($directory.'/ed25519.secret', base64_encode(sodium_crypto_sign_secretkey($keyPair)));
         File::put($directory.'/ed25519.public', base64_encode(sodium_crypto_sign_publickey($keyPair)));
+    }
+
+    private function enablePublicLaunch(): void
+    {
+        $journal = Journal::query()->firstOrFail();
+        $journal->update(['settings' => array_merge($journal->settings ?? [], ['public_launch_enabled' => true])]);
     }
 }

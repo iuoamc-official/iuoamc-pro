@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Control\JournalArticleController;
 use App\Http\Controllers\Control\JournalIssueController;
+use App\Http\Controllers\Control\JournalEditorialMemberController;
+use App\Http\Controllers\Control\JournalOperationsController;
 use App\Http\Controllers\Control\JournalReviewController;
 use App\Http\Controllers\Control\JournalSubmissionController as ControlJournalSubmissionController;
 use App\Http\Controllers\JournalPublicController;
 use App\Http\Controllers\JournalSubmissionController;
+use App\Http\Middleware\EnsureJournalLaunched;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('{locale}/journal')->where(['locale' => 'ar|en|fr'])->middleware('locale')->name('journal.public.')->group(function (): void {
+Route::prefix('{locale}/journal')->where(['locale' => 'ar|en|fr'])->middleware(['locale', EnsureJournalLaunched::class])->name('journal.public.')->group(function (): void {
     Route::get('/', [JournalPublicController::class, 'index'])->name('index');
     Route::get('/issues', [JournalPublicController::class, 'issues'])->name('issues.index');
     Route::get('/issues/{issue:slug}', [JournalPublicController::class, 'issue'])->name('issues.show');
@@ -50,4 +53,19 @@ Route::prefix('{locale}/control/journal')->where(['locale' => 'ar|en|fr'])
         Route::get('/issues/create', [JournalIssueController::class, 'create'])->middleware('permission:journal.manage')->name('issues.create');
         Route::post('/issues', [JournalIssueController::class, 'store'])->middleware(['permission:journal.manage', 'throttle:20,1'])->name('issues.store');
         Route::post('/issues/{issue}/publish', [JournalIssueController::class, 'publish'])->whereNumber('issue')->middleware(['permission:journal.publish', 'throttle:10,1'])->name('issues.publish');
+
+        Route::middleware('permission:journal.governance')->group(function (): void {
+            Route::get('/operations', [JournalOperationsController::class, 'index'])->name('operations.index');
+            Route::put('/operations', [JournalOperationsController::class, 'update'])->middleware('throttle:20,1')->name('operations.update');
+            Route::post('/operations/backup-verifications', [JournalOperationsController::class, 'confirmBackup'])->middleware('throttle:5,1')->name('operations.backup-verifications.store');
+            Route::post('/operations/public-launch', [JournalOperationsController::class, 'launch'])->middleware('throttle:5,1')->name('operations.public-launch.store');
+            Route::delete('/operations/public-launch', [JournalOperationsController::class, 'unlaunch'])->middleware('throttle:5,1')->name('operations.public-launch.destroy');
+
+            Route::get('/editorial-members', [JournalEditorialMemberController::class, 'index'])->name('editorial-members.index');
+            Route::get('/editorial-members/create', [JournalEditorialMemberController::class, 'create'])->name('editorial-members.create');
+            Route::post('/editorial-members', [JournalEditorialMemberController::class, 'store'])->middleware('throttle:20,1')->name('editorial-members.store');
+            Route::get('/editorial-members/{editorial_member}/edit', [JournalEditorialMemberController::class, 'edit'])->whereNumber('editorial_member')->name('editorial-members.edit');
+            Route::put('/editorial-members/{editorial_member}', [JournalEditorialMemberController::class, 'update'])->whereNumber('editorial_member')->middleware('throttle:20,1')->name('editorial-members.update');
+            Route::post('/editorial-members/{editorial_member}/archive', [JournalEditorialMemberController::class, 'archive'])->whereNumber('editorial_member')->middleware('throttle:10,1')->name('editorial-members.archive');
+        });
     });

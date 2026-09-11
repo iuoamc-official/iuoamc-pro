@@ -103,7 +103,9 @@ final class JournalArticle extends Model
 
     public function scopePublished(Builder $query): Builder
     {
-        return $query->whereIn('status', ['published', 'retracted'])->whereNotNull('published_at');
+        return $query->whereIn('status', ['published', 'retracted'])
+            ->whereNotNull('published_at')
+            ->whereHas('issue', fn (Builder $issueQuery): Builder => $issueQuery->where('status', 'published')->whereNotNull('published_at'));
     }
 
     public function translation(?string $locale = null): ?JournalArticleTranslation

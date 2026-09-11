@@ -15,6 +15,7 @@ return [
             'IUOAMC_PADES_SIGNATURE_FIELD',
             '1/392,76,580,130/IUOAMC_Authorized_Signature',
         ),
+        'visible_signature' => (bool) env('IUOAMC_PADES_VISIBLE_SIGNATURE', false),
         'timeout_seconds' => (int) env('IUOAMC_PADES_TIMEOUT', 90),
     ],
 ];

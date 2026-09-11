@@ -8,6 +8,7 @@ use App\Models\Journal;
 use App\Models\JournalSubmission;
 use App\Models\PublicPage;
 use App\Services\AuditTrail;
+use App\Services\JournalNotificationService;
 use App\Services\PublicSiteProfile;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,7 +27,7 @@ final class JournalSubmissionController extends Controller
         return view('journal.submissions.create', $this->shared($locale, $profile));
     }
 
-    public function store(Request $request, string $locale): RedirectResponse
+    public function store(Request $request, string $locale, JournalNotificationService $notifications): RedirectResponse
     {
         $validated = $request->validate([
             'website' => ['prohibited'],
@@ -66,7 +67,7 @@ final class JournalSubmissionController extends Controller
         }
 
         try {
-            $submission = DB::transaction(function () use ($request, $validated, $journal, $uuid, $token, $path, $fileHash, $file): JournalSubmission {
+            $submission = DB::transaction(function () use ($request, $validated, $journal, $uuid, $token, $path, $fileHash, $file, $notifications, $locale): JournalSubmission {
                 $submission = JournalSubmission::query()->create([
                     'record_uuid' => $uuid,
                     'journal_id' => $journal->id,
@@ -104,6 +105,23 @@ final class JournalSubmissionController extends Controller
                     'type' => $submission->type,
                     'file_sha256' => $submission->file_sha256,
                 ], ['source' => 'public_submission']);
+
+                $notifications->queue($journal, 'submission_received', $submission->author_email, $locale, [
+                    'name' => $submission->author_name,
+                    'code' => $submission->submission_code,
+                    'title' => $submission->title,
+                    'token' => $token,
+                    'tracking_url' => route('journal.public.submissions.tracking', ['locale' => $locale]),
+                ], $submission);
+                $contactEmail = trim((string) $journal->setting('contact_email'));
+                if ($contactEmail !== '') {
+                    $notifications->queue($journal, 'new_submission_received', $contactEmail, 'en', [
+                        'name' => 'Editorial Office',
+                        'code' => $submission->submission_code,
+                        'title' => $submission->title,
+                        'workspace_url' => route('journal.control.submissions.show', ['locale' => 'en', 'submission' => $submission]),
+                    ], $submission);
+                }
 
                 return $submission;
             }, 5);

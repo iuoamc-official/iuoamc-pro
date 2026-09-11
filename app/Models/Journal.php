@@ -38,6 +38,26 @@ final class Journal extends Model
         return $this->hasMany(JournalSubmission::class);
     }
 
+    public function editorialMembers(): HasMany
+    {
+        return $this->hasMany(JournalEditorialMember::class);
+    }
+
+    public function notificationOutbox(): HasMany
+    {
+        return $this->hasMany(JournalNotificationOutbox::class);
+    }
+
+    public function setting(string $key, mixed $default = null): mixed
+    {
+        return ($this->settings ?? [])[$key] ?? $default;
+    }
+
+    public function isPubliclyLaunched(): bool
+    {
+        return $this->setting('public_launch_enabled', false) === true;
+    }
+
     public function localized(string $field, ?string $locale = null): string
     {
         $values = $this->getAttribute($field);

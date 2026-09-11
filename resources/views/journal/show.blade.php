@@ -35,7 +35,7 @@
             <div class="journal-retraction" role="alert"><strong>{{ __('journal.retracted') }}</strong><p>{{ __('journal.retracted_notice') }}</p></div>
         @endif
         @if($article->correctionOf)
-            <div class="journal-correction"><strong>{{ __('journal.correction') }}</strong><a href="{{ route('journal.public.articles.show', ['locale' => app()->getLocale(), 'article' => $article->correctionOf]) }}">{{ __('journal.original_record') }}</a></div>
+            <div class="journal-correction"><strong>{{ __('journal.correction') }}</strong><a href="{{ route('journal.public.articles.show', ['locale' => app()->getLocale(), 'article' => $article->correctionOf->slug]) }}">{{ __('journal.original_record') }}</a></div>
         @endif
         <header class="journal-article-header">
             <span class="journal-type journal-type-{{ $article->type }}">{{ __('journal.types.'.$article->type) }}</span>
@@ -70,7 +70,7 @@
         <section class="journal-disclosures"><h2>{{ __('journal.disclosures') }}</h2><dl>@foreach(['conflicts', 'funding', 'ethics'] as $field)<div><dt>{{ __('journal.'.$field) }}</dt><dd>{{ $article->declarations[$field] ?? __('journal.not_declared') }}</dd></div>@endforeach</dl></section>
 
         @if($article->corrections->isNotEmpty())
-            <section class="journal-related"><h2>{{ __('journal.corrections') }}</h2>@foreach($article->corrections as $correction)<a href="{{ route('journal.public.articles.show', ['locale' => app()->getLocale(), 'article' => $correction]) }}">{{ $correction->translation()?->title }}</a>@endforeach</section>
+            <section class="journal-related"><h2>{{ __('journal.corrections') }}</h2>@foreach($article->corrections as $correction)<a href="{{ route('journal.public.articles.show', ['locale' => app()->getLocale(), 'article' => $correction->slug]) }}">{{ $correction->translation()?->title }}</a>@endforeach</section>
         @endif
     </article>
 @endsection

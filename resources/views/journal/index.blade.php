@@ -48,13 +48,13 @@
                         <span class="journal-type journal-type-{{ $article->type }}">{{ __('journal.types.'.$article->type) }}</span>
                         <bdi dir="ltr">{{ $article->article_code }}</bdi>
                     </div>
-                    <h3><a href="{{ route('journal.public.articles.show', ['locale' => app()->getLocale(), 'article' => $article]) }}">{{ $translation?->title }}</a></h3>
+                    <h3><a href="{{ route('journal.public.articles.show', ['locale' => app()->getLocale(), 'article' => $article->slug]) }}">{{ $translation?->title }}</a></h3>
                     <p>{{ \Illuminate\Support\Str::limit($translation?->abstract, 230) }}</p>
                     <div class="journal-byline">
                         <span>{{ $article->authors->pluck('name')->join(' · ') }}</span>
                         <time datetime="{{ $article->published_at?->toDateString() }}">{{ $article->published_at?->format('Y-m-d') }}</time>
                     </div>
-                    <a class="journal-read" href="{{ route('journal.public.articles.show', ['locale' => app()->getLocale(), 'article' => $article]) }}">{{ __('journal.read_article') }} →</a>
+                    <a class="journal-read" href="{{ route('journal.public.articles.show', ['locale' => app()->getLocale(), 'article' => $article->slug]) }}">{{ __('journal.read_article') }} →</a>
                 </article>
             @empty
                 <div class="journal-empty"><strong>{{ __('journal.no_publications') }}</strong><p>{{ __('journal.no_publications_text') }}</p></div>

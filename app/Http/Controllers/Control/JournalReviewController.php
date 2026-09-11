@@ -9,6 +9,7 @@ use App\Models\JournalArticle;
 use App\Models\JournalReview;
 use App\Models\Role;
 use App\Services\AuditTrail;
+use App\Services\JournalNotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +17,8 @@ use Illuminate\Validation\Rule;
 
 final class JournalReviewController extends Controller
 {
+    public function __construct(private readonly JournalNotificationService $notifications) {}
+
     public function store(Request $request, string $locale, JournalArticle $article): RedirectResponse
     {
         abort_unless($request->user()->canDo('journal.manage'), 403);
@@ -31,18 +34,30 @@ final class JournalReviewController extends Controller
             'due_at' => ['nullable', 'date', 'after:today'],
         ]);
 
-        $review = JournalReview::query()->create([
-            'journal_article_id' => $article->id,
-            'reviewer_id' => $validated['reviewer_id'],
-            'round' => $validated['round'],
-            'status' => 'invited',
-            'due_at' => $validated['due_at'] ?? null,
-            'assigned_by' => $request->user()->id,
-        ]);
-        AuditTrail::record('journal.review.assigned', $article, [], [
-            'review_id' => $review->id,
-            'round' => $review->round,
-        ]);
+        DB::transaction(function () use ($request, $validated, $article, $locale): void {
+            $review = JournalReview::query()->create([
+                'journal_article_id' => $article->id,
+                'reviewer_id' => $validated['reviewer_id'],
+                'round' => $validated['round'],
+                'status' => 'invited',
+                'due_at' => $validated['due_at'] ?? null,
+                'assigned_by' => $request->user()->id,
+            ]);
+            AuditTrail::record('journal.review.assigned', $article, [], [
+                'review_id' => $review->id,
+                'round' => $review->round,
+            ]);
+            $reviewer = $review->reviewer()->firstOrFail();
+            $reviewerLocale = in_array($reviewer->preferred_locale, ['ar', 'en', 'fr'], true) ? $reviewer->preferred_locale : $locale;
+            $this->notifications->queue($article->journal, 'review_assigned', $reviewer->email, $reviewerLocale, [
+                'name' => $reviewer->name,
+                'code' => $article->article_code,
+                'title' => $article->translation($reviewerLocale)?->title ?? $article->article_code,
+                'round' => $review->round,
+                'due' => $review->due_at?->toDateString() ?? trans('journal.not_assigned', [], $reviewerLocale),
+                'workspace_url' => route('journal.control.articles.show', ['locale' => $reviewerLocale, 'article' => $article]),
+            ], $review);
+        }, 5);
 
         return back()->with('success', trans('journal.messages.review_assigned'));
     }
@@ -70,6 +85,17 @@ final class JournalReviewController extends Controller
                 'round' => $review->round,
                 'recommendation' => $review->recommendation,
             ], [], $request->user()->id);
+            $article = $review->article()->with(['journal', 'translations'])->firstOrFail();
+            $contactEmail = trim((string) $article->journal->setting('contact_email'));
+            if ($contactEmail !== '') {
+                $this->notifications->queue($article->journal, 'review_completed', $contactEmail, 'en', [
+                    'name' => 'Editorial Office',
+                    'code' => $article->article_code,
+                    'title' => $article->translation('en')?->title ?? $article->article_code,
+                    'round' => $review->round,
+                    'workspace_url' => route('journal.control.articles.show', ['locale' => 'en', 'article' => $article]),
+                ], $review);
+            }
         });
 
         return back()->with('success', trans('journal.messages.review_submitted'));

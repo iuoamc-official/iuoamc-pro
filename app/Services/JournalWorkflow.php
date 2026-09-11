@@ -13,13 +13,15 @@ use Illuminate\Validation\ValidationException;
 
 final class JournalWorkflow
 {
+    public function __construct(private readonly JournalNotificationService $notifications) {}
+
     /** @var array<string, array<string, string>> */
     private const TRANSITIONS = [
         'draft' => ['submit' => 'submitted', 'publish_professional' => 'published'],
         'submitted' => ['screen' => 'initial_screening', 'publish_professional' => 'published'],
-        'initial_screening' => ['send_review' => 'under_review', 'accept' => 'accepted', 'request_revision' => 'revision_required', 'publish_professional' => 'published'],
-        'under_review' => ['request_revision' => 'revision_required', 'accept' => 'accepted', 'publish_professional' => 'published'],
-        'revision_required' => ['resubmit' => 'under_review', 'publish_professional' => 'published'],
+        'initial_screening' => ['send_review' => 'under_review', 'accept' => 'accepted', 'request_revision' => 'revision_required', 'reject' => 'rejected', 'publish_professional' => 'published'],
+        'under_review' => ['request_revision' => 'revision_required', 'accept' => 'accepted', 'reject' => 'rejected', 'publish_professional' => 'published'],
+        'revision_required' => ['resubmit' => 'under_review', 'reject' => 'rejected', 'publish_professional' => 'published'],
         'accepted' => ['copyedit' => 'copyediting', 'publish_professional' => 'published'],
         'copyediting' => ['typeset' => 'typesetting', 'publish_professional' => 'published'],
         'typesetting' => ['ready' => 'ready_to_publish', 'publish_professional' => 'published'],
@@ -88,6 +90,7 @@ final class JournalWorkflow
                 'accept' => 'accepted',
                 'request_revision' => 'revision_required',
                 'retract' => 'retracted',
+                'reject' => 'rejected',
                 default => null,
             };
             if ($decision !== null) {
@@ -108,13 +111,37 @@ final class JournalWorkflow
                 ['reason' => $reason, 'version_of_record' => $article->version_of_record]
             );
 
+            $event = match ($action) {
+                'accept' => 'article_accepted',
+                'request_revision' => 'revision_requested',
+                'reject' => 'article_rejected',
+                'publish', 'publish_professional' => 'article_published',
+                'retract' => 'article_retracted',
+                default => null,
+            };
+            if ($event !== null) {
+                foreach ($article->authors->filter(fn ($author): bool => (bool) $author->pivot->is_corresponding) as $author) {
+                    if (trim((string) $author->email) === '') {
+                        continue;
+                    }
+                    $locale = in_array($article->primary_locale, ['ar', 'en', 'fr'], true) ? $article->primary_locale : 'en';
+                    $this->notifications->queue($article->journal, $event, $author->email, $locale, [
+                        'name' => $author->name,
+                        'code' => $article->article_code,
+                        'title' => $article->translation($locale)?->title ?? $article->article_code,
+                        'reason' => trim((string) $reason),
+                        'record_url' => route('journal.public.articles.show', ['locale' => $locale, 'article' => $article->slug]),
+                    ], $article);
+                }
+            }
+
             return $article->fresh(['translations', 'authors', 'issue', 'versions']);
         }, 5);
     }
 
     private function authorize(User $actor, string $action): void
     {
-        $permission = in_array($action, ['accept', 'publish', 'publish_professional', 'retract'], true)
+        $permission = in_array($action, ['accept', 'reject', 'publish', 'publish_professional', 'retract'], true)
             ? 'journal.publish'
             : 'journal.manage';
 
@@ -128,7 +155,7 @@ final class JournalWorkflow
         }
 
         if ($article->type === 'professional_article' && in_array($action, [
-            'submit', 'screen', 'send_review', 'request_revision', 'resubmit', 'accept', 'copyedit', 'typeset', 'ready', 'publish',
+            'submit', 'screen', 'send_review', 'request_revision', 'resubmit', 'accept', 'reject', 'copyedit', 'typeset', 'ready', 'publish',
         ], true)) {
             throw ValidationException::withMessages(['action' => trans('journal.errors.professional_direct_publish')]);
         }

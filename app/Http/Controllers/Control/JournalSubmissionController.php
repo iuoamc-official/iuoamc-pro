@@ -9,6 +9,7 @@ use App\Models\JournalArticle;
 use App\Models\JournalAuthor;
 use App\Models\JournalSubmission;
 use App\Services\AuditTrail;
+use App\Services\JournalNotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,8 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 final class JournalSubmissionController extends Controller
 {
+    public function __construct(private readonly JournalNotificationService $notifications) {}
+
     public function index(Request $request): View
     {
         $filters = $request->validate([
@@ -83,6 +86,11 @@ final class JournalSubmissionController extends Controller
                 'handled_by' => $request->user()->id,
             ]);
             AuditTrail::record('journal.submission.declined', $locked, ['status' => $oldStatus], ['status' => 'declined']);
+            $this->notifications->queue($locked->journal, 'submission_declined', $locked->author_email, $locked->primary_locale, [
+                'name' => $locked->author_name,
+                'code' => $locked->submission_code,
+                'title' => $locked->title,
+            ], $locked);
         }, 5);
 
         return redirect()->route('journal.control.submissions.index', ['locale' => $locale])->with('success', trans('journal.messages.submission_declined'));
@@ -146,6 +154,12 @@ final class JournalSubmissionController extends Controller
                 'article_id' => $article->id,
                 'article_code' => $article->article_code,
             ]);
+            $this->notifications->queue($locked->journal, 'submission_screened', $locked->author_email, $locked->primary_locale, [
+                'name' => $locked->author_name,
+                'code' => $locked->submission_code,
+                'title' => $locked->title,
+                'article_code' => $article->article_code,
+            ], $locked);
 
             return $article;
         }, 5);

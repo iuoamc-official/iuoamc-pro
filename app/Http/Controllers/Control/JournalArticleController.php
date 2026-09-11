@@ -150,8 +150,8 @@ final class JournalArticleController extends Controller
     {
         $validated = $request->validate([
             'lock_version' => ['required', 'integer', 'min:1'],
-            'action' => ['required', Rule::in(['submit', 'screen', 'send_review', 'request_revision', 'resubmit', 'accept', 'copyedit', 'typeset', 'ready', 'publish', 'publish_professional', 'retract'])],
-            'reason' => [Rule::requiredIf(in_array((string) $request->input('action'), ['request_revision', 'retract'], true)), 'nullable', 'string', 'max:3000'],
+            'action' => ['required', Rule::in(['submit', 'screen', 'send_review', 'request_revision', 'resubmit', 'accept', 'reject', 'copyedit', 'typeset', 'ready', 'publish', 'publish_professional', 'retract'])],
+            'reason' => [Rule::requiredIf(in_array((string) $request->input('action'), ['request_revision', 'reject', 'retract'], true)), 'nullable', 'string', 'max:3000'],
         ]);
 
         $this->workflow->transition($request->user(), $article->id, (int) $validated['lock_version'], $validated['action'], $validated['reason'] ?? null);
@@ -338,6 +338,6 @@ final class JournalArticleController extends Controller
     /** @return list<string> */
     private function statuses(): array
     {
-        return ['draft', 'submitted', 'initial_screening', 'under_review', 'revision_required', 'accepted', 'copyediting', 'typesetting', 'ready_to_publish', 'published', 'retracted'];
+        return ['draft', 'submitted', 'initial_screening', 'under_review', 'revision_required', 'accepted', 'rejected', 'copyediting', 'typesetting', 'ready_to_publish', 'published', 'retracted'];
     }
 }

@@ -48,7 +48,7 @@
     <footer class="journal-footer">
         <div class="public-container journal-footer-grid">
             <div><strong>{{ $journal->localized('name') }}</strong><p>{{ $journal->localized('description') }}</p></div>
-            <div><span>{{ __('journal.publisher') }}</span><b>{{ $journal->publisher_name }}</b></div>
+            <div><span>{{ __('journal.publisher') }}</span><b>{{ $journal->publisher_name }}</b>@if($journal->setting('contact_email'))<a href="mailto:{{ $journal->setting('contact_email') }}">{{ $journal->setting('contact_email') }}</a>@endif @if($journal->setting('publication_frequency'))<small>{{ __('journal.frequencies.'.$journal->setting('publication_frequency')) }}</small>@endif</div>
             <div><a href="{{ route('public.home', ['locale' => app()->getLocale()]) }}">IUOAMC.PRO</a><a href="{{ route('journal.public.policies', ['locale' => app()->getLocale()]) }}">{{ __('journal.editorial_integrity') }}</a><a href="{{ route('journal.public.editorial-governance', ['locale' => app()->getLocale()]) }}">{{ __('journal.editorial_governance') }}</a><a href="{{ route('journal.public.submissions.tracking', ['locale' => app()->getLocale()]) }}">{{ __('journal.track_submission') }}</a></div>
         </div>
     </footer>

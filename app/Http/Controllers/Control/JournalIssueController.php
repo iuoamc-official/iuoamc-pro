@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 final class JournalIssueController extends Controller
@@ -58,8 +59,15 @@ final class JournalIssueController extends Controller
     {
         abort_unless($request->user()->canDo('journal.publish'), 403);
         abort_unless($issue->status === 'draft', 409);
-        $issue->update(['status' => 'published', 'published_at' => now()->utc()->startOfSecond(), 'updated_by' => $request->user()->id]);
-        AuditTrail::record('journal.issue.published', $issue, ['status' => 'draft'], ['status' => 'published']);
+        if (! $issue->articles()->whereIn('status', ['published', 'retracted'])->whereNotNull('published_at')->exists()) {
+            throw ValidationException::withMessages(['issue' => trans('journal.errors.issue_requires_article')]);
+        }
+        DB::transaction(function () use ($request, $issue): void {
+            $locked = JournalIssue::query()->lockForUpdate()->findOrFail($issue->id);
+            abort_unless($locked->status === 'draft', 409);
+            $locked->update(['status' => 'published', 'published_at' => now()->utc()->startOfSecond(), 'updated_by' => $request->user()->id]);
+            AuditTrail::record('journal.issue.published', $locked, ['status' => 'draft'], ['status' => 'published']);
+        }, 5);
 
         return back()->with('success', trans('journal.messages.issue_published'));
     }

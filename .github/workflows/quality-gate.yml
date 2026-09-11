@@ -28,7 +28,7 @@ jobs:
         with:
           php-version: '8.3'
           coverage: none
-          extensions: bcmath, ctype, dom, fileinfo, gd, intl, mbstring, pdo_sqlite, sodium, sqlite3, xml
+          extensions: bcmath, ctype, dom, fileinfo, gd, intl, mbstring, pdo_sqlite, sodium, sqlite3, xml, zip
 
       - name: Validate Composer metadata
         run: composer validate --strict --no-check-publish

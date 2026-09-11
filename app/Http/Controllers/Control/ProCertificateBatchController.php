@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ProCertificate;
 use App\Services\ProCertificateCatalog;
 use App\Services\ProCertificateCollection;
+use App\Services\ProCertificateCollectionPrintArchive;
 use App\Services\ProCertificateRegistry;
 use App\Services\ProCertificateBatchRegistry;
 use App\Services\ProCertificateStudentArchive;
@@ -15,6 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Throwable;
 final class ProCertificateBatchController extends Controller
 {
@@ -126,6 +128,61 @@ final class ProCertificateBatchController extends Controller
         $statuses=$members->mapWithKeys(fn($record)=>[$record->id=>$this->registry()->effectiveStatus($record)]);
         return $this->page('collection',compact('collection','members','checks','statuses'));
     }
+    public function downloadCollectionPrintArchive(
+        Request $request,
+        ProCertificateCollection $certificateCollections,
+        ProCertificateCollectionPrintArchive $archives
+    ): BinaryFileResponse {
+        $collection = $certificateCollections->find(
+            $request->user(),
+            (string) $request->route('collection')
+        );
+        $members = $collection['members'];
+
+        abort_unless(
+            $members->isNotEmpty() && $members->count() <= 100,
+            409,
+            __('certificate_catalog.errors.archive_limit')
+        );
+
+        foreach ($members as $certificate) {
+            abort_unless(
+                $this->registry()->verify($certificate),
+                409,
+                __('certificates.errors.integrity')
+            );
+            abort_unless(
+                $certificate->status === 'issued',
+                409,
+                __('certificates.errors.transition')
+            );
+        }
+
+        $prefix = preg_replace(
+            '/-\d{6}\z/',
+            '',
+            (string) $members->first()->certificate_number
+        ) ?? '';
+        $folder = (trim($prefix, '-_') ?: 'certificate-collection')
+            .'-'.$collection['achievement_date'].'-300dpi';
+
+        try {
+            $path = $archives->create($members, $folder);
+        } catch (Throwable $error) {
+            report($error);
+            abort(503, __('certificate_catalog.errors.archive_unavailable'));
+        }
+
+        return response()->download($path, $folder.'.zip', [
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'Pragma' => 'no-cache',
+            'Content-Type' => 'application/zip',
+            'X-Content-Type-Options' => 'nosniff',
+            'X-Robots-Tag' => 'noindex, nofollow, noarchive',
+            'Referrer-Policy' => 'no-referrer',
+        ])->deleteFileAfterSend(true);
+    }
+
     public function start(Request $request): RedirectResponse {
         $data=$request->validate(['action'=>['required','in:submit,approve,issue'],'fingerprint'=>['required','string','size:64','regex:/^[a-f0-9]{64}$/'],'confirm'=>['required','accepted']]);
         $run=$this->service()->start($request->user(),(int)$request->route('batch'),$data['action'],$data['fingerprint'],true);

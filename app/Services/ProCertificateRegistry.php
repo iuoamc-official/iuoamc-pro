@@ -47,6 +47,7 @@ final class ProCertificateRegistry
     {
         abort_unless(in_array($permission, [
             'certificates.view', 'certificates.manage', 'certificates.review', 'certificates.issue', 'certificates.revoke',
+            'certificates.correct',
         ], true), 403);
         abort_unless($actor->exists && $actor->status === 'active'
             && User::query()->whereKey($actor->getKey())->where('status', 'active')->exists()
@@ -315,6 +316,10 @@ final class ProCertificateRegistry
 
     public function effectiveStatus(ProCertificate $certificate): string
     {
+        if ($certificate->status === 'issued' && app(ProCertificateCorrection::class)->isSuperseded($certificate)) {
+            return 'superseded';
+        }
+
         if ($certificate->status === 'issued' && $certificate->expires_on !== null
             && $certificate->expires_on->toDateString() < now()->utc()->toDateString()) {
             return 'expired';

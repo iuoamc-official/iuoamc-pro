@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Models\Journal;
 use App\Models\JournalArticle;
 use App\Models\JournalIssue;
+use App\Models\JournalEditorialMember;
 use App\Models\PublicPage;
 use App\Services\PublicSiteProfile;
 use Illuminate\Http\Request;
@@ -74,7 +75,14 @@ final class JournalPublicController extends Controller
 
     public function editorialGovernance(string $locale, PublicSiteProfile $profile): View
     {
-        return view('journal.editorial-governance', $this->shared($locale, $profile));
+        $editorialMembers = JournalEditorialMember::query()
+            ->where('status', 'active')
+            ->whereNotNull('consented_at')
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        return view('journal.editorial-governance', $this->shared($locale, $profile) + compact('editorialMembers'));
     }
 
     /** @return array<string, mixed> */

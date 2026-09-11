@@ -89,6 +89,32 @@ class MembershipController extends Controller
         return redirect()->route('memberships.show', ['locale' => app()->getLocale(), 'membership' => $record->id])->with('success', trans('memberships.saved'));
     }
 
+    public function correct(Request $request): View
+    {
+        $this->registry()->requirePermission($request->user(), 'memberships.correct');
+        $membership = $this->record($request);
+        abort_unless(in_array($membership->status, ['active', 'suspended'], true), 409, trans('memberships.errors.correction_state'));
+        abort_unless($this->registry()->verify($membership), 409, trans('memberships.errors.integrity'));
+
+        return view('control.memberships.correct', compact('membership'));
+    }
+
+    public function storeCorrection(Request $request): RedirectResponse
+    {
+        $membership = $this->record($request);
+        $data = $request->validate([
+            'lock_version' => ['required', 'integer', 'min:1'],
+            'full_name' => ['required', 'string', 'max:255'],
+            'latin_name' => ['nullable', 'string', 'max:255'],
+            'professional_title' => ['nullable', 'string', 'max:160'],
+            'reason' => ['required', 'string', 'max:1500'],
+        ]);
+        $this->registry()->correctIdentity($request->user(), (int) $membership->id, (int) $data['lock_version'], $data);
+
+        return redirect()->route('memberships.show', ['locale' => app()->getLocale(), 'membership' => $membership->id])
+            ->with('success', trans('memberships.correction_saved'));
+    }
+
     public function show(Request $request): View
     {
         $membership = $this->record($request);

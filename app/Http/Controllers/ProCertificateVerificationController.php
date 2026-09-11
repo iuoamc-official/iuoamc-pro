@@ -50,6 +50,13 @@ final class ProCertificateVerificationController extends Controller
                     'signing_key_id' => $record->signing_key_id,
                     'pdf_sha256' => $record->pdf_sha256,
                     'payload_sha256' => $record->payload_sha256];
+                if ($record->pdf_signature_status !== null) {
+                    $public['pdf_signature_profile'] = $record->pdf_signature_profile;
+                    $public['pdf_signature_status'] = $record->pdf_signature_status;
+                    $public['pdf_signature_field'] = $record->pdf_signature_field;
+                    $public['pdf_signing_certificate_sha256'] = $record->pdf_signing_certificate_sha256;
+                    $public['pdf_signed_at'] = $record->pdf_signed_at?->format('Y-m-d H:i:s').' UTC';
+                }
                 if ($record->credential_basis !== null) {
                     $public['credential_basis'] = $record->credential_basis;
                     $public['accreditation_reference'] = $record->accreditation_reference;

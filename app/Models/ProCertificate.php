@@ -14,7 +14,7 @@ class ProCertificate extends Model
     protected $guarded = ['id'];
 
     protected $hidden = [
-        'recipient_name', 'statement', 'last_reason', 'issued_payload', 'pdf_path',
+        'recipient_name', 'recipient_email', 'statement', 'last_reason', 'issued_payload', 'pdf_path',
         'created_by', 'updated_by', 'approved_by', 'issued_by', 'revoked_by',
         'integrity_audit_id', 'creator', 'approver', 'issuer', 'integrityAudit',
     ];
@@ -24,11 +24,13 @@ class ProCertificate extends Model
         return [
             'organization_id' => 'integer', 'lock_version' => 'integer',
             'schema_version' => 'integer', 'catalog_type_id' => 'integer', 'catalog_snapshot' => 'array',
+            'recipient_email' => 'encrypted',
             'accreditation_date' => 'immutable_date:Y-m-d',
             'created_by' => 'integer', 'updated_by' => 'integer', 'approved_by' => 'integer',
             'issued_by' => 'integer', 'revoked_by' => 'integer', 'integrity_audit_id' => 'integer',
             'achievement_date' => 'immutable_date:Y-m-d', 'expires_on' => 'immutable_date:Y-m-d',
             'issued_at' => 'immutable_datetime', 'approved_at' => 'immutable_datetime',
+            'pdf_signed_at' => 'immutable_datetime',
             'revoked_at' => 'immutable_datetime', 'created_at' => 'immutable_datetime',
             'updated_at' => 'immutable_datetime', 'last_reason' => 'encrypted', 'issued_payload' => 'array',
         ];
@@ -45,11 +47,13 @@ class ProCertificate extends Model
             }
             if ($certificate->getRawOriginal('issued_payload') !== null) {
                 $immutable = [
-                    'recipient_name', 'public_name', 'program_title', 'certificate_title', 'certificate_type',
+                    'recipient_name', 'public_name', 'recipient_email', 'program_title', 'certificate_title', 'certificate_type',
                     'credential_basis', 'accreditation_reference', 'accreditation_date',
                     'language', 'achievement_date', 'expires_on', 'statement', 'signatory_name', 'signatory_title',
                     'certificate_number', 'public_token', 'issued_at', 'issued_by', 'approved_at', 'approved_by',
                     'issued_payload', 'payload_sha256', 'signature', 'signing_key_id', 'pdf_path', 'pdf_sha256',
+                    'pdf_signature_profile', 'pdf_signature_status', 'pdf_signature_field',
+                    'pdf_signing_certificate_sha256', 'pdf_signed_at',
                     'schema_version', 'catalog_type_id', 'catalog_snapshot', 'specialization',
                 ];
                 foreach ($immutable as $field) {

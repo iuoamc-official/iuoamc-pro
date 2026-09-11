@@ -82,11 +82,12 @@
                 <details>
                     <summary>{{ __('certificates.public.technical_evidence') }}</summary>
                     <p>{{ __('certificates.public.proof_notice') }}</p>
-                    <p>{{ __('certificates.public.pdf_signature_notice') }}</p>
+                    <p>{{ __('certificates.public.'.(!empty($public['pdf_signature_status'])?'pades_signature_notice':'pdf_signature_notice')) }}</p>
                     <dl class="pc-technical-facts">
                         <div><dt>{{ __('certificates.public.record_uuid') }}</dt><dd><code>{{ $public['record_uuid'] }}</code></dd></div>
                         <div><dt>{{ __('certificates.public.signing_key_id') }}</dt><dd><code>{{ $public['signing_key_id'] }}</code></dd></div>
                         <div><dt>{{ __('certificates.public.pdf_fingerprint') }}</dt><dd><code>{{ $public['pdf_sha256'] }}</code></dd></div>
+                        @if(!empty($public['pdf_signature_status']))<div><dt>{{ __('certificates.pades_status') }}</dt><dd><code>{{ $public['pdf_signature_profile'] }} / {{ $public['pdf_signature_status'] }}</code></dd></div><div><dt>{{ __('certificates.pades_certificate_fingerprint') }}</dt><dd><code>{{ $public['pdf_signing_certificate_sha256'] }}</code></dd></div><div><dt>{{ __('certificates.pdf_signed_at') }}</dt><dd><code>{{ $public['pdf_signed_at'] }}</code></dd></div>@endif
                         <div><dt>{{ __('certificates.public.payload_fingerprint') }}</dt><dd><code>{{ $public['payload_sha256'] }}</code></dd></div>
                     </dl>
                     <a class="pc-proof-link" href="{{ route('pro-certificates.proof', ['token' => $token, 'lang' => $locale]) }}" rel="nofollow">{{ __('certificates.public.open_machine_proof') }} <span dir="ltr">JSON ↗</span></a>

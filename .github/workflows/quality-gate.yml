@@ -42,6 +42,35 @@ jobs:
           php artisan key:generate
           touch database/database.sqlite
 
+      - name: Prepare isolated PAdES test signer
+        shell: bash
+        run: |
+          python3 -m venv /tmp/iuoamc-pades
+          /tmp/iuoamc-pades/bin/pip install --disable-pip-version-check \
+            'pyHanko==0.37.0' 'pyhanko-cli==0.5.0'
+          test -x /tmp/iuoamc-pades/bin/pyhanko
+          install -d -m 0700 /tmp/iuoamc-pades-secrets
+          openssl req -x509 -newkey rsa:3072 -sha256 -days 2 -nodes \
+            -keyout /tmp/iuoamc-pades-secrets/signing.key \
+            -out /tmp/iuoamc-pades-secrets/signing.crt \
+            -subj '/CN=IUOAMC CI Test Signer/O=IUOAMC Test/C=GB'
+          printf '%s\n' 'ci-only-password' > /tmp/iuoamc-pades-secrets/signing.pass
+          openssl pkcs12 -export \
+            -inkey /tmp/iuoamc-pades-secrets/signing.key \
+            -in /tmp/iuoamc-pades-secrets/signing.crt \
+            -out /tmp/iuoamc-pades-secrets/signing.p12 \
+            -passout pass:ci-only-password
+          chmod 0600 /tmp/iuoamc-pades-secrets/*
+          {
+            echo 'IUOAMC_PADES_CI=1'
+            echo 'IUOAMC_PADES_ENABLED=true'
+            echo 'IUOAMC_PADES_BINARY=/tmp/iuoamc-pades/bin/pyhanko'
+            echo 'IUOAMC_PADES_PKCS12_PATH=/tmp/iuoamc-pades-secrets/signing.p12'
+            echo 'IUOAMC_PADES_PASSPHRASE_FILE=/tmp/iuoamc-pades-secrets/signing.pass'
+            echo 'IUOAMC_PADES_TRUST_ROOT_PATH=/tmp/iuoamc-pades-secrets/signing.crt'
+            echo 'IUOAMC_PADES_PROFILE=PAdES-B-B'
+          } >> "$GITHUB_ENV"
+
       - name: Lint PHP source
         shell: bash
         run: |

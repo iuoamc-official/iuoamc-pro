@@ -42,7 +42,7 @@ final class ProCertificatePdf
         $authorityLogo = null;
         $arbitrationLogo = null;
         if ($isCatalog && $payload['catalog_snapshot']['layout'] === 'diploma') {
-            $arbitrationLogo = public_path('assets/brand/master-v1/icga-original.jpg');
+            $arbitrationLogo = public_path('assets/brand/master-v1/icga-transparent.png');
             $authorityLogo = public_path('assets/brand/master-v1/wsaca-authority-seal-transparent.svg');
             if (!is_file($arbitrationLogo) || is_link($arbitrationLogo)) {
                 throw new RuntimeException('CERTIFICATE_ARBITRATION_ASSET_MISSING');
@@ -76,6 +76,13 @@ final class ProCertificatePdf
             throw new RuntimeException('CERTIFICATE_PDF_TEMP_NOT_PRIVATE');
         }
         $labels = self::labels($language);
+        if (($payload['schema'] ?? null) === 'iuoamc-pro-certificate-v4') {
+            $labels['footer'] = match ($language) {
+                'ar' => 'ملف PDF موقّع تشفيريًا وفق PAdES بواسطة شهادة X.509؛ تُثبت بصمة SHA-256 الملف النهائي الموقّع، ويرتبط رمز QR بسجل التحقق.',
+                'fr' => 'PDF signé cryptographiquement au format PAdES avec un certificat X.509; SHA-256 identifie le fichier final signé et le QR renvoie au registre de vérification.',
+                default => 'Cryptographically signed PAdES PDF with an X.509 certificate; SHA-256 identifies the final signed file and the QR links to its verification record.',
+            };
+        }
         $diplomaLayout = $isCatalog && $payload['catalog_snapshot']['layout'] === 'diploma';
         $mpdf = new Mpdf([
             'mode' => 'utf-8', 'format' => 'A4-L',

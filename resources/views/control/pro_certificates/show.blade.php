@@ -15,6 +15,7 @@
             <dl class="pc-facts">
                 <div><dt>{{ __('certificates.recipient_name') }}</dt><dd><bdi>{{ $certificate->recipient_name }}</bdi></dd></div>
                 <div><dt>{{ __('certificates.public_name') }}</dt><dd><bdi>{{ $certificate->public_name }}</bdi></dd></div>
+                @if($certificate->recipient_email)<div><dt>{{ __('certificates.recipient_email') }}</dt><dd><bdi dir="ltr">{{ $certificate->recipient_email }}</bdi></dd></div>@endif
                 <div><dt>{{ __('certificates.program_title') }}</dt><dd><bdi>{{ $certificate->program_title }}</bdi></dd></div>
                 <div><dt>{{ __('certificates.certificate_type') }}</dt><dd>{{ __('certificates.types.'.$certificate->certificate_type) }}</dd></div>
                 @if($certificate->credential_basis)<div><dt>{{ __('certificates.credential_basis') }}</dt><dd>{{ __('certificates.credential_bases.'.$certificate->credential_basis) }}</dd></div>@endif
@@ -62,7 +63,7 @@
         </aside>
     </div>
     @if($certificate->pdf_sha256)
-    <details class="pc-card pc-evidence"><summary>{{ __('certificates.evidence') }}</summary><p class="pc-help">{{ __('certificates.evidence_notice') }}</p><dl class="pc-facts"><div><dt>{{ __('certificates.pdf_hash') }}</dt><dd><code dir="ltr">{{ $certificate->pdf_sha256 }}</code></dd></div><div><dt>{{ __('certificates.payload_hash') }}</dt><dd><code dir="ltr">{{ $certificate->payload_sha256 }}</code></dd></div><div><dt>{{ __('certificates.signature_key') }}</dt><dd><code dir="ltr">{{ $certificate->signing_key_id }}</code></dd></div></dl></details>
+    <details class="pc-card pc-evidence"><summary>{{ __('certificates.evidence') }}</summary><p class="pc-help">{{ __('certificates.evidence_notice') }}</p><dl class="pc-facts"><div><dt>{{ __('certificates.pdf_hash') }}</dt><dd><code dir="ltr">{{ $certificate->pdf_sha256 }}</code></dd></div>@if($certificate->pdf_signature_status)<div><dt>{{ __('certificates.pades_status') }}</dt><dd><bdi dir="ltr">{{ $certificate->pdf_signature_profile }} / {{ $certificate->pdf_signature_status }}</bdi><small><bdi dir="ltr">{{ $certificate->pdf_signed_at?->format('Y-m-d H:i:s') }} UTC</bdi></small></dd></div><div><dt>{{ __('certificates.pades_certificate_fingerprint') }}</dt><dd><code dir="ltr">{{ $certificate->pdf_signing_certificate_sha256 }}</code></dd></div>@endif<div><dt>{{ __('certificates.payload_hash') }}</dt><dd><code dir="ltr">{{ $certificate->payload_sha256 }}</code></dd></div><div><dt>{{ __('certificates.signature_key') }}</dt><dd><code dir="ltr">{{ $certificate->signing_key_id }}</code></dd></div></dl></details>
     @endif
     <section class="pc-card"><header class="pc-card-heading"><div><h2>{{ __('certificates.history') }}</h2><p>{{ __('certificates.history_notice') }}</p></div></header>
         <ol class="pc-timeline">@forelse($history as $event)

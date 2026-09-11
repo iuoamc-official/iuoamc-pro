@@ -46,7 +46,7 @@ final class ProMasterCertificatePdf
         $issuer = $payload['issuer'] ?? null;
         if (!in_array($language, ['ar', 'en', 'fr'], true)
             || !in_array($payload['template_version'] ?? null, ['IUOAMC-PRO-CERT-1.1.0', 'IUOAMC-PRO-CERT-1.2.0'], true)
-            || !in_array($payload['schema'] ?? null, ['iuoamc-pro-certificate-v2', 'iuoamc-pro-certificate-v3'], true)
+            || !in_array($payload['schema'] ?? null, ['iuoamc-pro-certificate-v2', 'iuoamc-pro-certificate-v3', 'iuoamc-pro-certificate-v4'], true)
             || !is_array($issuer) || !self::supportsIssuer($issuer)
             || !is_array($catalog) || ($catalog['layout'] ?? null) !== self::LAYOUT
             || ($catalog['category'] ?? null) !== 'professional_master'
@@ -151,7 +151,10 @@ final class ProMasterCertificatePdf
         $this->text($mpdf, $labels['authenticity_verification'], [51,237.5,71,5], 6.8, 6.1, $dir, true, 'statement', $language, '#0C675A');
         $this->text($mpdf, $labels['secure_qr'], [51,244,71,5], 6.1, 5.5, $dir, false, 'statement', $language, '#607080');
         $expiryText = $expires === null ? $labels['no_expiry'] : $labels['expiry'].': '.$expires;
-        $this->text($mpdf, self::message($language, $draft ? 'draft' : 'signed').' - '.$expiryText, [51,249,71,5], 5.8, 5.1, $dir, false, 'statement', $language, '#607080');
+        $securityText = ! $draft && ($payload['schema'] ?? null) === 'iuoamc-pro-certificate-v4'
+            ? self::message($language, 'pades_signed')
+            : self::message($language, $draft ? 'draft' : 'signed');
+        $this->text($mpdf, $securityText.' - '.$expiryText, [51,249,71,5], 5.8, 5.1, $dir, false, 'statement', $language, '#607080');
         $this->text($mpdf, $labels['program_ip_code'], [51,255.5,71,4], 5.8, 5.2, $dir, true, 'statement', $language);
         $this->text($mpdf, $ipCode, [51,260,71,4], 5.2, 4.8, 'ltr', false, 'statement', $language);
         $this->text($mpdf, $payload['signatory_name'], [130,228.5,49,7], 8.8, 7.6, $dir, true, 'signatory_name', $language);
@@ -252,6 +255,7 @@ final class ProMasterCertificatePdf
                 'draft' => 'مسودة للمراجعة · لم تُصدر',
                 'draft_band' => 'نسخة مراجعة | نظام الشهادات المؤسسي V3 | لم تصدر بعد',
                 'issued_band' => 'سجل مهني محمي | نظام الشهادات المؤسسي V3 | إصدار موثق',
+                'pades_signed' => 'PDF موقّع تشفيريًا وفق PAdES بشهادة X.509',
                 'ip_required' => 'يجب أن يتضمن بيان شهادة الماستر رمز تسجيل ملكية فكرية للبرنامج بصيغة WICP-PRO-P-YYYY- ثم 32 خانة سداسية.',
                 default => 'سجل مختوم بـ Ed25519 · سلامة PDF عبر SHA-256 وQR',
             },
@@ -261,6 +265,7 @@ final class ProMasterCertificatePdf
                 'draft' => 'BROUILLON · NON DÉLIVRÉ',
                 'draft_band' => 'ÉPREUVE | SYSTÈME DE CERTIFICATS ENTREPRISE V3 | NON DÉLIVRÉ',
                 'issued_band' => 'REGISTRE PROFESSIONNEL PROTÉGÉ | SYSTÈME ENTREPRISE V3 | DÉLIVRÉ',
+                'pades_signed' => 'PDF signé cryptographiquement PAdES avec certificat X.509',
                 'ip_required' => 'La déclaration doit contenir le code de propriété intellectuelle du programme au format WICP-PRO-P-AAAA suivi de 32 caractères hexadécimaux.',
                 default => 'Registre scellé Ed25519 · PDF contrôlé par SHA-256 et QR',
             },
@@ -270,6 +275,7 @@ final class ProMasterCertificatePdf
                 'draft' => 'REVIEW DRAFT · NOT ISSUED',
                 'draft_band' => 'DESIGN PROOF | ENTERPRISE CERTIFICATE SYSTEM V3 | NOT YET ISSUED',
                 'issued_band' => 'PROTECTED PROFESSIONAL RECORD | ENTERPRISE SYSTEM V3 | VERIFIED ISSUE',
+                'pades_signed' => 'Cryptographically signed PAdES PDF with X.509 certificate',
                 'ip_required' => 'The master certificate statement must contain a programme intellectual-property code in the format WICP-PRO-P-YYYY- followed by 32 hexadecimal characters.',
                 default => 'Ed25519-sealed record · PDF integrity via SHA-256 and QR',
             },

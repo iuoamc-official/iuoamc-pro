@@ -42,6 +42,7 @@ final class JournalPublishingTest extends TestCase
             '2026_09_11_160000_create_journal_submission_pipeline.php',
             '2026_09_11_170000_create_journal_prelaunch_operations.php',
             '2026_09_11_180000_add_publication_assets_to_journal_articles.php',
+            '2026_09_11_190000_assign_wicp_test_placeholders.php',
         ] as $migrationFile) {
             $migration = require database_path('migrations/'.$migrationFile);
             $migration->up();
@@ -493,6 +494,49 @@ final class JournalPublishingTest extends TestCase
             ->assertSee($article->version_of_record_hash);
     }
 
+
+    public function test_new_article_receives_an_editable_wicp_test_placeholder(): void
+    {
+        $journal = Journal::query()->firstOrFail();
+        $editor = $this->superAdmin();
+        $uuid = (string) Str::uuid();
+
+        $article = JournalArticle::query()->create([
+            'record_uuid' => $uuid,
+            'journal_id' => $journal->id,
+            'article_code' => 'PLACEHOLDER-'.Str::upper(Str::random(8)),
+            'slug' => 'placeholder-'.Str::lower(Str::random(8)),
+            'type' => 'professional_article',
+            'status' => 'draft',
+            'primary_locale' => 'en',
+            'license' => 'all-rights-reserved',
+            'created_by' => $editor->id,
+            'updated_by' => $editor->id,
+        ]);
+
+        $this->assertStringStartsWith(JournalArticle::WICP_TEST_PREFIX, $article->wicp_registration_number);
+        $this->assertNull($article->wicp_verified_at);
+        $this->assertFalse($article->hasVerifiedWicpRegistration());
+    }
+
+    public function test_wicp_test_placeholder_can_never_authorise_publication(): void
+    {
+        $this->installIntegrityKeys();
+        $article = $this->createArticle('professional_article', 'draft', 'Blocked placeholder article');
+        $article->update([
+            'wicp_registration_number' => JournalArticle::WICP_TEST_PREFIX.Str::upper(Str::random(12)),
+            'wicp_verified_at' => now(),
+        ]);
+
+        $this->expectException(ValidationException::class);
+        app(JournalWorkflow::class)->transition(
+            $this->superAdmin(),
+            $article->id,
+            $article->lock_version,
+            'publish_professional'
+        );
+    }
+
     private function createArticle(string $type, string $status, string $englishTitle): JournalArticle
     {
         $journal = Journal::query()->firstOrFail();
@@ -528,7 +572,7 @@ final class JournalPublishingTest extends TestCase
             'pdf_sha256' => $pdfHash,
             'pdf_size' => strlen($pdfContents),
             'pdf_downloads_count' => 0,
-            'wicp_registration_number' => 'WICP-TEST-'.Str::upper(Str::substr(str_replace('-', '', $recordUuid), 0, 12)),
+            'wicp_registration_number' => 'WICP-VERIFIED-FIXTURE-'.Str::upper(Str::substr(str_replace('-', '', $recordUuid), 0, 12)),
             'wicp_registered_at' => now()->toDateString(),
             'wicp_verification_url' => 'https://example.com/wicp/'.Str::substr($recordUuid, 0, 8),
             'wicp_verified_at' => now(),

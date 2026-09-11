@@ -44,9 +44,9 @@ final class ProCertificateCollection
                 ->with('organization')
                 ->latest('id')
                 ->get()
-        )['current']->keyBy(
-            fn (ProCertificate $certificate): int => (int) $certificate->id
-        );
+        )['current']
+            ->reject(fn (ProCertificate $certificate): bool => app(ProCertificateCorrection::class)->isSuperseded($certificate))
+            ->keyBy(fn (ProCertificate $certificate): int => (int) $certificate->id);
         $currentIds = $currentCertificates->keys();
         $memberIds = $batches
             ->flatMap(fn (ProCertificateBatch $batch): array => $batch->member_ids)

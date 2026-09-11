@@ -9,6 +9,7 @@ use App\Models\Organization;
 use App\Models\ProCertificate;
 use App\Services\InstitutionalAccess;
 use App\Services\ProCertificateCatalog;
+use App\Services\ProCertificateImage;
 use App\Services\ProCertificatePdf;
 use App\Services\ProCertificateRegistry;
 use App\Services\ProCertificateWorkspace;
@@ -189,6 +190,27 @@ final class ProCertificateController extends Controller
         $path = $this->registry()->downloadPath($certificate);
         $filename = preg_replace('/[^A-Za-z0-9_-]/', '-', (string) $certificate->certificate_number).'.pdf';
         return response()->download($path, $filename, $this->headers() + ['Content-Type' => 'application/pdf', 'X-Content-Type-Options' => 'nosniff']);
+    }
+
+    public function downloadImage(Request $request, ProCertificateImage $images): Response
+    {
+        $certificate = $this->record($request);
+        abort_unless($this->registry()->verify($certificate), 409, __('certificates.errors.integrity'));
+        abort_unless(in_array($certificate->status, ['issued', 'revoked'], true), 409, __('certificates.errors.transition'));
+
+        $variant = (string) $request->route('variant');
+        $path = $this->registry()->downloadPath($certificate);
+        $image = $images->render($path, $variant);
+        $filename = preg_replace('/[^A-Za-z0-9_-]/', '-', (string) $certificate->certificate_number)
+            .'-'.($variant === 'print' ? '300dpi' : 'share').'.'.$image['extension'];
+
+        return response($image['bytes'], 200, $this->headers() + [
+            'Content-Type' => $image['mime'],
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+            'Content-Length' => (string) strlen($image['bytes']),
+            'X-Content-Type-Options' => 'nosniff',
+            'X-IUOAMC-Source-PDF-SHA256' => (string) $certificate->pdf_sha256,
+        ]);
     }
 
     public function preview(Request $request): Response

@@ -19,6 +19,8 @@ Route::prefix('{locale}/control/certificates')->where(['locale' => 'ar|en|fr'])
         Route::get('/types/{type}/edit', [ProCertificateCatalogController::class,'edit'])->whereNumber('type')->middleware('permission:certificates.catalog')->name('catalog.edit');
         Route::put('/types/{type}', [ProCertificateCatalogController::class,'update'])->whereNumber('type')->middleware(['permission:certificates.catalog','throttle:30,1'])->name('catalog.update');
         Route::get('/batches', [ProCertificateBatchController::class,'index'])->name('batches.index');
+        Route::get('/batches/collections/{collection}', [ProCertificateBatchController::class,'collection'])
+            ->where('collection', '[a-f0-9]{64}')->name('batches.collections.show');
         Route::get('/batches/create', [ProCertificateBatchController::class,'create'])->middleware('permission:certificates.manage')->name('batches.create');
         Route::post('/batches', [ProCertificateBatchController::class,'store'])->middleware(['permission:certificates.manage','throttle:15,1,pc-batch-control'])->name('batches.store');
         Route::get('/batches/{batch}', [ProCertificateBatchController::class,'show'])->whereNumber('batch')->name('batches.show');
@@ -30,6 +32,8 @@ Route::prefix('{locale}/control/certificates')->where(['locale' => 'ar|en|fr'])
         Route::post('/{certificate}/actions/{action}', [ProCertificateController::class, 'transition'])->whereNumber('certificate')
             ->where('action', 'submit|return|approve|issue|revoke')->middleware('throttle:60,1')->name('transition');
         Route::get('/{certificate}/download', [ProCertificateController::class, 'download'])->whereNumber('certificate')->name('download');
+        Route::get('/{certificate}/image/{variant}', [ProCertificateController::class, 'downloadImage'])
+            ->whereNumber('certificate')->where('variant', 'print|share')->middleware('throttle:15,1')->name('image');
         Route::get('/{certificate}/preview', [ProCertificateController::class, 'preview'])->whereNumber('certificate')
             ->middleware(['permission:certificates.manage', 'throttle:30,1'])->name('preview');
     });

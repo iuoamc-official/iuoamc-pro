@@ -77,12 +77,27 @@
             <nav class="journal-reader-pagination" aria-label="{{ __('journal.reader_navigation') }}">
                 <div class="journal-page-status" aria-live="polite">{{ __('journal.page_of', ['page' => $currentPage, 'total' => count($bodyPages)]) }}</div>
                 <div class="journal-reader-actions">
-                    @if(!$readingFull && $currentPage > 1)<a rel="prev" href="{{ route('journal.public.articles.show', ['locale' => app()->getLocale(), 'article' => $article->slug, 'page' => $currentPage - 1]) }}#article-body">{{ __('journal.previous_page') }}</a>@else<span aria-disabled="true">{{ __('journal.previous_page') }}</span>@endif
+                    @if (! $readingFull && $currentPage > 1)
+                        <a rel="prev" href="{{ route('journal.public.articles.show', ['locale' => app()->getLocale(), 'article' => $article->slug, 'page' => $currentPage - 1]) }}#article-body">{{ __('journal.previous_page') }}</a>
+                    @else
+                        <span aria-disabled="true">{{ __('journal.previous_page') }}</span>
+                    @endif
                     <form method="get" action="{{ route('journal.public.articles.show', ['locale' => app()->getLocale(), 'article' => $article->slug]) }}">
-                        <label><span class="sr-only">{{ __('journal.go_to_page') }}</span><select name="page" onchange="this.form.submit()" aria-label="{{ __('journal.go_to_page') }}">@foreach($bodyPages as $pageIndex => $unused)<option value="{{ $pageIndex + 1 }}" @selected(!$readingFull && $currentPage === $pageIndex + 1)>{{ $pageIndex + 1 }}</option>@endforeach</select></label>
+                        <label>
+                            <span class="sr-only">{{ __('journal.go_to_page') }}</span>
+                            <select name="page" onchange="this.form.submit()" aria-label="{{ __('journal.go_to_page') }}">
+                                @foreach ($bodyPages as $pageIndex => $unused)
+                                    <option value="{{ $pageIndex + 1 }}" {{ ! $readingFull && $currentPage === $pageIndex + 1 ? 'selected' : '' }}>{{ $pageIndex + 1 }}</option>
+                                @endforeach
+                            </select>
+                        </label>
                         <noscript><button type="submit">{{ __('journal.go') }}</button></noscript>
                     </form>
-                    @if(!$readingFull && $currentPage < count($bodyPages))<a rel="next" href="{{ route('journal.public.articles.show', ['locale' => app()->getLocale(), 'article' => $article->slug, 'page' => $currentPage + 1]) }}#article-body">{{ __('journal.next_page') }}</a>@else<span aria-disabled="true">{{ __('journal.next_page') }}</span>@endif
+                    @if (! $readingFull && $currentPage < count($bodyPages))
+                        <a rel="next" href="{{ route('journal.public.articles.show', ['locale' => app()->getLocale(), 'article' => $article->slug, 'page' => $currentPage + 1]) }}#article-body">{{ __('journal.next_page') }}</a>
+                    @else
+                        <span aria-disabled="true">{{ __('journal.next_page') }}</span>
+                    @endif
                 </div>
                 <a class="journal-view-toggle" href="{{ route('journal.public.articles.show', ['locale' => app()->getLocale(), 'article' => $article->slug, 'view' => $readingFull ? 'pages' : 'full']) }}#article-body">{{ $readingFull ? __('journal.paginated_view') : __('journal.full_view') }}</a>
             </nav>

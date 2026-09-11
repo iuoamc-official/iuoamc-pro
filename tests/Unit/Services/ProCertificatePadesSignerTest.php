@@ -29,7 +29,10 @@ final class ProCertificatePadesSignerTest extends TestCase
         $signer = app(ProCertificatePadesSigner::class);
 
         $readiness = $signer->readiness();
-        self::assertTrue($readiness['ready'], (string) $readiness['reason']);
+        self::assertTrue(
+            $readiness['ready'],
+            (string) $readiness['reason'].' binary='.(string) config('certificates.pades.binary'),
+        );
         $unsigned = file_get_contents(resource_path('certificates/master-a4-v1.3.1.pdf'));
         self::assertIsString($unsigned);
 

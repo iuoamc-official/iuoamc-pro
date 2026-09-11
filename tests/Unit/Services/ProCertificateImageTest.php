@@ -37,7 +37,16 @@ final class ProCertificateImageTest extends TestCase
         $source = resource_path('certificates/master-a4-v1.3.1.pdf');
         $service = app(ProCertificateImage::class);
 
-        $print = $service->render($source, 'print');
+        try {
+            $print = $service->render($source, 'print');
+        } catch (RuntimeException $exception) {
+            if ($exception->getMessage() === 'CERTIFICATE_IMAGE_CONVERTER_UNAVAILABLE') {
+                self::markTestSkipped('The installed Imagick build cannot read PDF and Poppler is unavailable.');
+            }
+
+            throw $exception;
+        }
+
         $share = $service->render($source, 'share');
 
         self::assertSame('image/png', $print['mime']);

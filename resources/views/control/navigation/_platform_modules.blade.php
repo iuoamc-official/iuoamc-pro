@@ -14,6 +14,10 @@
     if (auth()->user()?->status === 'active' && auth()->user()->canDo('certificates.view')) {
         $platformModules[] = ['key'=>'certificates','route'=>'certificates.index','title'=>'certificates.title','description'=>'certificates.module_description'];
     }
+    // MCIJ_SCIENTIFIC_JOURNAL_MODULE_1_0_0
+    if (\Illuminate\Support\Facades\Route::has('journal.control.articles.index') && auth()->user()?->canDo('journal.view')) {
+        $platformModules[] = ['key'=>'journal','route'=>'journal.control.articles.index','title'=>'journal.title'];
+    }
 @endphp
 <nav class="governance-icon-links is-hub platform-module-links" aria-label="{{ __('platform.modules') }}" data-platform-modules="1.0.1">
     @forelse($platformModules as $platformModule)

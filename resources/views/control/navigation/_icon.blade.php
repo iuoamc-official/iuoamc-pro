@@ -9,6 +9,7 @@
 {{-- IUOAMC_LEGACY_CERTIFICATE_ICON_1_0_0 --}}
 @case('legacy-certificates')<path d="M6 3h12v12H6zM9 7h6M9 10h4"/><circle cx="12" cy="16" r="3"/><path d="m10 18-1 4 3-2 3 2-1-4"/>@break
 @case('public-content')<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/>@break
+@case('journal')<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 5.5v16M8 7h8M8 11h8M8 15h5"/>@break
 @default<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
 @endswitch
 </svg>

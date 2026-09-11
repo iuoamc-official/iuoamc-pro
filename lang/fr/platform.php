@@ -8,5 +8,6 @@ return [
     'descriptions'=>[
         'governance'=>'Entités institutionnelles, utilisateurs, rôles et permissions, et journal d’audit.',
         'memberships'=>'Dossiers des membres, examen et approbation, périodes de validité et renouvellement.',
+        'journal'=>'Gérer les recherches, les articles professionnels, l’évaluation, les numéros, la publication et le registre WICP.',
     ],
 ];

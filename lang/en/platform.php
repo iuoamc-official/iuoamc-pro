@@ -8,5 +8,6 @@ return [
     'descriptions'=>[
         'governance'=>'Institutional entities, users, roles and permissions, and the audit trail.',
         'memberships'=>'Member records, review and approval, validity periods, and renewal.',
+        'journal'=>'Manage research, professional articles, peer review, issues, publishing and the WICP record.',
     ],
 ];

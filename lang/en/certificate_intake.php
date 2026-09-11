@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
     'title' => 'Participant data',
     'skip_to_form' => 'Skip to content',
-    'public_title' => 'Confirm your Master certificate details',
+    'public_title' => 'Professional certificate application',
     'public_eyebrow' => 'CERTIFICATE DETAILS',
     'public_lead' => 'Check the spelling of your name and complete your details so the team can prepare your certificate after review.',
     'language' => 'Language',
@@ -23,7 +23,7 @@ return [
     'submit' => 'Submit details for review',
     'submit_hint' => 'Check your details before submitting. This link accepts one submission.',
     'your_program' => 'YOUR RECORDED PROGRAM',
-    'program_on_record' => 'Master program on record',
+    'program_on_record' => 'Professional programme on record',
     'program_hint' => 'The program name comes from your record. Mention any discrepancy in the notes.',
     'what_next' => 'What happens next?',
     'next_confirm' => 'Your details reach the certificate team.',

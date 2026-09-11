@@ -15,6 +15,7 @@ use App\Services\JournalWorkflow;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -146,6 +147,70 @@ final class JournalArticleController extends Controller
         return redirect()->route('journal.control.articles.show', ['locale' => app()->getLocale(), 'article' => $article])->with('success', trans('journal.messages.updated'));
     }
 
+
+    public function publicationAssets(Request $request, string $locale, JournalArticle $article): RedirectResponse
+    {
+        abort_if(in_array($article->status, ['published', 'retracted'], true), 409);
+
+        $validated = $request->validate([
+            'publication_pdf' => ['required', 'file', 'mimes:pdf', 'max:51200'],
+            'wicp_registration_number' => [
+                'required', 'string', 'max:120',
+                Rule::unique('journal_articles', 'wicp_registration_number')->ignore($article->id),
+            ],
+            'wicp_registered_at' => ['required', 'date_format:Y-m-d'],
+            'wicp_verification_url' => ['nullable', 'url:http,https', 'max:1000'],
+            'wicp_verified' => ['accepted'],
+        ]);
+
+        $uploaded = $validated['publication_pdf'];
+        $pdfHash = hash_file('sha256', $uploaded->getRealPath());
+        $pdfSize = (int) $uploaded->getSize();
+        $directory = 'journal/publication-pdfs/'.$article->record_uuid;
+        $path = $uploaded->storeAs($directory, $pdfHash.'.pdf', 'local');
+
+        if (! is_string($path)) {
+            throw ValidationException::withMessages(['publication_pdf' => trans('journal.errors.pdf_store_failed')]);
+        }
+
+        $previousPath = $article->pdf_path;
+
+        try {
+            DB::transaction(function () use ($request, $article, $validated, $path, $pdfHash, $pdfSize): void {
+                $locked = JournalArticle::query()->lockForUpdate()->findOrFail($article->id);
+                abort_if(in_array($locked->status, ['published', 'retracted'], true), 409);
+
+                $old = $locked->only([
+                    'pdf_path', 'pdf_sha256', 'pdf_size', 'wicp_registration_number',
+                    'wicp_registered_at', 'wicp_verification_url', 'wicp_verified_at',
+                ]);
+
+                $locked->fill([
+                    'pdf_path' => $path,
+                    'pdf_sha256' => $pdfHash,
+                    'pdf_size' => $pdfSize,
+                    'wicp_registration_number' => trim($validated['wicp_registration_number']),
+                    'wicp_registered_at' => $validated['wicp_registered_at'],
+                    'wicp_verification_url' => $validated['wicp_verification_url'] ?? null,
+                    'wicp_verified_at' => now()->utc()->startOfSecond(),
+                    'lock_version' => $locked->lock_version + 1,
+                    'updated_by' => $request->user()->id,
+                ])->save();
+
+                AuditTrail::record('journal.article.publication_assets_verified', $locked, $old, $locked->fresh()->only(array_keys($old)));
+            }, 5);
+        } catch (\Throwable $exception) {
+            Storage::disk('local')->delete($path);
+            throw $exception;
+        }
+
+        if ($previousPath && $previousPath !== $path) {
+            Storage::disk('local')->delete($previousPath);
+        }
+
+        return back()->with('success', trans('journal.messages.publication_assets_verified'));
+    }
+
     public function transition(Request $request, string $locale, JournalArticle $article): RedirectResponse
     {
         $validated = $request->validate([
@@ -169,8 +234,9 @@ final class JournalArticleController extends Controller
             $source = JournalArticle::query()->with(['translations', 'authors'])->lockForUpdate()->findOrFail($article->id);
             $number = $source->corrections()->count() + 1;
             $copy = $source->replicate([
-                'record_uuid', 'article_code', 'slug', 'status', 'doi', 'pdf_path', 'accepted_at', 'published_at', 'retracted_at',
-                'version_of_record', 'version_of_record_hash', 'lock_version',
+                'record_uuid', 'article_code', 'slug', 'status', 'doi', 'pdf_path', 'pdf_sha256', 'pdf_size', 'pdf_downloads_count',
+                'wicp_registration_number', 'wicp_registered_at', 'wicp_verification_url', 'wicp_verified_at',
+                'accepted_at', 'published_at', 'retracted_at', 'version_of_record', 'version_of_record_hash', 'lock_version',
             ]);
             $copy->fill([
                 'record_uuid' => (string) Str::uuid(),
@@ -180,6 +246,13 @@ final class JournalArticleController extends Controller
                 'status' => 'draft',
                 'doi' => null,
                 'pdf_path' => null,
+                'pdf_sha256' => null,
+                'pdf_size' => null,
+                'pdf_downloads_count' => 0,
+                'wicp_registration_number' => null,
+                'wicp_registered_at' => null,
+                'wicp_verification_url' => null,
+                'wicp_verified_at' => null,
                 'accepted_at' => null,
                 'published_at' => null,
                 'retracted_at' => null,

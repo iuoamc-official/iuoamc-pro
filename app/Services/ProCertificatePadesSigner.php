@@ -41,7 +41,7 @@ final class ProCertificatePadesSigner
             $this->writePrivateFile($input, $unsignedPdf);
             $command = [
                 $configuration['binary'], 'sign', 'addsig',
-                '--field', $configuration['field'], '--use-pades',
+                '--field', $this->signatureFieldArgument($configuration['field'], $configuration['visible_signature']), '--use-pades',
             ];
             if ($configuration['timestamp_url'] !== null) {
                 $command[] = '--timestamp-url';
@@ -92,7 +92,7 @@ final class ProCertificatePadesSigner
         }
     }
 
-    /** @return array{binary: string, pkcs12_path: string, passphrase_file: string, trust_root_path: string|null, timestamp_url: string|null, profile: string, field: string, timeout: int} */
+    /** @return array{binary: string, pkcs12_path: string, passphrase_file: string, trust_root_path: string|null, timestamp_url: string|null, profile: string, field: string, visible_signature: bool, timeout: int} */
     private function configuration(): array
     {
         if (config('certificates.pades.enabled') !== true) {
@@ -118,7 +118,7 @@ final class ProCertificatePadesSigner
             throw new RuntimeException('PADES_TIMESTAMP_REQUIRED');
         }
         $field = (string) config('certificates.pades.signature_field');
-        if (preg_match('/\A1\/[0-9]{1,3},[0-9]{1,3},[0-9]{1,3},[0-9]{1,3}\/[A-Za-z][A-Za-z0-9_]{2,63}\z/D', $field) !== 1) {
+        if (preg_match('/\A(?:1\/[0-9]{1,3},[0-9]{1,3},[0-9]{1,3},[0-9]{1,3}\/)?[A-Za-z][A-Za-z0-9_]{2,63}\z/D', $field) !== 1) {
             throw new RuntimeException('PADES_SIGNATURE_FIELD_INVALID');
         }
         $timeout = (int) config('certificates.pades.timeout_seconds');
@@ -134,6 +134,7 @@ final class ProCertificatePadesSigner
             'timestamp_url' => $timestamp,
             'profile' => $profile,
             'field' => $field,
+            'visible_signature' => (bool) config('certificates.pades.visible_signature'),
             'timeout' => $timeout,
         ];
     }
@@ -218,8 +219,15 @@ final class ProCertificatePadesSigner
         return $fingerprint;
     }
 
+    private function signatureFieldArgument(string $field, bool $visible): string
+    {
+        return $visible ? $field : $this->fieldName($field);
+    }
+
     private function fieldName(string $field): string
     {
-        return substr($field, (int) strrpos($field, '/') + 1);
+        $separator = strrpos($field, '/');
+
+        return $separator === false ? $field : substr($field, $separator + 1);
     }
 }

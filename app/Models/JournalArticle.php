@@ -9,11 +9,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 use LogicException;
 
 final class JournalArticle extends Model
 {
     public const TYPES = ['peer_reviewed_research', 'professional_article'];
+
+    public const WICP_TEST_PREFIX = 'WICP-TEST-PENDING-';
 
     protected $fillable = [
         'record_uuid', 'journal_id', 'journal_issue_id', 'correction_of_id', 'article_code',
@@ -43,6 +46,17 @@ final class JournalArticle extends Model
 
     protected static function booted(): void
     {
+        static::creating(function (JournalArticle $article): void {
+            if (blank($article->record_uuid)) {
+                $article->record_uuid = (string) Str::uuid();
+            }
+
+            if (blank($article->wicp_registration_number)) {
+                $suffix = Str::upper(Str::substr(str_replace('-', '', (string) $article->record_uuid), 0, 12));
+                $article->wicp_registration_number = self::WICP_TEST_PREFIX.$suffix;
+            }
+        });
+
         static::updating(function (JournalArticle $article): void {
             if (! in_array($article->getOriginal('status'), ['published', 'retracted'], true)) {
                 return;
@@ -58,6 +72,13 @@ final class JournalArticle extends Model
         static::deleting(static function (): never {
             throw new LogicException('Journal articles cannot be deleted; use the editorial status lifecycle.');
         });
+    }
+
+    public function hasVerifiedWicpRegistration(): bool
+    {
+        return filled($this->wicp_registration_number)
+            && $this->wicp_verified_at !== null
+            && ! Str::startsWith(Str::upper((string) $this->wicp_registration_number), 'WICP-TEST-');
     }
 
     public function journal(): BelongsTo

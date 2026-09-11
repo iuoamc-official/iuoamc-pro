@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'wicp_test_number' => 'Editable test number — publication blocked',
     'download_pdf' => 'Download article PDF',
     'pdf_size' => 'PDF size: :size MB',
     'reader_navigation' => 'Article page navigation',

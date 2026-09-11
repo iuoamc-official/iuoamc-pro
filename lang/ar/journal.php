@@ -3,6 +3,7 @@
 $en = require __DIR__.'/../en/journal.php';
 
 return array_replace_recursive($en, [
+    'wicp_test_number'=>'رقم تجريبي قابل للتعديل — لا يسمح بالنشر',
     'download_pdf'=>'تحميل البحث PDF',
     'pdf_size'=>'حجم ملف PDF: :size ميغابايت',
     'reader_navigation'=>'التنقل بين صفحات البحث',

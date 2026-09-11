@@ -21,7 +21,7 @@
 <section class="data-card journal-publication-control">
     <div class="data-card-header"><div><h2>{{ __('journal.publication_assets') }}</h2><p>{{ __('journal.publication_assets_help') }}</p></div></div>
     <dl class="journal-facts">
-        <div><dt>{{ __('journal.wicp_number') }}</dt><dd><bdi dir="ltr">{{ $article->wicp_registration_number ?: '—' }}</bdi></dd></div>
+        <div><dt>{{ __('journal.wicp_number') }}</dt><dd><bdi dir="ltr">{{ $article->wicp_registration_number ?: '—' }}</bdi>@if(str_starts_with((string) $article->wicp_registration_number, \App\Models\JournalArticle::WICP_TEST_PREFIX)) <span class="status-badge">{{ __('journal.wicp_test_number') }}</span>@endif</dd></div>
         <div><dt>{{ __('journal.wicp_registered_at') }}</dt><dd>{{ $article->wicp_registered_at?->format('Y-m-d') ?: '—' }}</dd></div>
         <div class="wide"><dt>{{ __('journal.pdf_fingerprint') }}</dt><dd><bdi dir="ltr">{{ $article->pdf_sha256 ?: '—' }}</bdi></dd></div>
     </dl>

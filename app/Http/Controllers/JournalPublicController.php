@@ -84,6 +84,7 @@ final class JournalPublicController extends Controller
             ->whereIn('status', ['published', 'retracted'])
             ->where('wicp_registration_number', $registration)
             ->whereNotNull('wicp_verified_at')
+            ->where('wicp_registration_number', 'not like', 'WICP-TEST-%')
             ->with(['translations', 'authors', 'issue'])
             ->firstOrFail();
 

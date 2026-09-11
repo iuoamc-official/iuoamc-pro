@@ -180,8 +180,7 @@ final class JournalWorkflow
             || $article->translations->pluck('locale')->sort()->values()->all() !== ['ar', 'en', 'fr']
             || blank($article->pdf_path)
             || blank($article->pdf_sha256)
-            || blank($article->wicp_registration_number)
-            || $article->wicp_verified_at === null
+            || ! $article->hasVerifiedWicpRegistration()
         ) {
             throw ValidationException::withMessages(['action' => trans('journal.errors.publication_incomplete')]);
         }

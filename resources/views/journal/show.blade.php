@@ -71,7 +71,7 @@
                 <div>
                     <dt>{{ __('journal.wicp_number') }}</dt>
                     <dd>
-                        <?php if ($article->wicp_registration_number) : ?>
+                        <?php if ($article->hasVerifiedWicpRegistration()) : ?>
                             <a dir="ltr" href="{{ route('journal.public.registry.show', ['locale' => app()->getLocale(), 'registration' => $article->wicp_registration_number]) }}">{{ $article->wicp_registration_number }}</a>
                         <?php else : ?>
                             {{ __('journal.not_assigned') }}

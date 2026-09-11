@@ -85,6 +85,8 @@ return [
         'states' => ['passed' => 'Complete', 'failed' => 'Required', 'na' => 'Not applicable'],
     ],
     'download' => 'Download issued PDF',
+    'download_png' => 'Download print PNG (300 DPI)',
+    'download_share' => 'Download sharing image',
     'preview' => 'Preview draft PDF',
     'preview_notice' => 'This preview is marked as a draft and is not an issued certificate.',
     'verify_link' => 'Open public verification',

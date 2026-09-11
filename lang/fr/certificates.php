@@ -85,6 +85,8 @@ return [
         'states' => ['passed' => 'Terminé', 'failed' => 'Requis', 'na' => 'Sans objet'],
     ],
     'download' => 'Télécharger le PDF délivré',
+    'download_png' => 'Télécharger le PNG d’impression (300 DPI)',
+    'download_share' => 'Télécharger l’image de partage',
     'preview' => 'Aperçu PDF du brouillon',
     'preview_notice' => 'Cet aperçu porte la mention « Brouillon » et ne constitue pas un certificat délivré.',
     'verify_link' => 'Ouvrir la vérification publique',

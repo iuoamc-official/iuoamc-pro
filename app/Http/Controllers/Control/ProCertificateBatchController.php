@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Control;
 use App\Http\Controllers\Controller;
 use App\Models\ProCertificate;
 use App\Services\ProCertificateCatalog;
+use App\Services\ProCertificateCollection;
 use App\Services\ProCertificateRegistry;
 use App\Services\ProCertificateBatchRegistry;
 use App\Services\ProCertificateStudentArchive;
@@ -28,10 +29,11 @@ final class ProCertificateBatchController extends Controller
         return $this->catalog()->query($request->user())->where('active',true)->with('organization')->orderBy('name_'.app()->getLocale())->get()
             ->filter(fn($type)=>$this->catalog()->verify($type)&&$type->organization?->status==='active');
     }
-    public function index(Request $request): Response {
+    public function index(Request $request, ProCertificateCollection $certificateCollections): Response {
         $batches=$this->service()->query($request->user())->with('organization')->latest('id')->paginate(20);
         $checks=$batches->getCollection()->mapWithKeys(fn($batch)=>[$batch->id=>$this->service()->verify($batch)]);
-        return $this->page('index',compact('batches','checks'));
+        $collections=$certificateCollections->all($request->user());
+        return $this->page('index',compact('batches','checks','collections'));
     }
     public function create(Request $request): Response {
         $this->registry()->requirePermission($request->user(),'certificates.manage');
@@ -104,7 +106,7 @@ final class ProCertificateBatchController extends Controller
         $batch=$this->service()->prepare($request->user(),$common,$rows,$input['request_key']);
         return redirect()->route('certificates.batches.show',['locale'=>app()->getLocale(),'batch'=>$batch->id])->with('success',__('certificate_catalog.batch_created'));
     }
-    public function show(Request $request): Response {
+    public function show(Request $request, ProCertificateCollection $certificateCollections): Response {
         $batch=$this->service()->view($request->user(),(int)$request->route('batch'));
         $review=$this->service()->review($request->user(),$batch);
         $members=$review['members'];$fingerprint=$review['fingerprint'];
@@ -112,7 +114,15 @@ final class ProCertificateBatchController extends Controller
         $statuses=$members->mapWithKeys(fn($record)=>[$record->id=>$this->registry()->effectiveStatus($record)]);
         $run=$this->service()->latestRun($request->user(),$batch);
         $eligible=['submit'=>$members->where('status','draft')->count(),'approve'=>$members->where('status','review')->count(),'issue'=>$members->where('status','approved')->count()];
-        return $this->page('show',compact('batch','members','fingerprint','checks','statuses','run','eligible'));
+        $collection=$certificateCollections->forBatch($request->user(),$batch);
+        return $this->page('show',compact('batch','members','fingerprint','checks','statuses','run','eligible','collection'));
+    }
+    public function collection(Request $request, ProCertificateCollection $certificateCollections): Response {
+        $collection=$certificateCollections->find($request->user(),(string)$request->route('collection'));
+        $members=$collection['members'];
+        $checks=$members->mapWithKeys(fn($record)=>[$record->id=>$this->registry()->verify($record)]);
+        $statuses=$members->mapWithKeys(fn($record)=>[$record->id=>$this->registry()->effectiveStatus($record)]);
+        return $this->page('collection',compact('collection','members','checks','statuses'));
     }
     public function start(Request $request): RedirectResponse {
         $data=$request->validate(['action'=>['required','in:submit,approve,issue'],'fingerprint'=>['required','string','size:64','regex:/^[a-f0-9]{64}$/'],'confirm'=>['required','accepted']]);

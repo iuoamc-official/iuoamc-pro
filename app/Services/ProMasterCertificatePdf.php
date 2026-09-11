@@ -45,8 +45,8 @@ final class ProMasterCertificatePdf
         $catalog = $payload['catalog_snapshot'] ?? null;
         $issuer = $payload['issuer'] ?? null;
         if (!in_array($language, ['ar', 'en', 'fr'], true)
-            || ($payload['template_version'] ?? null) !== 'IUOAMC-PRO-CERT-1.1.0'
-            || ($payload['schema'] ?? null) !== 'iuoamc-pro-certificate-v2'
+            || !in_array($payload['template_version'] ?? null, ['IUOAMC-PRO-CERT-1.1.0', 'IUOAMC-PRO-CERT-1.2.0'], true)
+            || !in_array($payload['schema'] ?? null, ['iuoamc-pro-certificate-v2', 'iuoamc-pro-certificate-v3'], true)
             || !is_array($issuer) || !self::supportsIssuer($issuer)
             || !is_array($catalog) || ($catalog['layout'] ?? null) !== self::LAYOUT
             || ($catalog['category'] ?? null) !== 'professional_master'
@@ -106,15 +106,16 @@ final class ProMasterCertificatePdf
         $mpdf->AddPage();
         $mpdf->useTemplate($template, 0, 0, 210, 297);
         $labels = ProCertificatePdf::labels($language);
+        $completionOnly = ($payload['credential_basis'] ?? null) === ProCertificateClaimPolicy::PROGRAMME_COMPLETION;
         $dir = $language === 'ar' ? 'rtl' : 'ltr';
         // Bounded plain-text measurement at a readable minimum precedes mPDF fit-to-box.
         // The source strings stay unchanged; text is neither clipped nor truncated.
         $this->text($mpdf, self::message($language, $draft ? 'draft_band' : 'issued_band'), [16,62.2,178,4], 6.4, 5.8, $dir, true, 'statement', $language, '#B88A2A');
-        $this->text($mpdf, $labels['professional_credential'], [25,73,160,5], 7.2, 6.5, $dir, true, 'certificate_title', $language, '#0C675A');
+        $this->text($mpdf, $labels[$completionOnly ? 'programme_completion' : 'professional_credential'], [25,73,160,5], 7.2, 6.5, $dir, true, 'certificate_title', $language, '#0C675A');
         $this->text($mpdf, $payload['certificate_title'], [20,81,170,16], 23, 15, $dir, true, 'certificate_title', $language);
         $this->text($mpdf, $labels['recipient'], [25,100,160,6], 8, 7.2, $dir, false, 'recipient_name', $language, '#607080');
         $this->text($mpdf, $payload['recipient_name'], [24,108,162,27], 19, 13, $dir, true, 'recipient_name', $language);
-        $this->text($mpdf, $labels['certified_programme'], [28,148,154,5], 6.6, 6.0, $dir, true, 'program_title', $language, '#0C675A');
+        $this->text($mpdf, $labels[$completionOnly ? 'professional_programme' : 'certified_programme'], [28,148,154,5], 6.6, 6.0, $dir, true, 'program_title', $language, '#0C675A');
         $this->text($mpdf, $payload['program_title'], [27,155,156,11], 11.5, 8.6, $dir, true, 'program_title', $language);
         if ($payload['specialization'] !== '') {
             $this->text($mpdf, $labels['specialization'].': '.$payload['specialization'], [27,165,156,5], 7.4, 6.6, $dir, false, 'specialization', $language, '#8A6825');
@@ -252,7 +253,7 @@ final class ProMasterCertificatePdf
                 'draft_band' => 'نسخة مراجعة | نظام الشهادات المؤسسي V3 | لم تصدر بعد',
                 'issued_band' => 'سجل مهني محمي | نظام الشهادات المؤسسي V3 | إصدار موثق',
                 'ip_required' => 'يجب أن يتضمن بيان شهادة الماستر رمز تسجيل ملكية فكرية للبرنامج بصيغة WICP-PRO-P-YYYY- ثم 32 خانة سداسية.',
-                default => 'سجل إصدار موقّع رقميًا · تحقّق عبر الرمز',
+                default => 'سجل مختوم بـ Ed25519 · سلامة PDF عبر SHA-256 وQR',
             },
             'fr' => match ($key) {
                 'issuer' => 'Ce modèle portrait est réservé aux certificats de master professionnel émis par ICGA UK, société 16846998.',
@@ -261,7 +262,7 @@ final class ProMasterCertificatePdf
                 'draft_band' => 'ÉPREUVE | SYSTÈME DE CERTIFICATS ENTREPRISE V3 | NON DÉLIVRÉ',
                 'issued_band' => 'REGISTRE PROFESSIONNEL PROTÉGÉ | SYSTÈME ENTREPRISE V3 | DÉLIVRÉ',
                 'ip_required' => 'La déclaration doit contenir le code de propriété intellectuelle du programme au format WICP-PRO-P-AAAA suivi de 32 caractères hexadécimaux.',
-                default => 'Registre signé numériquement · Vérifier le QR',
+                default => 'Registre scellé Ed25519 · PDF contrôlé par SHA-256 et QR',
             },
             default => match ($key) {
                 'issuer' => 'This portrait layout is reserved for professional master certificates issued by ICGA UK, company 16846998.',
@@ -270,7 +271,7 @@ final class ProMasterCertificatePdf
                 'draft_band' => 'DESIGN PROOF | ENTERPRISE CERTIFICATE SYSTEM V3 | NOT YET ISSUED',
                 'issued_band' => 'PROTECTED PROFESSIONAL RECORD | ENTERPRISE SYSTEM V3 | VERIFIED ISSUE',
                 'ip_required' => 'The master certificate statement must contain a programme intellectual-property code in the format WICP-PRO-P-YYYY- followed by 32 hexadecimal characters.',
-                default => 'Digitally signed record · Verify the QR',
+                default => 'Ed25519-sealed record · PDF integrity via SHA-256 and QR',
             },
         };
     }

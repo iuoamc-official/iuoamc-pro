@@ -61,6 +61,9 @@
                     <div><dt>{{ __('certificates.issued_at') }}</dt><dd><bdi dir="ltr">{{ $public['issued_at'] }}</bdi></dd></div>
                     <div><dt>{{ __('certificates.expires_on') }}</dt><dd><bdi dir="ltr">{{ $public['expires_on'] ?: __('certificates.no_expiry') }}</bdi></dd></div>
                     <div><dt>{{ __('certificates.public.issuer') }}</dt><dd><bdi>{{ $public['issuer'] }}</bdi></dd></div>
+                    @if(!empty($public['credential_basis']))<div><dt>{{ __('certificates.credential_basis') }}</dt><dd>{{ __('certificates.credential_bases.'.$public['credential_basis']) }}</dd></div>@endif
+                    @if(!empty($public['accreditation_reference']))<div><dt>{{ __('certificates.accreditation_reference') }}</dt><dd><bdi dir="ltr">{{ $public['accreditation_reference'] }}</bdi></dd></div>@endif
+                    @if(!empty($public['accreditation_date']))<div><dt>{{ __('certificates.accreditation_date') }}</dt><dd><bdi dir="ltr">{{ $public['accreditation_date'] }}</bdi></dd></div>@endif
                     @if(!empty($public['program_ip_code']))<div class="pc-public-full"><dt>{{ __('certificate_catalog.program_ip_code') }}</dt><dd><bdi class="pc-number" dir="ltr">{{ $public['program_ip_code'] }}</bdi></dd></div>@endif
                 </dl>
             </article>
@@ -79,6 +82,7 @@
                 <details>
                     <summary>{{ __('certificates.public.technical_evidence') }}</summary>
                     <p>{{ __('certificates.public.proof_notice') }}</p>
+                    <p>{{ __('certificates.public.pdf_signature_notice') }}</p>
                     <dl class="pc-technical-facts">
                         <div><dt>{{ __('certificates.public.record_uuid') }}</dt><dd><code>{{ $public['record_uuid'] }}</code></dd></div>
                         <div><dt>{{ __('certificates.public.signing_key_id') }}</dt><dd><code>{{ $public['signing_key_id'] }}</code></dd></div>

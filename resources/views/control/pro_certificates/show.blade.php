@@ -1,7 +1,7 @@
 @extends('layouts.control')
 @section('title', $integrity ? $certificate->certificate_title : __('certificates.title'))
 @section('content')
-@php($programIpCode=(int)$certificate->schema_version===2?\App\Services\ProMasterCertificatePdf::programIpCodeFromStatement($certificate->statement):null)
+@php($programIpCode=(int)$certificate->schema_version>=2?\App\Services\ProMasterCertificatePdf::programIpCodeFromStatement($certificate->statement):null)
 <div class="pc-module" dir="{{ app()->getLocale()==='ar'?'rtl':'ltr' }}">
     <header class="pc-heading"><div><span class="pc-eyebrow">{{ __('certificates.eyebrow') }}</span><h1>{{ $integrity ? $certificate->certificate_title : __('certificates.title') }}</h1>@if($integrity)<p><bdi dir="ltr" class="pc-number">{{ $certificate->certificate_number ?: $certificate->record_uuid }}</bdi></p>@endif</div><a class="pc-button pc-button-secondary" href="{{ route('certificates.index',['locale'=>app()->getLocale()]) }}">{{ __('certificates.back') }}</a></header>
     @include('control.pro_certificates._tabs')
@@ -17,7 +17,9 @@
                 <div><dt>{{ __('certificates.public_name') }}</dt><dd><bdi>{{ $certificate->public_name }}</bdi></dd></div>
                 <div><dt>{{ __('certificates.program_title') }}</dt><dd><bdi>{{ $certificate->program_title }}</bdi></dd></div>
                 <div><dt>{{ __('certificates.certificate_type') }}</dt><dd>{{ __('certificates.types.'.$certificate->certificate_type) }}</dd></div>
-                @if((int)$certificate->schema_version===2)<div><dt>{{ __('certificate_catalog.type_code') }}</dt><dd><bdi dir="ltr">{{ $certificate->catalog_snapshot['code']??'—' }}</bdi></dd></div><div><dt>{{ __('certificate_catalog.specialization') }}</dt><dd><bdi>{{ ($certificate->specialization!==null && $certificate->specialization!=='') ? $certificate->specialization : '—' }}</bdi></dd></div>@if($programIpCode)<div><dt>{{ __('certificate_catalog.program_ip_code') }}</dt><dd><bdi dir="ltr" class="pc-number">{{ $programIpCode }}</bdi></dd></div>@endif @endif
+                @if($certificate->credential_basis)<div><dt>{{ __('certificates.credential_basis') }}</dt><dd>{{ __('certificates.credential_bases.'.$certificate->credential_basis) }}</dd></div>@endif
+                @if($certificate->accreditation_reference)<div><dt>{{ __('certificates.accreditation_reference') }}</dt><dd><bdi dir="ltr">{{ $certificate->accreditation_reference }}</bdi><small><bdi dir="ltr">{{ $certificate->accreditation_date?->format('Y-m-d') }}</bdi></small></dd></div>@endif
+                @if((int)$certificate->schema_version>=2)<div><dt>{{ __('certificate_catalog.type_code') }}</dt><dd><bdi dir="ltr">{{ $certificate->catalog_snapshot['code']??'—' }}</bdi></dd></div><div><dt>{{ __('certificate_catalog.specialization') }}</dt><dd><bdi>{{ ($certificate->specialization!==null && $certificate->specialization!=='') ? $certificate->specialization : '—' }}</bdi></dd></div>@if($programIpCode)<div><dt>{{ __('certificate_catalog.program_ip_code') }}</dt><dd><bdi dir="ltr" class="pc-number">{{ $programIpCode }}</bdi></dd></div>@endif @endif
                 <div><dt>{{ __('certificates.language') }}</dt><dd>{{ ['ar'=>'العربية','en'=>'English','fr'=>'Français'][$certificate->language] ?? $certificate->language }}</dd></div>
                 <div><dt>{{ __('certificates.achievement_date') }}</dt><dd><bdi dir="ltr">{{ $certificate->achievement_date?->format('Y-m-d') }}</bdi></dd></div>
                 <div><dt>{{ __('certificates.expires_on') }}</dt><dd><bdi dir="ltr">{{ $certificate->expires_on?->format('Y-m-d') ?: __('certificates.no_expiry') }}</bdi></dd></div>

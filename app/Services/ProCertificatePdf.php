@@ -18,10 +18,10 @@ final class ProCertificatePdf
         $language = $payload['language'] ?? '';
         $template = $payload['template_version'] ?? '';
         if (!in_array($language, ['ar', 'en', 'fr'], true)
-            || !in_array($template, [self::TEMPLATE_VERSION, 'IUOAMC-PRO-CERT-1.1.0'], true)) {
+            || !in_array($template, [self::TEMPLATE_VERSION, 'IUOAMC-PRO-CERT-1.1.0', 'IUOAMC-PRO-CERT-1.2.0'], true)) {
             throw new RuntimeException('CERTIFICATE_TEMPLATE_UNSUPPORTED');
         }
-        $isCatalog = $template === 'IUOAMC-PRO-CERT-1.1.0';
+        $isCatalog = in_array($template, ['IUOAMC-PRO-CERT-1.1.0', 'IUOAMC-PRO-CERT-1.2.0'], true);
         if ($isCatalog && (!is_array($payload['catalog_snapshot'] ?? null)
             || !in_array($payload['catalog_snapshot']['layout'] ?? '', ['classic', 'diploma', 'master_a4_v1'], true))) {
             throw new RuntimeException('CERTIFICATE_CATALOG_TEMPLATE_UNSUPPORTED');
@@ -124,13 +124,14 @@ final class ProCertificatePdf
                 'document' => 'شهادة مؤسسية', 'recipient' => 'تُمنح هذه الشهادة إلى',
                 'specialization' => 'التخصص', 'type_code' => 'كود النوع',
                 'professional_credential' => 'اعتماد مهني', 'certified_programme' => 'البرنامج المهني المعتمد',
+                'programme_completion' => 'إتمام البرنامج', 'professional_programme' => 'برنامج التدريب المهني',
                 'authenticity_verification' => 'التحقق من الأصالة', 'secure_qr' => 'امسح رمز QR الآمن أو زُر iuoamc.pro',
                 'program_ip_code' => 'رمز سجل الملكية الفكرية للبرنامج',
                 'program' => 'البرنامج / المناسبة', 'achievement' => 'تاريخ الإنجاز',
                 'issued' => 'تاريخ الإصدار', 'expiry' => 'صالحة حتى', 'no_expiry' => 'دون تاريخ انتهاء محدد',
                 'number' => 'رقم الشهادة', 'registration' => 'رقم تسجيل الجهة',
                 'verify' => 'امسح الرمز للتحقق من الحالة الحالية',
-                'footer' => 'يرتبط هذا المستند بسجل إصدار موقّع رقميًا. راجع الحالة الحالية عبر رابط التحقق.',
+                'footer' => 'سجل الإصدار مختوم تشفيريًا بـ Ed25519، وتُفحص سلامة PDF عبر SHA-256 وQR. لا يتضمن الملف توقيع PAdES.',
                 'draft' => 'مسودة للمراجعة - لم تُصدر هذه الشهادة',
                 'too_long' => 'النص يتجاوز مساحة قالب الشهادة. اختصر العنوان أو الاسم أو النص ثم افتح المعاينة مجددًا.',
             ],
@@ -138,13 +139,14 @@ final class ProCertificatePdf
                 'document' => 'CERTIFICAT INSTITUTIONNEL', 'recipient' => 'Ce certificat est décerné à',
                 'specialization' => 'Spécialité', 'type_code' => 'Code du type',
                 'professional_credential' => 'TITRE PROFESSIONNEL', 'certified_programme' => 'PROGRAMME PROFESSIONNEL CERTIFIÉ',
+                'programme_completion' => 'ACHÈVEMENT DU PROGRAMME', 'professional_programme' => 'PROGRAMME DE FORMATION PROFESSIONNELLE',
                 'authenticity_verification' => 'VÉRIFICATION D’AUTHENTICITÉ', 'secure_qr' => 'Scannez le QR sécurisé ou consultez iuoamc.pro',
                 'program_ip_code' => 'CODE DU REGISTRE DE PROPRIÉTÉ INTELLECTUELLE DU PROGRAMME',
                 'program' => 'Programme / Événement', 'achievement' => 'Date de réalisation',
                 'issued' => 'Date de délivrance', 'expiry' => 'Valable jusqu’au', 'no_expiry' => 'Sans date d’expiration définie',
                 'number' => 'Numéro du certificat', 'registration' => 'Immatriculation de l’émetteur',
                 'verify' => 'Scannez pour vérifier le statut actuel',
-                'footer' => 'Ce document est lié à un registre signé numériquement. Consultez le lien pour son statut actuel.',
+                'footer' => 'Registre scellé par Ed25519; intégrité PDF contrôlée par SHA-256 et QR. Le PDF ne comporte pas de signature PAdES.',
                 'draft' => 'BROUILLON POUR RÉVISION - CERTIFICAT NON DÉLIVRÉ',
                 'too_long' => 'Le texte dépasse le format du certificat. Raccourcissez le titre, le nom ou le texte, puis ouvrez à nouveau l’aperçu.',
             ],
@@ -152,13 +154,14 @@ final class ProCertificatePdf
                 'document' => 'INSTITUTIONAL CERTIFICATE', 'recipient' => 'This certificate is awarded to',
                 'specialization' => 'Specialisation', 'type_code' => 'Type code',
                 'professional_credential' => 'PROFESSIONAL CREDENTIAL', 'certified_programme' => 'CERTIFIED PROFESSIONAL PROGRAMME',
+                'programme_completion' => 'PROGRAMME COMPLETION', 'professional_programme' => 'PROFESSIONAL TRAINING PROGRAMME',
                 'authenticity_verification' => 'AUTHENTICITY VERIFICATION', 'secure_qr' => 'Scan the secure QR code or visit iuoamc.pro',
                 'program_ip_code' => 'PROGRAM INTELLECTUAL PROPERTY REGISTRY CODE',
                 'program' => 'Programme / Event', 'achievement' => 'Achievement date',
                 'issued' => 'Issued on', 'expiry' => 'Valid until', 'no_expiry' => 'No expiry date specified',
                 'number' => 'Certificate number', 'registration' => 'Issuer registration',
                 'verify' => 'Scan to check the current status',
-                'footer' => 'This document is linked to a digitally signed issuance record. Check the verification link for its current status.',
+                'footer' => 'Issuance record sealed with Ed25519; PDF integrity checked by SHA-256 and QR. The PDF does not contain a PAdES signature.',
                 'draft' => 'REVIEW DRAFT - THIS CERTIFICATE HAS NOT BEEN ISSUED',
                 'too_long' => 'The text exceeds this certificate format. Shorten the title, name or statement, then preview again.',
             ],

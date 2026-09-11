@@ -50,7 +50,12 @@ final class ProCertificateVerificationController extends Controller
                     'signing_key_id' => $record->signing_key_id,
                     'pdf_sha256' => $record->pdf_sha256,
                     'payload_sha256' => $record->payload_sha256];
-                if ((int) $record->schema_version === 2) {
+                if ($record->credential_basis !== null) {
+                    $public['credential_basis'] = $record->credential_basis;
+                    $public['accreditation_reference'] = $record->accreditation_reference;
+                    $public['accreditation_date'] = $record->accreditation_date?->format('Y-m-d');
+                }
+                if ((int) $record->schema_version >= 2) {
                     $public['type_name'] = data_get($record->issued_payload, 'catalog_snapshot.names.'.$locale);
                     $public['type_code'] = data_get($record->issued_payload, 'catalog_snapshot.code');
                     $public['specialization'] = $record->specialization;

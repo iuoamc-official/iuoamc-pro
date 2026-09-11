@@ -29,6 +29,7 @@ final class ProCertificateBatchRegistry
     private const COMMON = [
         'batch_name', 'organization_id', 'catalog_type_id', 'language', 'program_title', 'achievement_date',
         'expires_on', 'certificate_title', 'statement', 'signatory_name', 'signatory_title', 'catalog_version',
+        'credential_basis', 'accreditation_reference', 'accreditation_date',
     ];
     private const ROW = ['recipient_name', 'public_name', 'specialization'];
 

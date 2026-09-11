@@ -23,6 +23,9 @@
             <span>{{ __('journal.title') }}</span>
         </a>
     @endif
+    @if(auth()->user()?->status === 'active' && auth()->user()->canDo('account-documents.view'))
+        <a href="{{ route('account-documents.index',['locale'=>app()->getLocale()]) }}" class="{{ request()->routeIs('account-documents.*')?'active':'' }}"><span class="module-sidebar-icon">@include('control.navigation._icon',['icon'=>'finance'])</span>{{ __('account.admin_documents') }}</a>
+    @endif
 
     {{-- IUOAMC_WICP_SIDEBAR_1_0_0_BEGIN --}}
     @if(\Illuminate\Support\Facades\Route::has('wicp.index') && auth()->check() && auth()->user()->canDo('wicp.view'))

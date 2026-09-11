@@ -108,6 +108,61 @@ final class MembershipCredentialRegistry
         }, 3);
     }
 
+    public function saveApplicationForVerifiedAccount(
+        User $actor,
+        Membership $membership,
+        array $data,
+        UploadedFile $photo
+    ): MembershipApplication {
+        abort_unless($actor->isActive() && $actor->hasVerifiedEmail(), 403);
+        abort_unless(app(AccountRecordAccess::class)->owns(
+            $actor, AccountRecordAccess::MEMBERSHIP, (int) $membership->id
+        ), 404);
+        abort_unless($membership->status === 'draft', 409);
+        abort_unless(app(MembershipRegistry::class)->verify($membership), 409);
+        abort_unless(! MembershipCredential::query()->where('membership_id', $membership->id)->exists(), 409);
+
+        $validated = validator($data, [
+            'date_of_birth' => ['required', 'date_format:Y-m-d', 'before:today'],
+            'nationality_code' => ['required', 'regex:/^[A-Z]{2}$/'],
+            'address' => ['required', 'string', 'max:1000'],
+            'city' => ['required', 'string', 'max:120'],
+            'postal_code' => ['nullable', 'string', 'max:30'],
+            'residence_country_code' => ['required', 'regex:/^[A-Z]{2}$/'],
+            'identification_type' => ['required', 'string', 'max:60'],
+            'identification_number' => ['required', 'string', 'max:120'],
+            'qualifications' => ['nullable', 'string', 'max:3000'],
+            'application_consent' => ['accepted'],
+        ])->validate();
+        foreach ($validated as $field => $value) {
+            if (is_string($value)) { $validated[$field] = trim($value); }
+        }
+        $photoData = $this->storePhoto($membership, $photo);
+
+        return DB::transaction(function () use ($actor, $membership, $validated, $photoData): MembershipApplication {
+            abort_if(MembershipApplication::query()->where('membership_id', $membership->id)->exists(), 409);
+            $application = new MembershipApplication([
+                'membership_id' => (int) $membership->id,
+                'lock_version' => 1,
+                'date_of_birth' => $validated['date_of_birth'],
+                'nationality_code' => $validated['nationality_code'],
+                'address' => $validated['address'],
+                'city' => $validated['city'],
+                'postal_code' => $validated['postal_code'] ?? null,
+                'residence_country_code' => $validated['residence_country_code'],
+                'identification_type' => $validated['identification_type'],
+                'identification_number' => $validated['identification_number'],
+                'qualifications' => $validated['qualifications'] ?? null,
+                'consent_at' => now()->utc()->startOfSecond(),
+                'updated_by' => (int) $actor->id,
+            ] + $photoData);
+            $application->save();
+            $this->sealApplication($application, $actor, []);
+
+            return $application->fresh(['integrityAudit']);
+        }, 3);
+    }
+
     public function ready(Membership $membership): bool
     {
         $application = $this->applicationFor($membership);

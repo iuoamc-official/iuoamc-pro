@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureActiveUser;
+use App\Http\Middleware\EnsureControlAccess;
 use App\Http\Middleware\EnsurePasswordChanged;
 use App\Http\Middleware\EnsurePermission;
 use App\Http\Middleware\SecurityHeaders;
@@ -22,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'locale' => SetLocale::class,
             'active' => EnsureActiveUser::class,
+            'control.access' => EnsureControlAccess::class,
             'password.changed' => EnsurePasswordChanged::class,
             'permission' => EnsurePermission::class,
         ]);

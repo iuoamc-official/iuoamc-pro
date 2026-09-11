@@ -8,7 +8,7 @@ use App\Http\Controllers\ProCertificateVerificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('{locale}/control/certificates')->where(['locale' => 'ar|en|fr'])
-    ->middleware(['locale', 'auth', 'active', 'password.changed', 'permission:certificates.view'])
+    ->middleware(['locale', 'auth', 'active', 'password.changed', 'control.access', 'permission:certificates.view'])
     ->name('certificates.')->group(function (): void {
         Route::get('/', [ProCertificateController::class, 'index'])->name('index');
         Route::get('/create', [ProCertificateController::class, 'create'])->middleware('permission:certificates.manage')->name('create');

@@ -7,10 +7,10 @@ use App\Http\Controllers\MembershipVerificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/{locale}/control/governance', [GovernanceHubController::class, 'index'])
-    ->where('locale', 'ar|en|fr')->middleware(['locale', 'auth', 'active', 'password.changed'])->name('governance.index');
+    ->where('locale', 'ar|en|fr')->middleware(['locale', 'auth', 'active', 'password.changed', 'control.access'])->name('governance.index');
 
 Route::prefix('{locale}/control/memberships')->where(['locale' => 'ar|en|fr'])
-    ->middleware(['locale', 'auth', 'active', 'password.changed', 'permission:memberships.view'])
+    ->middleware(['locale', 'auth', 'active', 'password.changed', 'control.access', 'permission:memberships.view'])
     ->name('memberships.')->group(function (): void {
         Route::get('/', [MembershipController::class, 'index'])->name('index');
         Route::get('/create', [MembershipController::class, 'create'])->middleware('permission:memberships.manage')->name('create');

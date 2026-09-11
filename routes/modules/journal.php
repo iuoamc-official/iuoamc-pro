@@ -31,7 +31,7 @@ Route::prefix('{locale}/journal')->where(['locale' => 'ar|en|fr'])->middleware([
 });
 
 Route::prefix('{locale}/control/journal')->where(['locale' => 'ar|en|fr'])
-    ->middleware(['locale', 'auth', 'active', 'password.changed', 'permission:journal.view', \App\Http\Middleware\JournalControlHeaders::class])
+    ->middleware(['locale', 'auth', 'active', 'password.changed', 'control.access', 'permission:journal.view', \App\Http\Middleware\JournalControlHeaders::class])
     ->name('journal.control.')->group(function (): void {
         Route::get('/', [JournalArticleController::class, 'index'])->name('articles.index');
         Route::get('/articles/create', [JournalArticleController::class, 'create'])->middleware('permission:journal.manage')->name('articles.create');

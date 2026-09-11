@@ -77,7 +77,22 @@
                     @endforeach
                 </nav>
                 @auth
-                    <a class="control-link" href="{{ route('dashboard', ['locale' => app()->getLocale()]) }}">{{ __('public_site.control_center') }}</a>
+                    <details class="public-account-menu">
+                        <summary><span>{{ mb_substr(auth()->user()->name,0,1) }}</span><bdi>{{ auth()->user()->name }}</bdi></summary>
+                        <div>
+                            <a href="{{ route('account.dashboard',['locale'=>app()->getLocale()]) }}#profile">{{ __('account.my_profile') }}</a>
+                            <a href="{{ route('account.dashboard',['locale'=>app()->getLocale()]) }}#memberships">{{ __('account.memberships') }}</a>
+                            <a href="{{ route('account.dashboard',['locale'=>app()->getLocale()]) }}#certificates">{{ __('account.certificates') }}</a>
+                            <a href="{{ route('account.dashboard',['locale'=>app()->getLocale()]) }}#documents">{{ __('account.documents_invoices_receipts') }}</a>
+                            <a href="{{ route('account.membership.create',['locale'=>app()->getLocale()]) }}">{{ __('account.apply_membership') }}</a>
+                            @if(auth()->user()->canAccessControl())
+                                <a href="{{ route('dashboard',['locale'=>app()->getLocale()]) }}">{{ __('public_site.control_center') }}</a>
+                            @endif
+                            <form method="post" action="{{ route('logout',['locale'=>app()->getLocale()]) }}">@csrf<button type="submit">{{ __('account.logout') }}</button></form>
+                        </div>
+                    </details>
+                @else
+                    <a class="control-link" href="{{ route('login',['locale'=>app()->getLocale()]) }}">{{ __('ui.sign_in') }}</a>
                 @endauth
             </div>
         </div>

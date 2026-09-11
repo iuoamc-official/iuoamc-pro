@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Notifications\ResetAccountPassword;
+use App\Notifications\VerifyAccountEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     use HasFactory, Notifiable;
 
@@ -68,5 +71,21 @@ class User extends Authenticatable
     public function isActive(): bool
     {
         return $this->status === 'active';
+    }
+
+    public function canAccessControl(): bool
+    {
+        return $this->isActive()
+            && ($this->hasRole('super-admin') || $this->roles()->whereHas('permissions')->exists());
+    }
+
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify(new VerifyAccountEmail());
+    }
+
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ResetAccountPassword((string) $token));
     }
 }

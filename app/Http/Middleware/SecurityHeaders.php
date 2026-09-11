@@ -37,6 +37,12 @@ class SecurityHeaders
             $response->headers->set('Cache-Control', 'no-store, private, max-age=0');
             $response->headers->set('Pragma', 'no-cache');
         }
+        if ($request->routeIs('account.*', 'account-documents.*', 'verification.*')) {
+            $response->headers->set('Cache-Control', 'no-store, private, max-age=0');
+            $response->headers->set('Pragma', 'no-cache');
+            $response->headers->set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+            $response->headers->set('Referrer-Policy', 'no-referrer');
+        }
         if ($request->routeIs('public-content.*')) {
             $response->headers->set('Cache-Control', 'no-store, private, max-age=0');
             $response->headers->set('Pragma', 'no-cache');

@@ -469,17 +469,9 @@ final class JournalPublishingTest extends TestCase
         $longBody = collect(range(1, 80))->map(fn (int $number): string => 'Section '.$number.' '.str_repeat('controlled sensory evidence ', 24))->join("\n\n");
         DB::table('journal_article_translations')->where('journal_article_id', $article->id)->where('locale', 'en')->update(['body' => $longBody]);
 
-        $response = $this->get('/en/journal/articles/'.$article->slug.'?page=2');
-        if ($response->status() === 500) {
-            foreach (glob(storage_path('framework/views/*.php')) ?: [] as $compiledView) {
-                $compiled = file_get_contents($compiledView);
-                if (is_string($compiled) && str_contains($compiled, 'journal-reader-pagination')) {
-                    $compiledLines = explode("\n", $compiled);
-                    fwrite(STDERR, "\nCOMPILED JOURNAL VIEW\n".implode("\n", array_slice($compiledLines, 35, 35))."\n");
-                }
-            }
-        }
-        $response->assertOk()->assertSee('Page 2 of');
+        $this->get('/en/journal/articles/'.$article->slug.'?page=2')
+            ->assertOk()
+            ->assertSee('Page 2 of');
 
         $this->get('/en/journal/articles/'.$article->slug.'/pdf')
             ->assertOk()

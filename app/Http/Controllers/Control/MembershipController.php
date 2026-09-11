@@ -155,10 +155,18 @@ class MembershipController extends Controller
         $credentialChecks = $credentials->mapWithKeys(
             fn (MembershipCredential $credential): array => [$credential->id => $this->credentials()->verifyCredential($credential)]
         );
+        $today = now()->utc()->toDateString();
+        $currentPeriod = $membership->periods->first(fn ($period): bool =>
+            $period->valid_from->toDateString() <= $today && $period->valid_until->toDateString() >= $today
+        );
+        $canIssueCredentials = $integrity && $applicationReady
+            && $membership->status === 'active'
+            && $currentPeriod !== null
+            && ! $credentials->contains('membership_period_id', $currentPeriod->id);
 
         return view('control.memberships.show', compact(
             'membership', 'integrity', 'periodChecks', 'history', 'reasons',
-            'application', 'applicationReady', 'credentials', 'credentialChecks'
+            'application', 'applicationReady', 'credentials', 'credentialChecks', 'canIssueCredentials'
         ));
     }
 

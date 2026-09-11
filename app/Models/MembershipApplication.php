@@ -16,7 +16,7 @@ final class MembershipApplication extends Model
     protected function casts(): array
     {
         return [
-            'date_of_birth' => 'encrypted:date',
+            'date_of_birth' => 'encrypted',
             'address' => 'encrypted',
             'identification_number' => 'encrypted',
             'qualifications' => 'encrypted',

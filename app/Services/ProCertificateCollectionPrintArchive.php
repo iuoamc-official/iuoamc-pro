@@ -40,6 +40,8 @@ final class ProCertificateCollectionPrintArchive
             throw new RuntimeException('CERTIFICATE_COLLECTION_ARCHIVE_UNAVAILABLE');
         }
 
+        $open = true;
+
         try {
             if (! $archive->addEmptyDir($folder)) {
                 throw new RuntimeException('CERTIFICATE_COLLECTION_ARCHIVE_FAILED');
@@ -72,11 +74,22 @@ final class ProCertificateCollectionPrintArchive
                 }
             }
 
-            if (! $archive->close() || ! is_file($path) || filesize($path) < 1) {
+            if (! $archive->close()) {
+                throw new RuntimeException('CERTIFICATE_COLLECTION_ARCHIVE_FAILED');
+            }
+            $open = false;
+
+            if (! is_file($path) || filesize($path) < 1) {
                 throw new RuntimeException('CERTIFICATE_COLLECTION_ARCHIVE_FAILED');
             }
         } catch (Throwable $error) {
-            $archive->close();
+            if ($open) {
+                try {
+                    $archive->close();
+                } catch (Throwable) {
+                    // The temporary file is removed below.
+                }
+            }
             if (is_file($path)) {
                 @unlink($path);
             }

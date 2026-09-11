@@ -50,7 +50,7 @@ final class JournalPublishingTest extends TestCase
         $this->get('/en/journal')
             ->assertOk()
             ->assertSee('Peer-reviewed scientific research')
-            ->assertSee('Professional article — not peer reviewed')
+            ->assertSee('Editorial professional article — not peer reviewed')
             ->assertSee($research->translation('en')->title)
             ->assertSee($professional->translation('en')->title)
             ->assertDontSee($draft->translation('en')->title);

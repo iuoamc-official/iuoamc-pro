@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
     'title' => 'Données des participants',
     'skip_to_form' => 'Aller au contenu',
-    'public_title' => 'Confirmez les informations de votre certificat Master',
+    'public_title' => 'Demande de certificat professionnel',
     'public_eyebrow' => 'INFORMATIONS DU CERTIFICAT',
     'public_lead' => 'Vérifiez l’orthographe de votre nom et complétez vos informations pour permettre à l’équipe de préparer votre certificat après examen.',
     'language' => 'Langue',
@@ -23,7 +23,7 @@ return [
     'submit' => 'Envoyer pour examen',
     'submit_hint' => 'Vérifiez vos informations avant l’envoi. Ce lien permet un seul envoi.',
     'your_program' => 'PROGRAMME ENREGISTRÉ',
-    'program_on_record' => 'Programme Master enregistré',
+    'program_on_record' => 'Programme professionnel enregistré',
     'program_hint' => 'Le nom du programme provient de votre dossier. Signalez toute différence dans les remarques.',
     'what_next' => 'Que se passe-t-il ensuite ?',
     'next_confirm' => 'Vos informations sont transmises à l’équipe des certificats.',

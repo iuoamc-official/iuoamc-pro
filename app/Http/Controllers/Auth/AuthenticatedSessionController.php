@@ -61,7 +61,13 @@ class AuthenticatedSessionController extends Controller
 
         AuditTrail::record('auth.login', $user, [], [], [], (int) $user->id);
 
-        return redirect()->intended(route('dashboard', ['locale' => $locale]));
+        if ($user->canAccessControl()) {
+            return redirect()->intended(route('dashboard', ['locale' => $locale]));
+        }
+
+        $request->session()->forget('url.intended');
+
+        return redirect()->route('account.dashboard', ['locale' => $locale]);
     }
 
     public function destroy(Request $request): RedirectResponse

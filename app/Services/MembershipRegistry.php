@@ -147,6 +147,49 @@ final class MembershipRegistry
         }, 3);
     }
 
+    public function createForVerifiedAccount(User $actor, array $data): Membership
+    {
+        abort_unless($actor->isActive() && $actor->hasVerifiedEmail(), 403);
+        $email = AccountRecordAccess::normalizeEmail($actor->email);
+        abort_unless(hash_equals($email, AccountRecordAccess::normalizeEmail($data['email'] ?? null)), 403);
+
+        return DB::transaction(function () use ($actor, $data): Membership {
+            $organization = Organization::query()->lockForUpdate()->findOrFail($data['organization_id']);
+            abort_unless($organization->status === 'active', 409);
+            $values = array_intersect_key($data, array_flip(self::PROFILE));
+            $membership = Membership::create($values + [
+                'record_uuid' => (string) Str::uuid(), 'organization_id' => $organization->id,
+                'status' => 'draft', 'lock_version' => 1, 'created_by' => $actor->id, 'updated_by' => $actor->id,
+            ]);
+            $this->append($membership, $actor, 'membership.created', []);
+
+            return $membership->fresh(['organization', 'integrityAudit']);
+        }, 3);
+    }
+
+    public function submitForVerifiedAccount(User $actor, Membership $membership): Membership
+    {
+        abort_unless($actor->isActive() && $actor->hasVerifiedEmail(), 403);
+        abort_unless(app(AccountRecordAccess::class)->owns(
+            $actor, AccountRecordAccess::MEMBERSHIP, (int) $membership->id
+        ), 404);
+
+        return DB::transaction(function () use ($actor, $membership): Membership {
+            $membership = Membership::query()->lockForUpdate()->findOrFail($membership->id);
+            abort_unless($membership->status === 'draft' && $this->verify($membership), 409);
+            abort_unless(app(MembershipCredentialRegistry::class)->ready($membership), 409);
+            $old = $membership->only(['status', 'lock_version', 'record_hash']);
+            $membership->status = 'pending';
+            $membership->lock_version++;
+            $membership->updated_by = $actor->id;
+            $membership->last_reason = null;
+            $membership->save();
+            $this->append($membership, $actor, 'membership.submit', $old);
+
+            return $membership->fresh(['organization', 'application']);
+        }, 3);
+    }
+
     public function update(User $actor, int $id, int $version, array $data): Membership
     {
         return DB::transaction(function () use ($actor, $id, $version, $data): Membership {

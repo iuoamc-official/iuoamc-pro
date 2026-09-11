@@ -14,6 +14,9 @@
     @if ($errors->any())
         <div class="alert alert-error" role="alert">{{ $errors->first() }}</div>
     @endif
+    @if (session('status'))
+        <div class="alert alert-success" role="status">{{ session('status') }}</div>
+    @endif
 
     <form method="post" action="{{ route('login.store', ['locale' => app()->getLocale()]) }}" class="form-stack">
         @csrf
@@ -33,5 +36,7 @@
         </label>
 
         <button class="primary-button" type="submit">{{ __('ui.continue') }}</button>
+        <a class="secondary-action" href="{{ route('password.request',['locale'=>app()->getLocale()]) }}">{{ __('account.forgot_password') }}</a>
+        <a class="secondary-action" href="{{ route('register',['locale'=>app()->getLocale()]) }}">{{ __('account.create_account') }}</a>
     </form>
 @endsection

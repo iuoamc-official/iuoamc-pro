@@ -126,7 +126,8 @@ class UserController extends Controller
             ]);
         }
 
-        DB::transaction(function () use ($request, $user, $validated, $roleIds, $organizationIds): void {
+        $emailChanged = false;
+        DB::transaction(function () use ($request, $user, $validated, $roleIds, $organizationIds, &$emailChanged): void {
             $user = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
             $this->protectLastSuperAdministrator(
                 $request,
@@ -150,6 +151,10 @@ class UserController extends Controller
                 'status' => $validated['status'],
                 'preferred_locale' => $validated['preferred_locale'],
             ];
+            if (! hash_equals(Str::lower((string) $user->email), $updates['email'])) {
+                $updates['email_verified_at'] = null;
+                $emailChanged = true;
+            }
 
             if (! empty($validated['password'])) {
                 $updates['password'] = Hash::make($validated['password']);
@@ -173,6 +178,10 @@ class UserController extends Controller
                 'password_reset_required' => ! empty($validated['password']),
             ]);
         });
+
+        if ($emailChanged) {
+            $user->refresh()->sendEmailVerificationNotification();
+        }
 
         return back()->with('success', trans('institutional.messages.user_updated'));
     }

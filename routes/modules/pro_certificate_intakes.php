@@ -8,7 +8,7 @@ use App\Http\Controllers\ProCertificateIntakeProgramPublicController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('{locale}/control/certificates/data-confirmations')->where(['locale' => 'ar|en|fr'])
-    ->middleware(['locale', 'auth', 'active', 'password.changed', 'permission:certificates.view', 'permission:certificates.manage'])
+    ->middleware(['locale', 'auth', 'active', 'password.changed', 'control.access', 'permission:certificates.view', 'permission:certificates.manage'])
     ->name('certificates.intakes.')->group(function (): void {
         Route::get('/', [ProCertificateIntakeProgramController::class, 'index'])->name('index');
         Route::get('/programs', [ProCertificateIntakeProgramController::class, 'index'])->name('programs.index');

@@ -6,7 +6,7 @@ use App\Http\Controllers\WicpVerificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('{locale}/control/wicp')->where(['locale' => 'ar|en|fr'])
-    ->middleware(['locale', 'auth', 'active', 'password.changed', 'permission:wicp.view'])->name('wicp.')->group(function (): void {
+    ->middleware(['locale', 'auth', 'active', 'password.changed', 'control.access', 'permission:wicp.view'])->name('wicp.')->group(function (): void {
         Route::get('/', [WicpController::class, 'index'])->name('index');
         Route::get('/programs/create', [WicpController::class, 'createProgram'])->middleware('permission:wicp.register')->name('programs.create');
         Route::post('/programs', [WicpController::class, 'storeProgram'])->middleware(['permission:wicp.register', 'throttle:20,1'])->name('programs.store');

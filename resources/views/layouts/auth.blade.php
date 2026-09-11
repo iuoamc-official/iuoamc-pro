@@ -22,8 +22,8 @@
             </div>
             <div class="auth-brand-copy">
                 <span class="eyebrow">GLOBAL INSTITUTIONAL SYSTEM</span>
-                <h1>{{ __('ui.control_center') }}</h1>
-                <p>{{ __('ui.secure_system') }}</p>
+                <h1>{{ __('account.secure_portal') }}</h1>
+                <p>{{ __('account.secure_portal_intro') }}</p>
             </div>
             <div class="security-note">
                 <span class="status-dot"></span>
@@ -35,9 +35,13 @@
             <nav class="language-nav" aria-label="Languages">
                 @foreach (['ar' => 'العربية', 'en' => 'English', 'fr' => 'Français'] as $code => $label)
                     @php
-                        $languageUrl = request()->routeIs('password.change')
-                            ? route('password.change', ['locale' => $code])
-                            : route('login', ['locale' => $code]);
+                        $languageUrl = match (true) {
+                            request()->routeIs('password.change') => route('password.change', ['locale' => $code]),
+                            request()->routeIs('register') => route('register', ['locale' => $code]),
+                            request()->routeIs('password.request') => route('password.request', ['locale' => $code]),
+                            request()->routeIs('verification.notice') => route('verification.notice', ['locale' => $code]),
+                            default => route('login', ['locale' => $code]),
+                        };
                     @endphp
                     <a href="{{ $languageUrl }}" class="{{ app()->getLocale() === $code ? 'active' : '' }}">{{ $label }}</a>
                 @endforeach

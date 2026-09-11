@@ -2,6 +2,11 @@
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\PasswordController;
+use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\EmailVerificationNotificationController;
+use App\Http\Controllers\Auth\VerifyEmailController;
+use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Control\DashboardController;
 use App\Http\Controllers\Control\OrganizationController;
 use App\Http\Controllers\Control\UserController;
@@ -31,6 +36,15 @@ Route::prefix('{locale}')
                 ->name('login');
             Route::post('/login', [AuthenticatedSessionController::class, 'store'])
                 ->name('login.store');
+            Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
+            Route::post('/register', [RegisteredUserController::class, 'store'])
+                ->middleware('throttle:6,1')->name('register.store');
+            Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
+            Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])
+                ->middleware('throttle:6,1')->name('password.email');
+            Route::get('/reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
+            Route::post('/reset-password', [NewPasswordController::class, 'store'])
+                ->middleware('throttle:6,1')->name('password.store');
         });
 
         Route::middleware(['auth', 'active'])->group(function (): void {
@@ -41,7 +55,14 @@ Route::prefix('{locale}')
             Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
                 ->name('logout');
 
-            Route::middleware('password.changed')
+            Route::get('/verify-email', [VerifyEmailController::class, 'notice'])
+                ->name('verification.notice');
+            Route::get('/verify-email/{id}/{hash}', [VerifyEmailController::class, 'verify'])
+                ->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
+            Route::post('/email/verification-notification', EmailVerificationNotificationController::class)
+                ->middleware('throttle:6,1')->name('verification.send');
+
+            Route::middleware(['password.changed', 'control.access'])
                 ->prefix('control')
                 ->group(function (): void {
                     Route::get('/', [DashboardController::class, 'index'])
@@ -144,3 +165,9 @@ require __DIR__.'/modules/pro_certificate_intakes.php';
 
 // MCIJ_SCIENTIFIC_JOURNAL_CORE_1_0_0
 require __DIR__.'/modules/journal.php';
+
+// Secure verified-email self-service account portal.
+require __DIR__.'/modules/account.php';
+
+// Immutable PDF documents, invoices and receipts issued to account holders.
+require __DIR__.'/modules/account_documents.php';

@@ -1,5 +1,20 @@
 @extends('layouts.journal')
 @php($translation = $article->translation())
+<?php
+    $articleSchema = [
+        '@context' => 'https://schema.org',
+        '@type' => $article->type === 'peer_reviewed_research' ? 'ScholarlyArticle' : 'Article',
+        'headline' => $translation?->title,
+        'datePublished' => $article->published_at?->toIso8601String(),
+        'identifier' => $article->doi ?: $article->article_code,
+        'author' => $article->authors->map(fn ($author) => [
+            '@type' => 'Person',
+            'name' => $author->latin_name ?: $author->name,
+            'sameAs' => $author->orcid ? 'https://orcid.org/'.$author->orcid : null,
+        ])->all(),
+        'publisher' => ['@type' => 'Organization', 'name' => $journal->publisher_name],
+    ];
+?>
 
 @section('title', $translation?->title)
 @section('description', $translation?->seo_description ?: \Illuminate\Support\Str::limit($translation?->abstract, 300))
@@ -13,17 +28,6 @@
     @if($article->doi)<meta name="citation_doi" content="{{ $article->doi }}">@endif
     @if($journal->issn)<meta name="citation_issn" content="{{ $journal->issn }}">@endif
     <?php if ($article->pdf_path) : ?><meta name="citation_pdf_url" content="{{ route('journal.public.articles.pdf', ['locale' => app()->getLocale(), 'article' => $article->slug]) }}"><?php endif; ?>
-    @php
-        $articleSchema = [
-            chr(64).'context' => 'https://schema.org',
-            '@type' => $article->type === 'peer_reviewed_research' ? 'ScholarlyArticle' : 'Article',
-            'headline' => $translation?->title,
-            'datePublished' => $article->published_at?->toIso8601String(),
-            'identifier' => $article->doi ?: $article->article_code,
-            'author' => $article->authors->map(fn ($author) => ['@type' => 'Person', 'name' => $author->latin_name ?: $author->name, 'sameAs' => $author->orcid ? 'https://orcid.org/'.$author->orcid : null])->all(),
-            'publisher' => ['@type' => 'Organization', 'name' => $journal->publisher_name],
-        ];
-    @endphp
     <script type="application/ld+json" nonce="{{ request()->attributes->get('csp_nonce') }}">{!! json_encode($articleSchema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
 @endpush
 

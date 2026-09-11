@@ -33,6 +33,11 @@ final class Journal extends Model
         return $this->hasMany(JournalArticle::class);
     }
 
+    public function submissions(): HasMany
+    {
+        return $this->hasMany(JournalSubmission::class);
+    }
+
     public function localized(string $field, ?string $locale = null): string
     {
         $values = $this->getAttribute($field);

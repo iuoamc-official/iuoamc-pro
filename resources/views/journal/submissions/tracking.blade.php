@@ -1,0 +1,11 @@
+@extends('layouts.journal')
+@section('title', __('journal.track_submission'))
+@push('metadata')<meta name="robots" content="noindex,nofollow,noarchive">@endpush
+@section('content')
+<section class="journal-page-head"><div class="public-container"><span>MCIJ · PRIVATE TRACKING</span><h1>{{ __('journal.track_submission') }}</h1><p>{{ __('journal.tracking_intro') }}</p></div></section>
+<div class="public-container journal-tracking">
+    <form method="post" action="{{ route('journal.public.submissions.track',['locale'=>app()->getLocale()]) }}">@csrf<label><span>{{ __('journal.submission_code') }}</span><input dir="ltr" name="submission_code" maxlength="80" required value="{{ old('submission_code') }}"></label><label><span>{{ __('journal.tracking_token') }}</span><input dir="ltr" name="tracking_token" maxlength="64" minlength="64" required></label><button>{{ __('journal.view_status') }}</button></form>
+    @if($errors->any() || ($trackingError ?? false))<div class="journal-form-error" role="alert">{{ __('journal.tracking_invalid') }}</div>@endif
+    @isset($submission)<section class="journal-tracking-result"><div><span>{{ __('journal.submission_code') }}</span><bdi dir="ltr">{{ $submission->submission_code }}</bdi></div><div><span>{{ __('journal.article_title') }}</span><strong>{{ $submission->title }}</strong></div><div><span>{{ __('journal.status') }}</span><strong>{{ __('journal.submission_statuses.'.$submission->status) }}</strong></div><div><span>{{ __('journal.received') }}</span><time>{{ $submission->received_at->format('Y-m-d H:i') }} UTC</time></div>@if($submission->convertedArticle)<div><span>{{ __('journal.editorial_record') }}</span><bdi dir="ltr">{{ $submission->convertedArticle->article_code }}</bdi></div>@foreach($submission->convertedArticle->decisions as $decision)@if($decision->letter)<article><span>{{ __('journal.decision_letter') }}</span><strong>{{ __('journal.statuses.'.$decision->decision) }}</strong><p>{!! nl2br(e($decision->letter)) !!}</p></article>@endif @endforeach @endif</section>@endisset
+</div>
+@endsection

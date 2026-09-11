@@ -18,7 +18,7 @@
                 <span>{{ __('journal.scope') }}</span>
                 <strong>{{ __('journal.scope_title') }}</strong>
                 <p>{{ __('journal.scope_text') }}</p>
-                <a href="{{ route('journal.public.policies', ['locale' => app()->getLocale()]) }}">{{ __('journal.read_policies') }} ↗</a>
+                <div class="journal-hero-actions"><a href="{{ route('journal.public.submissions.create', ['locale' => app()->getLocale()]) }}">{{ __('journal.submit_manuscript') }} →</a><a href="{{ route('journal.public.author-guidelines', ['locale' => app()->getLocale()]) }}">{{ __('journal.author_guidelines') }} ↗</a></div>
             </aside>
         </div>
     </section>

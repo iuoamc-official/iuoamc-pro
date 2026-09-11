@@ -5,7 +5,9 @@ declare(strict_types=1);
 use App\Http\Controllers\Control\JournalArticleController;
 use App\Http\Controllers\Control\JournalIssueController;
 use App\Http\Controllers\Control\JournalReviewController;
+use App\Http\Controllers\Control\JournalSubmissionController as ControlJournalSubmissionController;
 use App\Http\Controllers\JournalPublicController;
+use App\Http\Controllers\JournalSubmissionController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('{locale}/journal')->where(['locale' => 'ar|en|fr'])->middleware('locale')->name('journal.public.')->group(function (): void {
@@ -14,6 +16,13 @@ Route::prefix('{locale}/journal')->where(['locale' => 'ar|en|fr'])->middleware('
     Route::get('/issues/{issue:slug}', [JournalPublicController::class, 'issue'])->name('issues.show');
     Route::get('/articles/{article:slug}', [JournalPublicController::class, 'show'])->name('articles.show');
     Route::get('/policies', [JournalPublicController::class, 'policies'])->name('policies');
+    Route::get('/author-guidelines', [JournalPublicController::class, 'authorGuidelines'])->name('author-guidelines');
+    Route::get('/editorial-governance', [JournalPublicController::class, 'editorialGovernance'])->name('editorial-governance');
+    Route::get('/submit', [JournalSubmissionController::class, 'create'])->name('submissions.create');
+    Route::post('/submit', [JournalSubmissionController::class, 'store'])->middleware('throttle:5,1')->name('submissions.store');
+    Route::get('/submission-confirmation', [JournalSubmissionController::class, 'confirmation'])->name('submissions.confirmation');
+    Route::get('/track-submission', [JournalSubmissionController::class, 'tracking'])->name('submissions.tracking');
+    Route::post('/track-submission', [JournalSubmissionController::class, 'track'])->middleware('throttle:20,1')->name('submissions.track');
 });
 
 Route::prefix('{locale}/control/journal')->where(['locale' => 'ar|en|fr'])
@@ -29,6 +38,13 @@ Route::prefix('{locale}/control/journal')->where(['locale' => 'ar|en|fr'])
         Route::post('/articles/{article}/corrections', [JournalArticleController::class, 'correction'])->whereNumber('article')->middleware(['permission:journal.publish', 'throttle:10,1'])->name('articles.corrections.store');
         Route::post('/articles/{article}/reviews', [JournalReviewController::class, 'store'])->whereNumber('article')->middleware(['permission:journal.review', 'throttle:20,1'])->name('reviews.store');
         Route::put('/reviews/{review}', [JournalReviewController::class, 'update'])->whereNumber('review')->middleware('throttle:20,1')->name('reviews.update');
+
+        Route::get('/submissions', [ControlJournalSubmissionController::class, 'index'])->middleware('permission:journal.submissions')->name('submissions.index');
+        Route::get('/submissions/{submission}', [ControlJournalSubmissionController::class, 'show'])->whereNumber('submission')->middleware('permission:journal.submissions')->name('submissions.show');
+        Route::get('/submissions/{submission}/manuscript', [ControlJournalSubmissionController::class, 'download'])->whereNumber('submission')->middleware(['permission:journal.submissions', 'throttle:30,1'])->name('submissions.download');
+        Route::post('/submissions/{submission}/screen', [ControlJournalSubmissionController::class, 'screen'])->whereNumber('submission')->middleware(['permission:journal.submissions', 'throttle:20,1'])->name('submissions.screen');
+        Route::post('/submissions/{submission}/decline', [ControlJournalSubmissionController::class, 'decline'])->whereNumber('submission')->middleware(['permission:journal.submissions', 'throttle:20,1'])->name('submissions.decline');
+        Route::post('/submissions/{submission}/convert', [ControlJournalSubmissionController::class, 'convert'])->whereNumber('submission')->middleware(['permission:journal.submissions', 'throttle:10,1'])->name('submissions.convert');
 
         Route::get('/issues', [JournalIssueController::class, 'index'])->name('issues.index');
         Route::get('/issues/create', [JournalIssueController::class, 'create'])->middleware('permission:journal.manage')->name('issues.create');

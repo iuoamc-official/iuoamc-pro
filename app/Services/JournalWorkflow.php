@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Models\JournalArticle;
 use App\Models\JournalArticleVersion;
+use App\Models\JournalEditorialDecision;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -83,6 +84,22 @@ final class JournalWorkflow
             }
 
             $article->fill($changes)->save();
+            $decision = match ($action) {
+                'accept' => 'accepted',
+                'request_revision' => 'revision_required',
+                'retract' => 'retracted',
+                default => null,
+            };
+            if ($decision !== null) {
+                JournalEditorialDecision::query()->create([
+                    'journal_article_id' => $article->id,
+                    'decision' => $decision,
+                    'letter' => trim((string) $reason) ?: null,
+                    'issued_by' => $actor->id,
+                    'issued_at' => now()->utc()->startOfSecond(),
+                ]);
+            }
+
             AuditTrail::record(
                 'journal.article.'.$action,
                 $article,

@@ -9,10 +9,14 @@ use App\Models\JournalArticle;
 use App\Models\JournalAuthor;
 use App\Models\JournalIssue;
 use App\Models\JournalReview;
+use App\Models\JournalSubmission;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\JournalWorkflow;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use LogicException;
@@ -30,6 +34,7 @@ final class JournalPublishingTest extends TestCase
             '2026_09_07_230000_add_integrity_to_audit_logs.php',
             '2026_09_10_060000_create_public_site_content.php',
             '2026_09_11_150000_create_scientific_journal_core.php',
+            '2026_09_11_160000_create_journal_submission_pipeline.php',
         ] as $migrationFile) {
             $migration = require database_path('migrations/'.$migrationFile);
             $migration->up();
@@ -55,6 +60,18 @@ final class JournalPublishingTest extends TestCase
     {
         $this->get('/en/control/journal')
             ->assertRedirect(route('login', ['locale' => 'en']));
+    }
+
+    public function test_author_submission_resources_are_public_but_the_intake_form_is_not_indexable(): void
+    {
+        $this->get('/en/journal/author-guidelines')
+            ->assertOk()
+            ->assertSee('Originality and authorship');
+
+        $this->get('/en/journal/submit')
+            ->assertOk()
+            ->assertSee('noindex,nofollow,noarchive', false)
+            ->assertSee('Submit for editorial screening');
     }
 
     public function test_editorial_workspace_is_private_and_not_indexable(): void
@@ -120,6 +137,11 @@ final class JournalPublishingTest extends TestCase
 
         $this->assertSame('accepted', $accepted->status);
         $this->assertNotNull($accepted->accepted_at);
+        $this->assertDatabaseHas('journal_editorial_decisions', [
+            'journal_article_id' => $accepted->id,
+            'decision' => 'accepted',
+            'issued_by' => $editor->id,
+        ]);
     }
 
     public function test_reviewer_cannot_open_an_unassigned_editorial_record(): void
@@ -140,6 +162,61 @@ final class JournalPublishingTest extends TestCase
         $this->actingAs($reviewer)
             ->get('/en/control/journal/articles/'.$unassigned->id)
             ->assertNotFound();
+    }
+
+    public function test_public_submission_is_private_encrypted_and_fingerprinted(): void
+    {
+        $this->installIntegrityKeys();
+        Storage::fake('local');
+
+        $response = $this->post('/en/journal/submit', $this->validSubmissionPayload());
+
+        $response->assertRedirect('/en/journal/submission-confirmation')->assertSessionHas('journal_submission_receipt');
+        $submission = JournalSubmission::query()->firstOrFail();
+        $this->assertSame('author@example.test', $submission->author_email);
+        $this->assertNotSame('author@example.test', DB::table('journal_submissions')->value('author_email'));
+        $this->assertSame(64, strlen($submission->file_sha256));
+        Storage::disk('local')->assertExists($submission->manuscript_path);
+        $this->assertDatabaseMissing('journal_articles', ['slug' => Str::slug($submission->title)]);
+    }
+
+    public function test_submission_tracking_requires_the_private_token(): void
+    {
+        $this->installIntegrityKeys();
+        Storage::fake('local');
+        $response = $this->post('/en/journal/submit', $this->validSubmissionPayload());
+        $receipt = session('journal_submission_receipt');
+
+        $this->post('/en/journal/track-submission', [
+            'submission_code' => $receipt['code'],
+            'tracking_token' => str_repeat('x', 64),
+        ])->assertOk()->assertSee('do not match');
+
+        $this->post('/en/journal/track-submission', [
+            'submission_code' => $receipt['code'],
+            'tracking_token' => $receipt['token'],
+        ])->assertOk()->assertSee('Controlled sensory manuscript')->assertSee('Received');
+    }
+
+    public function test_editor_can_convert_a_screened_submission_into_a_draft_record(): void
+    {
+        $this->installIntegrityKeys();
+        Storage::fake('local');
+        $this->post('/en/journal/submit', $this->validSubmissionPayload());
+        $submission = JournalSubmission::query()->firstOrFail();
+        $editor = $this->superAdmin();
+
+        $this->actingAs($editor)->post('/en/control/journal/submissions/'.$submission->id.'/convert')
+            ->assertRedirect();
+
+        $submission->refresh();
+        $this->assertSame('converted', $submission->status);
+        $this->assertNotNull($submission->converted_article_id);
+        $this->assertDatabaseHas('journal_articles', [
+            'id' => $submission->converted_article_id,
+            'status' => 'draft',
+            'type' => 'peer_reviewed_research',
+        ]);
     }
 
     private function createArticle(string $type, string $status, string $englishTitle): JournalArticle
@@ -213,6 +290,30 @@ final class JournalPublishingTest extends TestCase
         $user->roles()->attach($role);
 
         return $user;
+    }
+
+    /** @return array<string, mixed> */
+    private function validSubmissionPayload(): array
+    {
+        return [
+            'type' => 'peer_reviewed_research',
+            'primary_locale' => 'en',
+            'title' => 'Controlled sensory manuscript',
+            'abstract' => 'A complete abstract submitted for confidential editorial screening.',
+            'keywords' => 'sensory evaluation, gastronomy',
+            'manuscript' => UploadedFile::fake()->create('manuscript.pdf', 120, 'application/pdf'),
+            'author_name' => 'Submission Author',
+            'author_email' => 'author@example.test',
+            'affiliation' => 'Independent Culinary Research Unit',
+            'orcid' => '0000-0002-1825-0097',
+            'country_code' => 'GB',
+            'conflicts' => 'No competing interests declared.',
+            'funding' => 'No external funding.',
+            'ethics' => 'No human participants were involved.',
+            'authorship_confirmed' => '1',
+            'originality_confirmed' => '1',
+            'privacy_confirmed' => '1',
+        ];
     }
 
     private function installIntegrityKeys(): void

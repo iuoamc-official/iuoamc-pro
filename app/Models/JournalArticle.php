@@ -89,6 +89,11 @@ final class JournalArticle extends Model
         return $this->hasMany(JournalReview::class);
     }
 
+    public function decisions(): HasMany
+    {
+        return $this->hasMany(JournalEditorialDecision::class)->orderByDesc('issued_at');
+    }
+
     public function authors(): BelongsToMany
     {
         return $this->belongsToMany(JournalAuthor::class, 'journal_article_author')

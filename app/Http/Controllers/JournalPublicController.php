@@ -67,6 +67,16 @@ final class JournalPublicController extends Controller
         return view('journal.policies', $this->shared($locale, $profile));
     }
 
+    public function authorGuidelines(string $locale, PublicSiteProfile $profile): View
+    {
+        return view('journal.author-guidelines', $this->shared($locale, $profile));
+    }
+
+    public function editorialGovernance(string $locale, PublicSiteProfile $profile): View
+    {
+        return view('journal.editorial-governance', $this->shared($locale, $profile));
+    }
+
     /** @return array<string, mixed> */
     private function shared(string $locale, PublicSiteProfile $profile): array
     {

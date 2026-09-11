@@ -101,7 +101,7 @@ final class JournalArticleController extends Controller
         $reviewScope = fn ($query) => request()->user()->canDo('journal.manage')
             ? $query
             : $query->where('reviewer_id', request()->user()->id);
-        $article->load(['translations', 'authors', 'issue', 'correctionOf', 'corrections', 'versions', 'reviews' => $reviewScope, 'reviews.reviewer']);
+        $article->load(['translations', 'authors', 'issue', 'correctionOf', 'corrections', 'versions', 'decisions.issuer', 'reviews' => $reviewScope, 'reviews.reviewer']);
         $reviewers = request()->user()->canDo('journal.manage')
             ? User::query()->where('status', 'active')->whereHas('roles', fn ($query) => $query->where('slug', 'journal-reviewer'))->orderBy('name')->get(['id', 'name', 'email'])
             : collect();

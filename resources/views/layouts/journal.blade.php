@@ -32,6 +32,8 @@
                 <a href="{{ route('journal.public.index', ['locale' => app()->getLocale(), 'type' => 'professional_article']) }}">{{ __('journal.types.professional_article') }}</a>
                 <a href="{{ route('journal.public.issues.index', ['locale' => app()->getLocale()]) }}">{{ __('journal.issues') }}</a>
                 <a href="{{ route('journal.public.policies', ['locale' => app()->getLocale()]) }}">{{ __('journal.policies') }}</a>
+                <a href="{{ route('journal.public.author-guidelines', ['locale' => app()->getLocale()]) }}">{{ __('journal.author_guidelines') }}</a>
+                <a class="journal-submit-link" href="{{ route('journal.public.submissions.create', ['locale' => app()->getLocale()]) }}">{{ __('journal.submit_manuscript') }}</a>
             </nav>
             <nav class="journal-languages" aria-label="{{ __('public_site.languages') }}">
                 @foreach(['ar' => 'ع', 'en' => 'EN', 'fr' => 'FR'] as $language => $label)
@@ -47,7 +49,7 @@
         <div class="public-container journal-footer-grid">
             <div><strong>{{ $journal->localized('name') }}</strong><p>{{ $journal->localized('description') }}</p></div>
             <div><span>{{ __('journal.publisher') }}</span><b>{{ $journal->publisher_name }}</b></div>
-            <div><a href="{{ route('public.home', ['locale' => app()->getLocale()]) }}">IUOAMC.PRO</a><a href="{{ route('journal.public.policies', ['locale' => app()->getLocale()]) }}">{{ __('journal.editorial_integrity') }}</a></div>
+            <div><a href="{{ route('public.home', ['locale' => app()->getLocale()]) }}">IUOAMC.PRO</a><a href="{{ route('journal.public.policies', ['locale' => app()->getLocale()]) }}">{{ __('journal.editorial_integrity') }}</a><a href="{{ route('journal.public.editorial-governance', ['locale' => app()->getLocale()]) }}">{{ __('journal.editorial_governance') }}</a><a href="{{ route('journal.public.submissions.tracking', ['locale' => app()->getLocale()]) }}">{{ __('journal.track_submission') }}</a></div>
         </div>
     </footer>
 </body>

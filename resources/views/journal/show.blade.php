@@ -12,7 +12,7 @@
     <meta name="citation_journal_title" content="{{ $journal->localized('name') }}">
     @if($article->doi)<meta name="citation_doi" content="{{ $article->doi }}">@endif
     @if($journal->issn)<meta name="citation_issn" content="{{ $journal->issn }}">@endif
-    @if($article->pdf_path)<meta name="citation_pdf_url" content="{{ route('journal.public.articles.pdf', ['locale' => app()->getLocale(), 'article' => $article->slug]) }}">@endif
+    <?php if ($article->pdf_path) : ?><meta name="citation_pdf_url" content="{{ route('journal.public.articles.pdf', ['locale' => app()->getLocale(), 'article' => $article->slug]) }}"><?php endif; ?>
     @php
         $articleSchema = [
             chr(64).'context' => 'https://schema.org',
@@ -59,11 +59,11 @@
                 <div>
                     <dt>{{ __('journal.wicp_number') }}</dt>
                     <dd>
-                        @if ($article->wicp_registration_number)
+                        <?php if ($article->wicp_registration_number) : ?>
                             <a dir="ltr" href="{{ route('journal.public.registry.show', ['locale' => app()->getLocale(), 'registration' => $article->wicp_registration_number]) }}">{{ $article->wicp_registration_number }}</a>
-                        @else
+                        <?php else : ?>
                             {{ __('journal.not_assigned') }}
-                        @endif
+                        <?php endif; ?>
                     </dd>
                 </div>
                 <div><dt>{{ __('journal.integrity') }}</dt><dd><bdi dir="ltr">SHA-256 {{ \Illuminate\Support\Str::limit($article->version_of_record_hash, 18) }}</bdi></dd></div>
@@ -71,26 +71,26 @@
             <aside><span>{{ __('journal.version_of_record') }}</span><strong>V{{ $article->version_of_record }}</strong><p>{{ __('journal.immutable_notice') }}</p></aside>
         </div>
 
-        @if($article->pdf_path)
+        <?php if ($article->pdf_path) : ?>
             <section class="journal-publication-assets">
                 <a class="journal-download-pdf" href="{{ route('journal.public.articles.pdf', ['locale' => app()->getLocale(), 'article' => $article->slug]) }}">{{ __('journal.download_pdf') }}</a>
                 <span>{{ __('journal.pdf_size', ['size' => number_format(((int) $article->pdf_size) / 1048576, 2)]) }}</span>
                 <bdi dir="ltr">SHA-256 {{ $article->pdf_sha256 }}</bdi>
             </section>
-        @endif
+        <?php endif; ?>
 
         <section class="journal-abstract"><h2>{{ __('journal.abstract') }}</h2><p>{!! nl2br(e($translation?->abstract)) !!}</p><div>@foreach($translation?->keywords ?? [] as $keyword)<span>{{ $keyword }}</span>@endforeach</div></section>
         <section class="journal-body" id="article-body" tabindex="-1">{!! nl2br(e($bodyPage)) !!}</section>
 
-        @if(count($bodyPages) > 1)
+        <?php if (count($bodyPages) > 1) : ?>
             <nav class="journal-reader-pagination" aria-label="{{ __('journal.reader_navigation') }}">
                 <div class="journal-page-status" aria-live="polite">{{ __('journal.page_of', ['page' => $currentPage, 'total' => count($bodyPages)]) }}</div>
                 <div class="journal-reader-actions">
-                    @if (! $readingFull && $currentPage > 1)
+                    <?php if (! $readingFull && $currentPage > 1) : ?>
                         <a rel="prev" href="{{ route('journal.public.articles.show', ['locale' => app()->getLocale(), 'article' => $article->slug, 'page' => $currentPage - 1]) }}#article-body">{{ __('journal.previous_page') }}</a>
-                    @else
+                    <?php else : ?>
                         <span aria-disabled="true">{{ __('journal.previous_page') }}</span>
-                    @endif
+                    <?php endif; ?>
                     <form method="get" action="{{ route('journal.public.articles.show', ['locale' => app()->getLocale(), 'article' => $article->slug]) }}">
                         <label>
                             <span class="sr-only">{{ __('journal.go_to_page') }}</span>
@@ -102,15 +102,15 @@
                         </label>
                         <noscript><button type="submit">{{ __('journal.go') }}</button></noscript>
                     </form>
-                    @if (! $readingFull && $currentPage < count($bodyPages))
+                    <?php if (! $readingFull && $currentPage < count($bodyPages)) : ?>
                         <a rel="next" href="{{ route('journal.public.articles.show', ['locale' => app()->getLocale(), 'article' => $article->slug, 'page' => $currentPage + 1]) }}#article-body">{{ __('journal.next_page') }}</a>
-                    @else
+                    <?php else : ?>
                         <span aria-disabled="true">{{ __('journal.next_page') }}</span>
-                    @endif
+                    <?php endif; ?>
                 </div>
                 <a class="journal-view-toggle" href="{{ route('journal.public.articles.show', ['locale' => app()->getLocale(), 'article' => $article->slug, 'view' => $readingFull ? 'pages' : 'full']) }}#article-body">{{ $readingFull ? __('journal.paginated_view') : __('journal.full_view') }}</a>
             </nav>
-        @endif
+        <?php endif; ?>
 
         @if(($translation?->references ?? []) !== [])
             <section class="journal-references"><h2>{{ __('journal.references') }}</h2><ol>@foreach($translation->references as $reference)<li>{{ $reference }}</li>@endforeach</ol></section>

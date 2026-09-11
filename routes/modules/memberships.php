@@ -17,6 +17,10 @@ Route::prefix('{locale}/control/memberships')->where(['locale' => 'ar|en|fr'])
         Route::get('/{membership}', [MembershipController::class, 'show'])->whereNumber('membership')->name('show');
         Route::get('/{membership}/edit', [MembershipController::class, 'edit'])->whereNumber('membership')->middleware('permission:memberships.manage')->name('edit');
         Route::put('/{membership}', [MembershipController::class, 'update'])->whereNumber('membership')->middleware(['permission:memberships.manage', 'throttle:60,1'])->name('update');
+        Route::get('/{membership}/correct', [MembershipController::class, 'correct'])->whereNumber('membership')
+            ->middleware('permission:memberships.correct')->name('correct');
+        Route::post('/{membership}/correct', [MembershipController::class, 'storeCorrection'])->whereNumber('membership')
+            ->middleware(['permission:memberships.correct', 'throttle:10,1'])->name('correction.store');
         Route::post('/{membership}/actions/{action}', [MembershipController::class, 'transition'])
             ->whereNumber('membership')->where('action', 'submit|return|reject|approve|reopen|suspend|reinstate|revoke|renew')
             ->middleware('throttle:60,1')->name('transition');

@@ -31,6 +31,12 @@ Route::prefix('{locale}/control/certificates')->where(['locale' => 'ar|en|fr'])
         Route::get('/{certificate}', [ProCertificateController::class, 'show'])->whereNumber('certificate')->name('show');
         Route::get('/{certificate}/edit', [ProCertificateController::class, 'edit'])->whereNumber('certificate')->middleware('permission:certificates.manage')->name('edit');
         Route::put('/{certificate}', [ProCertificateController::class, 'update'])->whereNumber('certificate')->middleware(['permission:certificates.manage', 'throttle:60,1'])->name('update');
+        Route::get('/{certificate}/correct', [ProCertificateController::class, 'correct'])->whereNumber('certificate')
+            ->middleware('permission:certificates.correct')->name('correct');
+        Route::patch('/{certificate}/delivery-contact', [ProCertificateController::class, 'updateDeliveryContact'])->whereNumber('certificate')
+            ->middleware(['permission:certificates.correct', 'throttle:30,1'])->name('delivery-contact.update');
+        Route::post('/{certificate}/replacement', [ProCertificateController::class, 'createReplacement'])->whereNumber('certificate')
+            ->middleware(['permission:certificates.correct', 'throttle:10,1'])->name('replacement.store');
         Route::post('/{certificate}/actions/{action}', [ProCertificateController::class, 'transition'])->whereNumber('certificate')
             ->where('action', 'submit|return|approve|issue|revoke')->middleware('throttle:60,1')->name('transition');
         Route::get('/{certificate}/download', [ProCertificateController::class, 'download'])->whereNumber('certificate')->name('download');

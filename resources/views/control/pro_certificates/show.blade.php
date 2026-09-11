@@ -10,12 +10,14 @@
         <div class="pc-notice pc-notice-error" role="alert"><strong>{{ __('certificates.integrity_failed') }}</strong><p>{{ __('certificates.errors.integrity') }}</p></div>
     @else
     <div class="pc-record-status"><span class="pc-badge pc-state-{{ $status }}">{{ __('certificates.states.'.$status) }}</span><span class="pc-integrity">{{ __('certificates.verified') }}</span><span>{{ __('certificates.revision') }} {{ $certificate->lock_version }}</span></div>
+    @if($replacement)<div class="pc-notice pc-notice-warning"><strong>{{ __('certificates.replacement_linked') }}</strong><p><a href="{{ route('certificates.show',['locale'=>app()->getLocale(),'certificate'=>$replacement->id]) }}">{{ $replacement->certificate_number ?: $replacement->record_uuid }}</a></p></div>@endif
+    @if($correctionSource)<div class="pc-notice"><strong>{{ __('certificates.correction_source') }}</strong><p><a href="{{ route('certificates.show',['locale'=>app()->getLocale(),'certificate'=>$correctionSource->id]) }}">{{ $correctionSource->certificate_number }}</a></p></div>@endif
     <div class="pc-detail-grid">
         <section class="pc-card"><header class="pc-card-heading"><div><h2>{{ __('certificates.identity') }}</h2><p><bdi>{{ $certificate->organization?->display_name }}</bdi></p></div></header>
             <dl class="pc-facts">
                 <div><dt>{{ __('certificates.recipient_name') }}</dt><dd><bdi>{{ $certificate->recipient_name }}</bdi></dd></div>
                 <div><dt>{{ __('certificates.public_name') }}</dt><dd><bdi>{{ $certificate->public_name }}</bdi></dd></div>
-                @if($certificate->recipient_email)<div><dt>{{ __('certificates.recipient_email') }}</dt><dd><bdi dir="ltr">{{ $certificate->recipient_email }}</bdi></dd></div>@endif
+                @if($deliveryEmail)<div><dt>{{ __('certificates.recipient_email') }}</dt><dd><bdi dir="ltr">{{ $deliveryEmail }}</bdi></dd></div>@endif
                 <div><dt>{{ __('certificates.program_title') }}</dt><dd><bdi>{{ $certificate->program_title }}</bdi></dd></div>
                 <div><dt>{{ __('certificates.certificate_type') }}</dt><dd>{{ __('certificates.types.'.$certificate->certificate_type) }}</dd></div>
                 @if($certificate->credential_basis)<div><dt>{{ __('certificates.credential_basis') }}</dt><dd>{{ __('certificates.credential_bases.'.$certificate->credential_basis) }}</dd></div>@endif
@@ -29,6 +31,7 @@
             <div class="pc-statement"><h3>{{ __('certificates.statement') }}</h3><p>{{ $certificate->statement }}</p></div>
             <div class="pc-button-row">
                 @if($certificate->status==='draft' && auth()->user()->canDo('certificates.manage'))<a class="pc-button pc-button-secondary" href="{{ route('certificates.edit',['locale'=>app()->getLocale(),'certificate'=>$certificate->id]) }}">{{ __('certificates.edit') }}</a>@endif
+                @if(in_array($certificate->status,['issued','revoked'],true) && auth()->user()->canDo('certificates.correct'))<a class="pc-button pc-button-secondary" href="{{ route('certificates.correct',['locale'=>app()->getLocale(),'certificate'=>$certificate->id]) }}">{{ __('certificates.correct') }}</a>@endif
                 @if(in_array($certificate->status,['draft','review','approved'],true) && auth()->user()->canDo('certificates.manage'))<a class="pc-button pc-button-secondary" href="{{ route('certificates.preview',['locale'=>app()->getLocale(),'certificate'=>$certificate->id]) }}" target="_blank" rel="noopener noreferrer">{{ __('certificates.preview') }}</a>@endif
                 @if(in_array($certificate->status,['issued','revoked'],true))<a class="pc-button pc-button-primary" href="{{ route('certificates.download',['locale'=>app()->getLocale(),'certificate'=>$certificate->id]) }}">{{ __('certificates.download') }}</a><a class="pc-button pc-button-secondary" href="{{ route('certificates.image',['locale'=>app()->getLocale(),'certificate'=>$certificate->id,'variant'=>'print']) }}">{{ __('certificates.download_png') }}</a><a class="pc-button pc-button-secondary" href="{{ route('certificates.image',['locale'=>app()->getLocale(),'certificate'=>$certificate->id,'variant'=>'share']) }}">{{ __('certificates.download_share') }}</a><a class="pc-button pc-button-secondary" href="{{ route('pro-certificates.verify',['token'=>$certificate->public_token,'lang'=>app()->getLocale()]) }}" target="_blank" rel="noopener noreferrer">{{ __('certificates.verify_link') }}</a>@endif
             </div>

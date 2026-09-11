@@ -9,6 +9,7 @@ use App\Models\Organization;
 use App\Models\ProCertificate;
 use App\Services\InstitutionalAccess;
 use App\Services\ProCertificateCatalog;
+use App\Services\ProCertificateCorrection;
 use App\Services\ProCertificateImage;
 use App\Services\ProCertificatePdf;
 use App\Services\ProCertificateRegistry;
@@ -24,6 +25,7 @@ use Throwable;
 final class ProCertificateController extends Controller
 {
     private function registry(): ProCertificateRegistry { return app(ProCertificateRegistry::class); }
+    private function corrections(): ProCertificateCorrection { return app(ProCertificateCorrection::class); }
 
     private function headers(): array
     {
@@ -164,7 +166,48 @@ final class ProCertificateController extends Controller
             try { $reasons[$event->id] = isset($event->metadata['reason_encrypted']) ? Crypt::decryptString($event->metadata['reason_encrypted']) : null; }
             catch (Throwable) { $reasons[$event->id] = __('certificates.unreadable'); }
         }
-        return $this->page('control.pro_certificates.show', compact('certificate', 'integrity', 'status', 'readiness', 'history', 'reasons'));
+        $deliveryEmail = $integrity ? $this->corrections()->effectiveDeliveryEmail($certificate) : null;
+        $replacement = $integrity ? $this->corrections()->replacementFor($certificate) : null;
+        $correctionSource = $integrity ? $this->corrections()->sourceFor($certificate) : null;
+        return $this->page('control.pro_certificates.show', compact(
+            'certificate', 'integrity', 'status', 'readiness', 'history', 'reasons',
+            'deliveryEmail', 'replacement', 'correctionSource'
+        ));
+    }
+
+    public function correct(Request $request): Response
+    {
+        $this->registry()->requirePermission($request->user(), 'certificates.correct');
+        $certificate = $this->record($request);
+        abort_unless($this->registry()->verify($certificate), 409, __('certificates.errors.integrity'));
+        abort_unless(in_array($certificate->status, ['issued', 'revoked'], true), 409, __('certificates.errors.correction_state'));
+
+        return $this->page('control.pro_certificates.correct', [
+            'certificate' => $certificate,
+            'deliveryEmail' => $this->corrections()->effectiveDeliveryEmail($certificate),
+            'replacement' => $this->corrections()->replacementFor($certificate),
+        ]);
+    }
+
+    public function updateDeliveryContact(Request $request): RedirectResponse
+    {
+        $certificate = $this->record($request);
+        $data = $request->validate(['recipient_email' => ['nullable', 'email:rfc', 'max:254']]);
+        $this->corrections()->updateDeliveryEmail($request->user(), $certificate, $data['recipient_email'] ?? null);
+
+        return redirect()->route('certificates.show', ['locale' => app()->getLocale(), 'certificate' => $certificate->id])
+            ->with('success', __('certificates.delivery_email_saved'));
+    }
+
+    public function createReplacement(Request $request): RedirectResponse
+    {
+        $certificate = $this->record($request);
+        $replacement = $this->corrections()->createReplacementDraft($request->user(), $certificate, $request->only([
+            'recipient_name', 'public_name', 'recipient_email', 'reason',
+        ]));
+
+        return redirect()->route('certificates.show', ['locale' => app()->getLocale(), 'certificate' => $replacement->id])
+            ->with('success', __('certificates.replacement_created'));
     }
 
     public function transition(Request $request): RedirectResponse

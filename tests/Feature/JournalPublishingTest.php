@@ -41,6 +41,7 @@ final class JournalPublishingTest extends TestCase
             '2026_09_11_150000_create_scientific_journal_core.php',
             '2026_09_11_160000_create_journal_submission_pipeline.php',
             '2026_09_11_170000_create_journal_prelaunch_operations.php',
+            '2026_09_11_180000_add_publication_assets_to_journal_articles.php',
         ] as $migrationFile) {
             $migration = require database_path('migrations/'.$migrationFile);
             $migration->up();

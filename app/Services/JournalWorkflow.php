@@ -174,7 +174,15 @@ final class JournalWorkflow
             return;
         }
 
-        if ($article->issue === null || $article->authors->isEmpty() || $article->translations->pluck('locale')->sort()->values()->all() !== ['ar', 'en', 'fr']) {
+        if (
+            $article->issue === null
+            || $article->authors->isEmpty()
+            || $article->translations->pluck('locale')->sort()->values()->all() !== ['ar', 'en', 'fr']
+            || blank($article->pdf_path)
+            || blank($article->pdf_sha256)
+            || blank($article->wicp_registration_number)
+            || $article->wicp_verified_at === null
+        ) {
             throw ValidationException::withMessages(['action' => trans('journal.errors.publication_incomplete')]);
         }
     }
@@ -188,6 +196,14 @@ final class JournalWorkflow
             'type' => $article->type,
             'doi' => $article->doi,
             'license' => $article->license,
+            'pdf_sha256' => $article->pdf_sha256,
+            'wicp_registration' => [
+                'number' => $article->wicp_registration_number,
+                'registered_at' => $article->wicp_registered_at?->toDateString(),
+                'verification_url' => $article->wicp_verification_url,
+                'verified_at' => $article->wicp_verified_at?->toIso8601String(),
+                'issuer' => 'WICP',
+            ],
             'issue' => $article->issue?->only(['volume', 'number', 'slug']),
             'authors' => $article->authors->map(fn ($author): array => [
                 'name' => $author->name,

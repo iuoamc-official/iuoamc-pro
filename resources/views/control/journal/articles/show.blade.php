@@ -17,6 +17,28 @@
 @endphp
 @foreach($actions as $action)@if((in_array($action,['accept','reject','publish','publish_professional','retract'],true) && auth()->user()->canDo('journal.publish')) || (!in_array($action,['accept','reject','publish','publish_professional','retract'],true) && auth()->user()->canDo('journal.manage')))<form class="journal-action" method="post" action="{{ route('journal.control.articles.transition',['locale'=>app()->getLocale(),'article'=>$article]) }}">@csrf<input type="hidden" name="lock_version" value="{{ $article->lock_version }}"><input type="hidden" name="action" value="{{ $action }}">@if(in_array($action,['accept','request_revision','reject','retract'],true))<textarea name="reason" @required(in_array($action,['request_revision','reject','retract'],true)) maxlength="3000" placeholder="{{ $action==='accept' ? __('journal.decision_letter_optional') : __('journal.reason_required') }}"></textarea>@endif<button class="{{ in_array($action,['publish','publish_professional','accept'],true)?'primary-action':'secondary-action' }}" type="submit">{{ __('journal.actions.'.$action) }}</button></form>@endif @endforeach
 @if(in_array($article->status,['published','retracted'],true) && auth()->user()->canDo('journal.publish'))<form class="journal-action correction-action" method="post" action="{{ route('journal.control.articles.corrections.store',['locale'=>app()->getLocale(),'article'=>$article]) }}">@csrf<textarea name="reason" required maxlength="3000" placeholder="{{ __('journal.correction_reason') }}"></textarea><button class="secondary-action">{{ __('journal.create_correction') }}</button></form>@endif</aside></div>
+@if(!$blindReviewer)
+<section class="data-card journal-publication-control">
+    <div class="data-card-header"><div><h2>{{ __('journal.publication_assets') }}</h2><p>{{ __('journal.publication_assets_help') }}</p></div></div>
+    <dl class="journal-facts">
+        <div><dt>{{ __('journal.wicp_number') }}</dt><dd><bdi dir="ltr">{{ $article->wicp_registration_number ?: '—' }}</bdi></dd></div>
+        <div><dt>{{ __('journal.wicp_registered_at') }}</dt><dd>{{ $article->wicp_registered_at?->format('Y-m-d') ?: '—' }}</dd></div>
+        <div class="wide"><dt>{{ __('journal.pdf_fingerprint') }}</dt><dd><bdi dir="ltr">{{ $article->pdf_sha256 ?: '—' }}</bdi></dd></div>
+    </dl>
+    @if(!in_array($article->status,['published','retracted'],true) && auth()->user()->canDo('journal.manage'))
+    <form class="institutional-form" method="post" enctype="multipart/form-data" action="{{ route('journal.control.articles.publication-assets',['locale'=>app()->getLocale(),'article'=>$article]) }}">@csrf
+        <div class="form-grid two-columns">
+            <label class="field"><span>{{ __('journal.publication_pdf') }} *</span><input type="file" name="publication_pdf" accept="application/pdf,.pdf" required><small>{{ __('journal.publication_pdf_help') }}</small></label>
+            <label class="field"><span>{{ __('journal.wicp_number') }} *</span><input name="wicp_registration_number" maxlength="120" dir="ltr" required value="{{ old('wicp_registration_number',$article->wicp_registration_number) }}"></label>
+            <label class="field"><span>{{ __('journal.wicp_registered_at') }} *</span><input type="date" name="wicp_registered_at" required value="{{ old('wicp_registered_at',$article->wicp_registered_at?->format('Y-m-d')) }}"></label>
+            <label class="field"><span>{{ __('journal.wicp_verification_url') }}</span><input type="url" name="wicp_verification_url" dir="ltr" maxlength="1000" value="{{ old('wicp_verification_url',$article->wicp_verification_url) }}"></label>
+            <label class="field wide consent-check"><input type="checkbox" name="wicp_verified" value="1" required><span>{{ __('journal.wicp_verification_confirmed') }}</span></label>
+        </div>
+        <button class="primary-action" type="submit">{{ __('journal.save_publication_assets') }}</button>
+    </form>
+    @endif
+</section>
+@endif
 <section class="data-card journal-preview"><div class="data-card-header"><div><h2>{{ __('journal.content_preview') }}</h2></div></div><h3>{{ $translation?->title }}</h3><strong>{{ __('journal.abstract') }}</strong><p>{!! nl2br(e($translation?->abstract)) !!}</p></section>
 @if(!$blindReviewer && $article->decisions->isNotEmpty())<section class="data-card"><div class="data-card-header"><div><h2>{{ __('journal.editorial_decisions') }}</h2><p>{{ __('journal.editorial_decisions_help') }}</p></div></div><div class="journal-decision-list">@foreach($article->decisions as $decision)<article><header><strong>{{ __('journal.statuses.'.$decision->decision) }}</strong><time>{{ $decision->issued_at->format('Y-m-d H:i') }} UTC</time></header><p>{{ $decision->letter ?: __('journal.no_decision_letter') }}</p><small>{{ __('journal.issued_by') }}: {{ $decision->issuer->name }}</small></article>@endforeach</div></section>@endif
 @if($article->type==='peer_reviewed_research')<section class="data-card"><div class="data-card-header"><div><h2>{{ __('journal.peer_review_records') }}</h2><p>{{ __('journal.peer_review_help') }}</p></div></div>

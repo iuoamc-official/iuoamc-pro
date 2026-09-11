@@ -99,11 +99,13 @@ final class ProCertificatePadesSigner
             throw new RuntimeException('PADES_NOT_ENABLED');
         }
 
-        $binary = $this->safeFile((string) config('certificates.pades.binary'), true, false);
-        $pkcs12 = $this->safeFile((string) config('certificates.pades.pkcs12_path'), false, true);
-        $passphrase = $this->safeFile((string) config('certificates.pades.passphrase_file'), false, true);
+        $binary = $this->safeFile((string) config('certificates.pades.binary'), true, false, 'BINARY');
+        $pkcs12 = $this->safeFile((string) config('certificates.pades.pkcs12_path'), false, true, 'PKCS12');
+        $passphrase = $this->safeFile((string) config('certificates.pades.passphrase_file'), false, true, 'PASSPHRASE');
         $trust = config('certificates.pades.trust_root_path');
-        $trust = is_string($trust) && trim($trust) !== '' ? $this->safeFile($trust, false, false) : null;
+        $trust = is_string($trust) && trim($trust) !== ''
+            ? $this->safeFile($trust, false, false, 'TRUST_ROOT')
+            : null;
         $profile = (string) config('certificates.pades.profile');
         if (! in_array($profile, ['PAdES-B-B', 'PAdES-B-T'], true)) {
             throw new RuntimeException('PADES_PROFILE_INVALID');
@@ -136,14 +138,14 @@ final class ProCertificatePadesSigner
         ];
     }
 
-    private function safeFile(string $path, bool $executable, bool $private): string
+    private function safeFile(string $path, bool $executable, bool $private, string $label): string
     {
         if ($path === '' || ! str_starts_with($path, '/') || is_link($path) || ! is_file($path)) {
-            throw new RuntimeException('PADES_FILE_UNAVAILABLE');
+            throw new RuntimeException('PADES_'.$label.'_UNAVAILABLE');
         }
         $real = realpath($path);
         if ($real === false || $real !== $path || ! is_readable($real) || ($executable && ! is_executable($real))) {
-            throw new RuntimeException('PADES_FILE_UNAVAILABLE');
+            throw new RuntimeException('PADES_'.$label.'_UNAVAILABLE');
         }
         if ($private && (fileperms($real) & 0077) !== 0) {
             throw new RuntimeException('PADES_SECRET_PERMISSIONS_INVALID');

@@ -8,7 +8,7 @@ final class PdrtseCertificateDefinition
 {
     public const CODE = 'PDRTSE';
 
-    public const NUMBER_PREFIX = 'IUOAMC-PDRTSE';
+    public const NUMBER_PREFIX = 'ICGA-PDRTSE';
 
     public const DESIGNATION = 'Certified Restaurant Tasting and Sensory Evaluation Specialist';
 
@@ -39,7 +39,7 @@ final class PdrtseCertificateDefinition
             'statement_fr' => 'Ce certificat est décerné à [RECIPIENT NAME], qui a suivi avec succès les quatre niveaux progressifs du programme de formation professionnelle de 20 heures dispensé sur un mois et a réussi l’évaluation professionnelle finale. En conséquence, le titulaire reçoit le titre professionnel de Certified Restaurant Tasting and Sensory Evaluation Specialist.'
                 ."\n".'Titre professionnel - ne constitue ni un diplôme universitaire ni une qualification réglementée.',
             'signatory_name' => 'Master Chef Ahmad Maadarani',
-            'signatory_title' => 'President General & Authorized Signatory',
+            'signatory_title' => 'President General & Authorised Signatory',
             'active' => true,
         ];
     }

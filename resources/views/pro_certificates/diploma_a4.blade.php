@@ -2,6 +2,7 @@
     $typeName = $payload['catalog_snapshot']['names'][$language];
     $longName = mb_strlen($payload['recipient_name']) > 42;
     $longTitle = mb_strlen($payload['certificate_title']) > 72;
+    $pdrtse = ($payload['catalog_snapshot']['code'] ?? null) === 'PDRTSE';
 @endphp
 <!doctype html>
 <html lang="{{ $language }}" dir="{{ $language === 'ar' ? 'rtl' : 'ltr' }}">
@@ -19,6 +20,7 @@ body { margin:0; padding:0; color:#102b43; font-family:dejavusans; font-size:9pt
 .masthead td { vertical-align:middle; }
 .brand-cell { width:19%; text-align:center; }
 .issuer-cell { width:43%; text-align:{{ $language === 'ar' ? 'left' : 'right' }}; font-size:7.5pt; line-height:1.4; }
+.entity-roles { position:fixed; top:37.2mm; left:24mm; width:232mm; text-align:center; color:#63788b; font-size:5.6pt; letter-spacing:.08pt; }
 .muted { color:#63788b; font-size:6.7pt; }
 .eyebrow { position:fixed; top:40mm; left:35mm; width:210mm; text-align:center; color:#8e712a; font-size:7.5pt; }
 .title { position:fixed; top:46mm; left:20mm; width:240mm; text-align:center; font-weight:bold; font-size:{{ $longTitle ? '15' : '18' }}pt; line-height:1.05; }
@@ -37,7 +39,7 @@ body { margin:0; padding:0; color:#102b43; font-family:dejavusans; font-size:9pt
 .security-zone { position:fixed; top:146mm; left:214mm; width:57mm; height:40mm; }
 .security-zone table { border-collapse:collapse; width:57mm; height:40mm; }
 .nfc { width:15mm; text-align:center; color:#b58b24; font-size:6pt; line-height:1.1; vertical-align:middle; }
-.nfc-mark { font-size:18pt; line-height:.8; font-weight:bold; }
+.nfc-mark { width:13mm; height:17mm; margin:0 auto .5mm; }
 .physical-seal { width:40mm; height:40mm; border:.25mm dashed #c7a23e; border-radius:20mm; }
 .foot { position:fixed; bottom:3.5mm; left:48mm; width:158mm; text-align:center; color:#63788b; font-size:5.8pt; line-height:1.15; }
 .code { direction:ltr; font-family:dejavusans; }
@@ -58,6 +60,7 @@ body { margin:0; padding:0; color:#102b43; font-family:dejavusans; font-size:9pt
 @if(!empty($payload['issuer']['registration_number']))<br>{{ $labels['registration'] }}: <span dir="ltr">{{ $payload['issuer']['registration_number'] }}</span>@endif
 </span></td>
 </tr></table></div>
+@if($pdrtse)<div class="entity-roles"><strong>ISSUING BODY: ICGA®</strong> &nbsp;•&nbsp; PROGRAMME &amp; INSTITUTIONAL FRAMEWORK: IUOAMC &nbsp;•&nbsp; PROFESSIONAL OVERSIGHT: WSA-CA</div>@endif
 
 <div class="eyebrow">{{ $typeName }}</div>
 <div class="title">{{ $payload['certificate_title'] }}</div>
@@ -84,7 +87,10 @@ body { margin:0; padding:0; color:#102b43; font-family:dejavusans; font-size:9pt
 <div class="signatory-box"><div class="signatory">{{ $payload['signatory_name'] }}</div><div class="muted">{{ $payload['signatory_title'] }}</div></div>
 
 <div class="security-zone"><table><tr>
-<td class="nfc"><div class="nfc-mark">◉)))</div><strong>NFC</strong><br>SECURED</td>
+<td class="nfc"><svg class="nfc-mark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 68" aria-label="NFC secured seal">
+<circle cx="10" cy="34" r="5" fill="#b58b24"/>
+<path d="M19 20c8 7 8 21 0 28M27 13c13 11 13 31 0 42M35 6c19 16 19 40 0 56" fill="none" stroke="#b58b24" stroke-width="4" stroke-linecap="round"/>
+</svg><strong>NFC</strong><br>SECURED</td>
 <td><svg xmlns="http://www.w3.org/2000/svg" width="40mm" height="40mm" viewBox="0 0 40 40" aria-label="40 mm physical gold seal placement">
 <circle cx="20" cy="20" r="19.3" fill="none" stroke="#c7a23e" stroke-width=".28" stroke-dasharray="1.2 1.2"/>
 <circle cx="20" cy="20" r="17.8" fill="none" stroke="#e6dac1" stroke-width=".18"/>

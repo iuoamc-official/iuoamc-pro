@@ -15,7 +15,7 @@ final class PdrtseCertificateDefinitionTest extends TestCase
         $profile = $definition->typeProfile(91);
 
         self::assertSame('PDRTSE', $profile['code']);
-        self::assertSame('IUOAMC-PDRTSE', $profile['number_prefix']);
+        self::assertSame('ICGA-PDRTSE', $profile['number_prefix']);
         self::assertSame(91, $profile['organization_id']);
         self::assertSame(PdrtseCertificateDefinition::TITLE_EN, $profile['title_en']);
         self::assertSame(
@@ -23,6 +23,7 @@ final class PdrtseCertificateDefinitionTest extends TestCase
             $profile['statement_en'],
         );
         self::assertSame(PdrtseCertificateDefinition::DESIGNATION, 'Certified Restaurant Tasting and Sensory Evaluation Specialist');
+        self::assertSame('President General & Authorised Signatory', $profile['signatory_title']);
     }
 
     public function test_private_recipient_identity_is_not_part_of_the_public_type_profile(): void

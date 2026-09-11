@@ -43,7 +43,10 @@ final class InstallPdrtseDraft extends Command
         }
 
         $actor = User::query()->where('email', $email)->where('status', 'active')->firstOrFail();
-        $organization = Organization::query()->where('code', 'IUOAMC-UK-16649793')->where('status', 'active')->firstOrFail();
+        $organization = Organization::query()
+            ->where('registration_number', '16846998')
+            ->where('status', 'active')
+            ->firstOrFail();
         $existingTypes = ProCertificateType::query()->where('code', PdrtseCertificateDefinition::CODE)->get();
         if ($existingTypes->count() > 1) {
             throw new RuntimeException('PDRTSE_TYPE_CODE_DUPLICATED');
@@ -89,7 +92,7 @@ final class InstallPdrtseDraft extends Command
             'statement' => $definition->englishStatement(),
             'specialization' => PdrtseCertificateDefinition::DESIGNATION,
             'signatory_name' => 'Master Chef Ahmad Maadarani',
-            'signatory_title' => 'President General & Authorized Signatory',
+            'signatory_title' => 'President General & Authorised Signatory',
         ]);
 
         $this->info('PDRTSE_DRAFT_CREATED='.$draft->id);

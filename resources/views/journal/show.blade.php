@@ -56,7 +56,16 @@
                 <div><dt>{{ __('journal.accepted') }}</dt><dd>{{ $article->accepted_at?->format('Y-m-d') ?: '—' }}</dd></div>
                 <div><dt>{{ __('journal.published') }}</dt><dd>{{ $article->published_at?->format('Y-m-d') }}</dd></div>
                 <div><dt>DOI</dt><dd>@if($article->doi)<a dir="ltr" href="https://doi.org/{{ $article->doi }}">{{ $article->doi }}</a>@else{{ __('journal.not_assigned') }}@endif</dd></div>
-                <div><dt>{{ __('journal.wicp_number') }}</dt><dd>@if($article->wicp_registration_number)<a dir="ltr" href="{{ route('journal.public.registry.show', ['locale' => app()->getLocale(), 'registration' => $article->wicp_registration_number]) }}">{{ $article->wicp_registration_number }}</a>@else{{ __('journal.not_assigned') }}@endif</dd></div>
+                <div>
+                    <dt>{{ __('journal.wicp_number') }}</dt>
+                    <dd>
+                        @if ($article->wicp_registration_number)
+                            <a dir="ltr" href="{{ route('journal.public.registry.show', ['locale' => app()->getLocale(), 'registration' => $article->wicp_registration_number]) }}">{{ $article->wicp_registration_number }}</a>
+                        @else
+                            {{ __('journal.not_assigned') }}
+                        @endif
+                    </dd>
+                </div>
                 <div><dt>{{ __('journal.integrity') }}</dt><dd><bdi dir="ltr">SHA-256 {{ \Illuminate\Support\Str::limit($article->version_of_record_hash, 18) }}</bdi></dd></div>
             </dl>
             <aside><span>{{ __('journal.version_of_record') }}</span><strong>V{{ $article->version_of_record }}</strong><p>{{ __('journal.immutable_notice') }}</p></aside>

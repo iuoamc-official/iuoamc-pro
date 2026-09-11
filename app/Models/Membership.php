@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use LogicException;
 
 class Membership extends Model
@@ -27,6 +28,8 @@ class Membership extends Model
     public function organization(): BelongsTo { return $this->belongsTo(Organization::class); }
     public function integrityAudit(): BelongsTo { return $this->belongsTo(AuditLog::class, 'integrity_audit_id'); }
     public function periods(): HasMany { return $this->hasMany(MembershipPeriod::class)->orderByDesc('version'); }
+    public function application(): HasOne { return $this->hasOne(MembershipApplication::class); }
+    public function credentials(): HasMany { return $this->hasMany(MembershipCredential::class)->orderByDesc('version'); }
 
     public function effectiveStatus(?string $date = null): string
     {

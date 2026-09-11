@@ -253,6 +253,10 @@ final class MembershipRegistry
         return DB::transaction(function () use ($actor, $id, $version, $action, $data, $permission, $allowed, $next): Membership {
             $membership = $this->locked($actor, $id, $version, $permission);
             if (! in_array($membership->status, $allowed, true)) { $this->stop('transition'); }
+            if (in_array($action, ['submit', 'approve'], true)
+                && ! app(MembershipCredentialRegistry::class)->ready($membership)) {
+                $this->stop('application_incomplete');
+            }
             if ($next === 'active' && $membership->organization->status !== 'active') { $this->stop('inactive_organization'); }
             if ($action !== 'submit' && trim((string) ($data['reason'] ?? '')) === '') { $this->stop('reason'); }
             $old = $membership->only(['status', 'lock_version', 'record_hash']);

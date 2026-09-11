@@ -3,11 +3,12 @@
 @section('content')
 @php($editing = $membership->exists)
 @php($identityLocked = $editing && $membership->status !== 'draft')
+@php($application = $editing ? $membership->application : null)
 <div class="membership-module">
     <section class="page-heading"><div><span class="eyebrow">IUOAMC / MEMBER RECORD</span><h1>{{ __($editing?'memberships.edit':'memberships.new') }}</h1><p>{{ __('memberships.form_lead') }}</p></div></section>
     @if($errors->any())<div class="alert alert-error" role="alert">{{ $errors->first() }}</div>@endif
     @if($identityLocked)<div class="alert membership-notice">{{ __('memberships.contact_only') }}</div>@endif
-    <form class="institutional-form" method="post" action="{{ $editing ? route('memberships.update',['locale'=>app()->getLocale(),'membership'=>$membership->id]) : route('memberships.store',['locale'=>app()->getLocale()]) }}">
+    <form class="institutional-form" method="post" enctype="multipart/form-data" action="{{ $editing ? route('memberships.update',['locale'=>app()->getLocale(),'membership'=>$membership->id]) : route('memberships.store',['locale'=>app()->getLocale()]) }}">
         @csrf
         @if($editing) @method('put')<input type="hidden" name="lock_version" value="{{ $membership->lock_version }}"> @endif
         <section class="form-card"><header><span class="form-step">01</span><div><h2>{{ __('memberships.identity') }}</h2><p>{{ __('institutional.required_fields') }}</p></div></header>
@@ -28,6 +29,9 @@
             </div>
             <label class="field"><span>{{ __('memberships.notes') }}</span><textarea name="private_notes" rows="4" maxlength="5000">{{ old('private_notes',$membership->private_notes) }}</textarea></label>
         </section>
+        @if(!$identityLocked)
+            @include('control.memberships._application_fields',['application'=>$application,'photoRequired'=>$application===null])
+        @endif
         <div class="form-footer"><p>{{ __('memberships.draft_notice') }}</p><div><a class="secondary-action" href="{{ route('memberships.index',['locale'=>app()->getLocale()]) }}">{{ __('institutional.cancel') }}</a><button type="submit" class="primary-action">{{ __('memberships.save') }}</button></div></div>
     </form>
 </div>

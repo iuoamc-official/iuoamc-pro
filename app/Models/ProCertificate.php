@@ -24,6 +24,7 @@ class ProCertificate extends Model
         return [
             'organization_id' => 'integer', 'lock_version' => 'integer',
             'schema_version' => 'integer', 'catalog_type_id' => 'integer', 'catalog_snapshot' => 'array',
+            'accreditation_date' => 'immutable_date:Y-m-d',
             'created_by' => 'integer', 'updated_by' => 'integer', 'approved_by' => 'integer',
             'issued_by' => 'integer', 'revoked_by' => 'integer', 'integrity_audit_id' => 'integer',
             'achievement_date' => 'immutable_date:Y-m-d', 'expires_on' => 'immutable_date:Y-m-d',
@@ -45,6 +46,7 @@ class ProCertificate extends Model
             if ($certificate->getRawOriginal('issued_payload') !== null) {
                 $immutable = [
                     'recipient_name', 'public_name', 'program_title', 'certificate_title', 'certificate_type',
+                    'credential_basis', 'accreditation_reference', 'accreditation_date',
                     'language', 'achievement_date', 'expires_on', 'statement', 'signatory_name', 'signatory_title',
                     'certificate_number', 'public_token', 'issued_at', 'issued_by', 'approved_at', 'approved_by',
                     'issued_payload', 'payload_sha256', 'signature', 'signing_key_id', 'pdf_path', 'pdf_sha256',

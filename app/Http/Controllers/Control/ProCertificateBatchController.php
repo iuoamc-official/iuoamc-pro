@@ -77,7 +77,9 @@ final class ProCertificateBatchController extends Controller
         $types=$this->types($request);$selectedType=$types->firstWhere('id',(int)$input['catalog_type_id']);abort_unless($selectedType,404);
         if((int)$input['catalog_version']!==(int)$selectedType->lock_version)throw ValidationException::withMessages(['catalog_version'=>__('certificate_catalog.errors.preview_changed')]);
         $common=array_merge($this->catalog()->defaults($request->user(),(int)$selectedType->id,$input['language']),
-            $request->only(['batch_name','program_title','achievement_date','expires_on','certificate_title','statement','signatory_name','signatory_title']));
+            $request->only(['batch_name','program_title','achievement_date','expires_on','certificate_title','statement',
+                'signatory_name','signatory_title','credential_basis','accreditation_reference','accreditation_date']));
+        $common['credential_basis']??=\App\Services\ProCertificateClaimPolicy::PROGRAMME_COMPLETION;
         unset($common['certificate_type']);
         $common['organization_id']=(int)$selectedType->organization_id;$common['catalog_type_id']=(int)$selectedType->id;$common['catalog_version']=(int)$input['catalog_version'];
         $rawRows=$this->parseRows($input['recipient_rows']);$rows=[];$seen=[];

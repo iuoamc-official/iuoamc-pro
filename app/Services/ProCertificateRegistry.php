@@ -24,6 +24,7 @@ final class ProCertificateRegistry
         'recipient_name', 'public_name', 'program_title', 'certificate_title', 'certificate_type',
         'language', 'achievement_date', 'expires_on', 'statement', 'signatory_name', 'signatory_title',
     ];
+    private const CREDENTIAL_FIELDS = ['credential_basis', 'accreditation_reference', 'accreditation_date'];
     public const TEMPLATE_VERSION = 'IUOAMC-PRO-CERT-1.0.0';
 
     private const POLICY = [
@@ -68,9 +69,10 @@ final class ProCertificateRegistry
             app(InstitutionalAccess::class)->authorizeOrganization($actor, $organization);
             $this->requireActiveOrganization($organization);
             $prepared = $this->validateDraft($actor, $data);
-            $version = isset($prepared['catalog_type_id']) ? 2 : 1;
+            $version = isset($prepared['catalog_type_id']) ? 3 : 1;
+            $prepared['credential_basis'] ??= ProCertificateClaimPolicy::PROGRAMME_COMPLETION;
             $values = $this->validatedProfile($prepared, $version);
-            $catalog = $version === 2 ? app(ProCertificateCatalog::class)->snapshotFor(
+            $catalog = $version >= 2 ? app(ProCertificateCatalog::class)->snapshotFor(
                 $actor, $prepared['catalog_type_id'], (int) $organization->id
             ) : null;
             $time = now()->utc()->startOfSecond();
@@ -104,7 +106,7 @@ final class ProCertificateRegistry
                 $this->stop('organization_locked');
             }
             $values = $this->validatedProfile(array_replace($this->profile($certificate), $data), $this->version($certificate));
-            if ($this->version($certificate) === 2 && $values['certificate_type'] !== $certificate->catalog_snapshot['category']) {
+            if ($this->version($certificate) >= 2 && $values['certificate_type'] !== $certificate->catalog_snapshot['category']) {
                 $this->stop('transition');
             }
             $old = $this->auditValues($certificate);
@@ -146,8 +148,13 @@ final class ProCertificateRegistry
                 app(InstitutionalAccess::class)->authorizeOrganization($actor, $organization);
                 if (in_array($action, ['submit', 'approve', 'issue'], true)) {
                     $this->requireActiveOrganization($organization);
+                    if ($this->version($certificate) >= 3 && $certificate->credential_basis === null) {
+                        throw ValidationException::withMessages([
+                            'credential_basis' => trans('certificates.errors.credential_basis_required'),
+                        ]);
+                    }
                     $this->validatedProfile($this->profile($certificate), $this->version($certificate));
-                    if ($this->version($certificate) === 2) {
+                    if ($this->version($certificate) >= 2) {
                         app(ProCertificateCatalog::class)->snapshotFor($actor, (int) $certificate->catalog_type_id, (int) $certificate->organization_id);
                     }
                 }
@@ -314,7 +321,7 @@ final class ProCertificateRegistry
             'record_hash' => $certificate->record_hash, 'pdf_sha256' => $certificate->pdf_sha256,
             'issued_payload_sha256' => $certificate->payload_sha256,
         ];
-        if ($this->version($certificate) === 2) {
+        if ($this->version($certificate) >= 2) {
             $attestation['schema'] = 'iuoamc-pro-certificate-public-attestation-v2';
             $attestation['specialization'] = $certificate->specialization;
             $attestation['catalog'] = ['code' => $certificate->catalog_snapshot['code'],
@@ -323,6 +330,13 @@ final class ProCertificateRegistry
             if ($programIpCode !== null) {
                 $attestation['program_intellectual_property_code'] = $programIpCode;
             }
+        }
+        if ($this->version($certificate) >= 3) {
+            $attestation['schema'] = 'iuoamc-pro-certificate-public-attestation-v3';
+            $attestation['credential_basis'] = $certificate->credential_basis;
+            $attestation['accreditation_reference'] = $certificate->accreditation_reference;
+            $attestation['accreditation_date'] = $certificate->accreditation_date?->toDateString();
+            $attestation['pdf_signature_profile'] = 'registry-seal-ed25519-sha256';
         }
         $signer = app(ProCertificateSigner::class);
 
@@ -362,7 +376,7 @@ final class ProCertificateRegistry
         $version = $this->version($current);
         $catalog = null;
 
-        if ($integrity && $version === 2) {
+        if ($integrity && $version >= 2) {
             try {
                 app(ProCertificateCatalog::class)->snapshotFor(
                     $actor,
@@ -377,13 +391,13 @@ final class ProCertificateRegistry
 
         $programIp = null;
         $catalogSnapshot = is_array($current->catalog_snapshot) ? $current->catalog_snapshot : [];
-        if ($version === 2 && ($catalogSnapshot['category'] ?? null) === 'professional_master') {
+        if ($version >= 2 && ($catalogSnapshot['category'] ?? null) === 'professional_master') {
             $programIp = ProMasterCertificatePdf::programIpCodeFromStatement($current->statement) !== null;
         }
 
         $printAsset = is_file(public_path('assets/brand/iuoamc-pro-logo.png'))
             && ! is_link(public_path('assets/brand/iuoamc-pro-logo.png'));
-        if ($version === 2 && ($catalogSnapshot['layout'] ?? null) === ProMasterCertificatePdf::LAYOUT) {
+        if ($version >= 2 && ($catalogSnapshot['layout'] ?? null) === ProMasterCertificatePdf::LAYOUT) {
             $printAsset = ProMasterCertificatePdf::backgroundIsValid();
         }
 
@@ -391,6 +405,7 @@ final class ProCertificateRegistry
             'integrity' => $integrity,
             'approved' => $current->status === 'approved',
             'organization' => $current->organization?->status === 'active',
+            'credential_basis' => $version >= 3 ? $current->credential_basis !== null : null,
             'catalog' => $catalog,
             'program_ip' => $programIp,
             'print_asset' => $printAsset,
@@ -437,19 +452,27 @@ final class ProCertificateRegistry
         $language = Validator::make($data, ['language' => ['required', 'string', Rule::in(['ar', 'en', 'fr'])]])->validate()['language'];
         $defaults = $catalog->defaults($actor, $identity['catalog_type_id'], $language);
         if (array_key_exists('certificate_type', $data) && $data['certificate_type'] !== $snapshot['category']) { $this->stop('transition'); }
-        $profile = $this->validatedProfile(array_replace($defaults, $data, ['certificate_type' => $snapshot['category']]), 2);
+        $profile = $this->validatedProfile(array_replace([
+            'credential_basis' => ProCertificateClaimPolicy::PROGRAMME_COMPLETION,
+        ], $defaults, $data, ['certificate_type' => $snapshot['category']]), 3);
         return $identity + $profile;
     }
 
     private function validatedProfile(array $data, int $version = 1): array
     {
-        $fields = $version === 2 ? array_merge(self::PROFILE, ['specialization']) : self::PROFILE;
+        $fields = $version >= 2 ? array_merge(self::PROFILE, ['specialization']) : self::PROFILE;
+        if ($version >= 3) {
+            $fields = array_merge($fields, self::CREDENTIAL_FIELDS);
+        }
         $values = array_intersect_key($data, array_flip($fields));
         foreach ($values as $field => $value) {
             if (is_string($value)) { $values[$field] = trim($value); }
         }
         if (($values['expires_on'] ?? null) === '') { $values['expires_on'] = null; }
-        if ($version === 2 && ($values['specialization'] ?? null) === '') { $values['specialization'] = null; }
+        if ($version >= 3 && ($values['credential_basis'] ?? null) === '') { $values['credential_basis'] = null; }
+        if ($version >= 3 && ($values['accreditation_reference'] ?? null) === '') { $values['accreditation_reference'] = null; }
+        if ($version >= 3 && ($values['accreditation_date'] ?? null) === '') { $values['accreditation_date'] = null; }
+        if ($version >= 2 && ($values['specialization'] ?? null) === '') { $values['specialization'] = null; }
         $short = $this->plainTextRule(false);
         $long = $this->plainTextRule(true);
 
@@ -458,8 +481,14 @@ final class ProCertificateRegistry
             'public_name' => ['required', 'string', 'max:120', $short],
             'program_title' => ['required', 'string', 'max:200', $short],
             'certificate_title' => ['required', 'string', 'max:120', $short],
-            'certificate_type' => ['required', 'string', Rule::in($version === 2
+            'certificate_type' => ['required', 'string', Rule::in($version >= 2
                 ? ['participation', 'completion', 'appreciation', 'diploma', 'professional_master'] : ['participation', 'completion', 'appreciation'])],
+            'credential_basis' => ['nullable', 'string', Rule::in([
+                ProCertificateClaimPolicy::PROGRAMME_COMPLETION,
+                ProCertificateClaimPolicy::PROFESSIONAL_ACCREDITATION,
+            ])],
+            'accreditation_reference' => ['nullable', 'string', 'max:120', 'regex:/\A[A-Z0-9][A-Z0-9._\/-]{4,119}\z/D'],
+            'accreditation_date' => ['nullable', 'string', 'date_format:Y-m-d', 'after_or_equal:achievement_date'],
             'language' => ['required', 'string', Rule::in(['ar', 'en', 'fr'])],
             'achievement_date' => ['required', 'string', 'date_format:Y-m-d'],
             'expires_on' => ['nullable', 'string', 'date_format:Y-m-d', 'after_or_equal:achievement_date'],
@@ -467,9 +496,22 @@ final class ProCertificateRegistry
             'signatory_name' => ['required', 'string', 'max:120', $short],
             'signatory_title' => ['required', 'string', 'max:120', $short],
         ];
-        if ($version === 2) { $rules['specialization'] = ['nullable', 'string', 'max:200', $short]; }
-        return Validator::make($values, $rules)->validate() + ['expires_on' => null]
-            + ($version === 2 ? ['specialization' => null] : []);
+        if ($version >= 2) { $rules['specialization'] = ['nullable', 'string', 'max:200', $short]; }
+        if ($version < 3) {
+            unset($rules['credential_basis'], $rules['accreditation_reference'], $rules['accreditation_date']);
+        }
+        $validated = Validator::make($values, $rules)->validate() + ['expires_on' => null]
+            + ($version >= 2 ? ['specialization' => null] : [])
+            + ($version >= 3 ? [
+                'credential_basis' => null,
+                'accreditation_reference' => null,
+                'accreditation_date' => null,
+            ] : []);
+        if ($version >= 3) {
+            app(ProCertificateClaimPolicy::class)->enforce($validated);
+        }
+
+        return $validated;
     }
 
     private function plainTextRule(bool $multiline): \Closure
@@ -499,9 +541,14 @@ final class ProCertificateRegistry
     private function profile(ProCertificate $certificate): array
     {
         $profile = $certificate->only(self::PROFILE);
-        if ($this->version($certificate) === 2) { $profile['specialization'] = $certificate->specialization; }
+        if ($this->version($certificate) >= 2) { $profile['specialization'] = $certificate->specialization; }
         $profile['achievement_date'] = $certificate->achievement_date?->toDateString();
         $profile['expires_on'] = $certificate->expires_on?->toDateString();
+        if ($this->version($certificate) >= 3) {
+            $profile['credential_basis'] = $certificate->credential_basis;
+            $profile['accreditation_reference'] = $certificate->accreditation_reference;
+            $profile['accreditation_date'] = $certificate->accreditation_date?->toDateString();
+        }
 
         return $profile;
     }
@@ -530,17 +577,21 @@ final class ProCertificateRegistry
             'verification_url' => $certificate->public_token === null ? '' : 'https://iuoamc.pro/verify/c/'.$certificate->public_token,
             'template_version' => self::TEMPLATE_VERSION,
         ];
-        if ($this->version($certificate) === 2) {
-            $payload['schema'] = 'iuoamc-pro-certificate-v2';
+        if ($this->version($certificate) >= 2) {
+            $payload['schema'] = $this->version($certificate) >= 3
+                ? 'iuoamc-pro-certificate-v3'
+                : 'iuoamc-pro-certificate-v2';
             $payload['catalog_snapshot'] = $certificate->catalog_snapshot;
-            $payload['template_version'] = 'IUOAMC-PRO-CERT-1.1.0';
+            $payload['template_version'] = $this->version($certificate) >= 3
+                ? 'IUOAMC-PRO-CERT-1.2.0'
+                : 'IUOAMC-PRO-CERT-1.1.0';
         }
         return $payload;
     }
 
     private function nextNumber(int $year, ProCertificate $certificate): string
     {
-        if ($this->version($certificate) === 2) {
+        if ($this->version($certificate) >= 2) {
             $type = (int) $certificate->catalog_type_id;
             DB::table('pro_certificate_type_sequences')->insertOrIgnore(['type_id' => $type, 'year' => $year, 'last_number' => 0]);
             $query = DB::table('pro_certificate_type_sequences')->where('type_id', $type)->where('year', $year);
@@ -582,9 +633,11 @@ final class ProCertificateRegistry
             'signature' => $certificate->signature, 'signing_key_id' => $certificate->signing_key_id,
         ];
 
-        if ($this->version($certificate) === 2) {
-            $data['schema'] = 'iuoamc-pro-certificate-current-state-v2';
-            $data['schema_version'] = 2;
+        if ($this->version($certificate) >= 2) {
+            $data['schema'] = $this->version($certificate) >= 3
+                ? 'iuoamc-pro-certificate-current-state-v3'
+                : 'iuoamc-pro-certificate-current-state-v2';
+            $data['schema_version'] = $this->version($certificate);
             $data['catalog_type_id'] = (int) $certificate->catalog_type_id;
             $data['catalog_snapshot'] = $certificate->catalog_snapshot;
         }
@@ -656,10 +709,15 @@ final class ProCertificateRegistry
         }
         $version = $this->version($certificate);
         if ($version === 1) {
-            if ($certificate->catalog_type_id !== null || $certificate->catalog_snapshot !== null || $certificate->specialization !== null) { return false; }
-        } elseif ($version === 2) {
+            if ($certificate->catalog_type_id !== null || $certificate->catalog_snapshot !== null
+                || $certificate->specialization !== null || $certificate->credential_basis !== null
+                || $certificate->accreditation_reference !== null || $certificate->accreditation_date !== null) { return false; }
+        } elseif (in_array($version, [2, 3], true)) {
             if (! ProCertificateCatalog::validSnapshot($certificate->catalog_snapshot, (int) $certificate->catalog_type_id, (int) $certificate->organization_id)
                 || $certificate->certificate_type !== $certificate->catalog_snapshot['category']) { return false; }
+            if ($version === 2 && ($certificate->credential_basis !== null
+                || $certificate->accreditation_reference !== null || $certificate->accreditation_date !== null)) { return false; }
+            if ($version === 3 && $certificate->credential_basis === null) { return false; }
         } else { return false; }
         $this->validatedProfile($this->profile($certificate), $version);
         $approved = in_array($certificate->status, ['approved', 'issued', 'revoked'], true);
@@ -677,7 +735,7 @@ final class ProCertificateRegistry
             foreach (self::ISSUED_FIELDS as $field) {
                 if ($certificate->getAttribute($field) === null || $certificate->getAttribute($field) === '') { return false; }
             }
-            return preg_match('/\A'.preg_quote($version === 2 ? $certificate->catalog_snapshot['number_prefix'] : 'IUOAMC-PRO-CERT', '/').'-'.preg_quote($certificate->issued_at->format('Y'), '/').'-[0-9]{6}\z/D', $certificate->certificate_number) === 1
+            return preg_match('/\A'.preg_quote($version >= 2 ? $certificate->catalog_snapshot['number_prefix'] : 'IUOAMC-PRO-CERT', '/').'-'.preg_quote($certificate->issued_at->format('Y'), '/').'-[0-9]{6}\z/D', $certificate->certificate_number) === 1
                 && preg_match('/\A[0-9a-f]{64}\z/D', $certificate->public_token) === 1
                 && preg_match('/\A[0-9a-f]{64}\z/D', $certificate->pdf_sha256) === 1;
         }

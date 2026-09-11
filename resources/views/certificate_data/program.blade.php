@@ -13,7 +13,7 @@
     $programTitle = app()->getLocale()==='ar' ? ($program->program_name_ar ?: $program->program_name_en) : (app()->getLocale()==='fr' ? ($program->program_name_fr ?: $program->program_name_en ?: $program->program_name_ar) : ($program->program_name_en ?: $program->program_name_ar));
     $programCode = (string)$program->code;
 @endphp
-<header class="ci-intro"><span class="ci-eyebrow">{{ __('certificate_intake.public_eyebrow') }}</span><h1>{{ __('certificate_intake.public_title') }}</h1><p>{{ __('certificate_intake.public_lead') }}</p></header>
+<header class="ci-intro"><span class="ci-eyebrow">{{ __('certificate_intake.public_eyebrow') }}</span><h1><bdi>{{ $programTitle ?: __('certificate_intake.public_title') }}</bdi></h1><p>{{ __('certificate_intake.public_lead') }}</p></header>
 <div class="ci-form-layout">
     <section class="ci-form-card" aria-labelledby="ci-details-title">
         <div class="ci-card-heading"><span class="ci-step-number" aria-hidden="true">01</span><div><h2 id="ci-details-title">{{ __('certificate_intake.your_details') }}</h2><p>{{ __('certificate_intake.required_hint') }}</p></div></div>

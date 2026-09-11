@@ -140,11 +140,12 @@ final class ProCertificatePadesSigner
 
     private function safeFile(string $path, bool $executable, bool $private, string $label): string
     {
-        if ($path === '' || ! str_starts_with($path, '/') || is_link($path) || ! is_file($path)) {
+        if ($path === '' || ! str_starts_with($path, '/') || (! $executable && is_link($path)) || ! is_file($path)) {
             throw new RuntimeException('PADES_'.$label.'_UNAVAILABLE');
         }
         $real = realpath($path);
-        if ($real === false || $real !== $path || ! is_readable($real) || ($executable && ! is_executable($real))) {
+        if ($real === false || (! $executable && $real !== $path)
+            || ! is_readable($real) || ($executable && ! is_executable($real))) {
             throw new RuntimeException('PADES_'.$label.'_UNAVAILABLE');
         }
         if ($private && (fileperms($real) & 0077) !== 0) {

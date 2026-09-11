@@ -14,7 +14,7 @@ return new class extends Migration {
             $table->engine = 'InnoDB';
             $table->id();
             $table->foreignId('membership_id')->unique()->constrained()->restrictOnDelete();
-            $table->date('date_of_birth')->nullable();
+            $table->text('date_of_birth')->nullable();
             $table->string('nationality_code', 2)->nullable();
             $table->text('address')->nullable();
             $table->string('city', 120)->nullable();
@@ -29,7 +29,7 @@ return new class extends Migration {
             $table->timestamp('consent_at');
             $table->unsignedInteger('lock_version')->default(1);
             $table->char('record_hash', 64)->nullable();
-            $table->foreignId('integrity_audit_id_id')->nullable()->constrained('audit_logs')->restrictOnDelete();
+            $table->foreignId('integrity_audit_id')->nullable()->constrained('audit_logs')->restrictOnDelete();
             $table->foreignId('updated_by')->constrained('users')->restrictOnDelete();
             $table->timestamps();
                });

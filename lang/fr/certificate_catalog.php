@@ -48,6 +48,7 @@ return [
     'collections_help' => 'Les certificats et lots opérationnellement identiques sont présentés ensemble sans modifier aucun lot, certificat, PDF ou signature numérique.',
     'collection_batches' => 'Lots sources',
     'collection_certificates' => 'Certificats de la collection',
+    'download_print_folder' => 'Télécharger le dossier d’images d’impression',
     'open_collection' => 'Ouvrir la collection unifiée',
     'collection_integrity_notice' => 'Il s’agit uniquement d’une vue opérationnelle. Les numéros, PDF, empreintes et lots signés d’origine restent inchangés.',
     'source_batches' => 'Lots sources conservés',
@@ -113,6 +114,8 @@ return [
     'run_nojs' => 'Activez JavaScript pour lancer ou reprendre le traitement du lot. Les actions déjà terminées restent enregistrées.',
     'batch_save_confirm' => 'J’ai vérifié chaque ligne et j’approuve explicitement les noms choisis pour la vérification publique avant de créer ces brouillons.',
     'errors' => [
+        'archive_unavailable' => 'Le dossier d’images d’impression n’a pas pu être préparé. Vérifiez les services ZIP et de conversion d’images, puis réessayez.',
+        'archive_limit' => 'Une collection d’images d’impression doit contenir entre 1 et 100 certificats.',
         'batch_integrity' => 'Le contrôle d’intégrité du lot a échoué. Le traitement reste indisponible jusqu’à la vérification des fiches enregistrées.',
         'batch_request' => 'Cette référence d’envoi a déjà été utilisée pour des informations différentes. Rouvrez le formulaire du lot et vérifiez votre liste avant de la soumettre à nouveau.',
         'batch_action' => 'Cette action n’est pas disponible pour ce lot.',

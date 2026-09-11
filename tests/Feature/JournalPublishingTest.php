@@ -436,6 +436,62 @@ final class JournalPublishingTest extends TestCase
         $this->assertDatabaseHas('journal_notification_outbox', ['event' => 'article_rejected', 'status' => 'pending']);
     }
 
+
+    public function test_editor_can_verify_wicp_registration_and_final_pdf_before_publication(): void
+    {
+        Storage::fake('local');
+        $article = $this->createArticle('peer_reviewed_research', 'ready_to_publish', 'WICP protected research');
+        $editor = $this->superAdmin();
+        $pdf = UploadedFile::fake()->createWithContent('final.pdf', "%PDF-1.4\nverified publication");
+
+        $this->actingAs($editor)->post('/en/control/journal/articles/'.$article->id.'/publication-assets', [
+            'publication_pdf' => $pdf,
+            'wicp_registration_number' => 'WICP-EXTERNAL-2026-7788',
+            'wicp_registered_at' => '2026-09-11',
+            'wicp_verification_url' => 'https://example.com/wicp/WICP-EXTERNAL-2026-7788',
+            'wicp_verified' => '1',
+        ])->assertRedirect();
+
+        $article->refresh();
+        $this->assertSame('WICP-EXTERNAL-2026-7788', $article->wicp_registration_number);
+        $this->assertSame(64, strlen((string) $article->pdf_sha256));
+        $this->assertNotNull($article->wicp_verified_at);
+        Storage::disk('local')->assertExists($article->pdf_path);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'journal.article.publication_assets_verified']);
+    }
+
+    public function test_public_reader_paginates_long_research_and_downloads_verified_pdf(): void
+    {
+        Storage::fake('local');
+        $this->enablePublicLaunch();
+        $article = $this->createArticle('peer_reviewed_research', 'published', 'Long verified research');
+        $longBody = collect(range(1, 80))->map(fn (int $number): string => 'Section '.$number.' '.str_repeat('controlled sensory evidence ', 24))->join("\n\n");
+        DB::table('journal_article_translations')->where('journal_article_id', $article->id)->where('locale', 'en')->update(['body' => $longBody]);
+
+        $this->get('/en/journal/articles/'.$article->slug.'?page=2')
+            ->assertOk()
+            ->assertSee('Page 2 of');
+
+        $this->get('/en/journal/articles/'.$article->slug.'/pdf')
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+
+        $this->assertSame(1, $article->fresh()->pdf_downloads_count);
+    }
+
+    public function test_public_wicp_registry_links_the_external_number_to_the_immutable_record(): void
+    {
+        Storage::fake('local');
+        $this->enablePublicLaunch();
+        $article = $this->createArticle('professional_article', 'published', 'Registered professional article');
+
+        $this->get('/en/journal/registry/wicp/'.$article->wicp_registration_number)
+            ->assertOk()
+            ->assertSee($article->wicp_registration_number)
+            ->assertSee($article->pdf_sha256)
+            ->assertSee($article->version_of_record_hash);
+    }
+
     private function createArticle(string $type, string $status, string $englishTitle): JournalArticle
     {
         $journal = Journal::query()->firstOrFail();
@@ -452,8 +508,13 @@ final class JournalPublishingTest extends TestCase
             'created_by' => $user->id,
             'updated_by' => $user->id,
         ]);
+        $recordUuid = (string) Str::uuid();
+        $pdfContents = "%PDF-1.4\\nIUOAMC controlled publication";
+        $pdfHash = hash('sha256', $pdfContents);
+        $pdfPath = 'journal/publication-pdfs/'.$recordUuid.'/'.$pdfHash.'.pdf';
+        Storage::disk('local')->put($pdfPath, $pdfContents);
         $article = JournalArticle::query()->create([
-            'record_uuid' => (string) Str::uuid(),
+            'record_uuid' => $recordUuid,
             'journal_id' => $journal->id,
             'journal_issue_id' => $issue->id,
             'article_code' => 'TEST-'.Str::upper(Str::random(10)),
@@ -462,6 +523,14 @@ final class JournalPublishingTest extends TestCase
             'status' => $status === 'published' ? 'ready_to_publish' : $status,
             'primary_locale' => 'ar',
             'license' => 'all-rights-reserved',
+            'pdf_path' => $pdfPath,
+            'pdf_sha256' => $pdfHash,
+            'pdf_size' => strlen($pdfContents),
+            'pdf_downloads_count' => 0,
+            'wicp_registration_number' => 'WICP-TEST-'.Str::upper(Str::substr(str_replace('-', '', $recordUuid), 0, 12)),
+            'wicp_registered_at' => now()->toDateString(),
+            'wicp_verification_url' => 'https://example.com/wicp/'.Str::substr($recordUuid, 0, 8),
+            'wicp_verified_at' => now(),
             'published_at' => null,
             'version_of_record' => 0,
             'version_of_record_hash' => null,

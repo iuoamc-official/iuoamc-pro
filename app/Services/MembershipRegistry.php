@@ -69,7 +69,7 @@ final class MembershipRegistry
                 && app(IntegrityService::class)->verifyAuditLog($audit)['valid'];
             if (!$valid) { return false; }
             $expectedPeriods = AuditLog::query()->where('auditable_type', $membership->getMorphClass())
-                ->where('auditable_id', $membership->id)->whereIn('event', ['membership.approve','membership.renew'])->count();
+                ->where('auditable_id', $membership->id)->whereIn('event', ['membership.approve','membership.renew','membership.correct'])->count();
             return $membership->periods->count() === $expectedPeriods
                 && $membership->periods->every(fn (MembershipPeriod $period) => $this->verifyPeriod($period));
         } catch (Throwable) { return false; }
@@ -167,6 +167,71 @@ final class MembershipRegistry
             $membership->save();
             $this->append($membership, $actor, 'membership.updated', $old);
             return $membership->fresh();
+        }, 3);
+    }
+
+    public function correctIdentity(User $actor, int $id, int $version, array $data): Membership
+    {
+        return DB::transaction(function () use ($actor, $id, $version, $data): Membership {
+            $membership = $this->locked($actor, $id, $version, 'memberships.correct');
+            if (! in_array($membership->status, ['active', 'suspended'], true)) { $this->stop('correction_state'); }
+
+            $values = array_intersect_key($data, array_flip(['full_name', 'latin_name', 'professional_title']));
+            foreach ($values as $field => $value) {
+                $values[$field] = is_string($value) ? trim($value) : $value;
+            }
+            if (($values['full_name'] ?? '') === '') { $this->stop('name_required'); }
+
+            $last = $membership->periods()->lockForUpdate()->first();
+            if ($last === null || ! $this->verifyPeriod($last)) { $this->stop('integrity'); }
+
+            $membership->fill($values);
+            if (! $membership->isDirty()) { $this->stop('correction_no_changes'); }
+
+            $reason = trim((string) ($data['reason'] ?? ''));
+            if ($reason === '') { $this->stop('reason'); }
+
+            $old = $membership->only(['status', 'lock_version', 'record_hash']);
+            $membership->lock_version++;
+            $membership->updated_by = $actor->id;
+            $membership->last_reason = $reason;
+            $membership->save();
+
+            $organization = $membership->organization;
+            $period = [
+                'schema' => 'iuoamc-membership-period-v1',
+                'period_uuid' => (string) Str::uuid(),
+                'membership_id' => (int) $membership->id,
+                'record_uuid' => $membership->record_uuid,
+                'membership_number' => $membership->membership_number,
+                'version' => (int) $last->version + 1,
+                'full_name' => $membership->full_name,
+                'latin_name' => $membership->latin_name,
+                'membership_type' => $membership->membership_type,
+                'professional_title' => $membership->professional_title,
+                'organization' => $organization->only(['id', 'code', 'legal_name', 'display_name', 'jurisdiction', 'registration_number']),
+                'valid_from' => $last->valid_from->toDateString(),
+                'valid_until' => $last->valid_until->toDateString(),
+                'approved_by' => (int) $actor->id,
+                'approved_at' => now()->utc()->toIso8601String(),
+                'correction_of_period_uuid' => $last->period_uuid,
+            ];
+
+            $audit = $this->append($membership, $actor, 'membership.correct', $old, $period);
+            MembershipPeriod::create([
+                'period_uuid' => $period['period_uuid'],
+                'membership_id' => $membership->id,
+                'version' => $period['version'],
+                'valid_from' => $period['valid_from'],
+                'valid_until' => $period['valid_until'],
+                'payload' => $period,
+                'payload_sha256' => self::digest($period),
+                'audit_log_id' => $audit->id,
+                'approved_by' => $actor->id,
+                'created_at' => $period['approved_at'],
+            ]);
+
+            return $membership->fresh(['periods', 'organization']);
         }, 3);
     }
 

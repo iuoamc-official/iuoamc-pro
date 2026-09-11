@@ -34,9 +34,9 @@ body { margin:0; padding:0; color:#102b43; font-family:dejavusans; font-size:9pt
 .dates td { width:33.333%; padding-top:2mm; text-align:center; font-size:7pt; }
 .qr { position:fixed; top:148mm; left:13mm; width:32mm; text-align:center; }
 .registry { position:fixed; top:149mm; left:49mm; width:83mm; text-align:center; font-size:7pt; line-height:1.45; }
-.signatory-box { position:fixed; top:151mm; left:138mm; width:67mm; text-align:center; }
+.signatory-box { position:fixed; top:151mm; left:134mm; width:67mm; text-align:center; }
 .signatory { font-size:9pt; font-weight:bold; border-top:.3mm solid #b89943; padding-top:1.5mm; }
-.security-zone { position:fixed; top:146mm; left:214mm; width:57mm; height:40mm; }
+.security-zone { position:fixed; top:146mm; left:218mm; width:57mm; height:40mm; }
 .security-zone table { border-collapse:collapse; width:57mm; height:40mm; }
 .nfc { width:15mm; text-align:center; color:#b58b24; font-size:6pt; line-height:1.1; vertical-align:middle; }
 .nfc-mark { width:13mm; height:17mm; margin:0 auto .5mm; }

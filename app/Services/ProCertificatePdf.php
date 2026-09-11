@@ -42,7 +42,7 @@ final class ProCertificatePdf
         $authorityLogo = null;
         $arbitrationLogo = null;
         if ($isCatalog && $payload['catalog_snapshot']['layout'] === 'diploma') {
-            $arbitrationLogo = public_path('assets/brand/master-v1/icga-original.jpg');
+            $arbitrationLogo = public_path('assets/brand/master-v1/icga-transparent.png');
             $authorityLogo = public_path('assets/brand/master-v1/wsaca-authority-seal-transparent.svg');
             if (!is_file($arbitrationLogo) || is_link($arbitrationLogo)) {
                 throw new RuntimeException('CERTIFICATE_ARBITRATION_ASSET_MISSING');

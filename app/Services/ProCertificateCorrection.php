@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Models\AuditLog;
 use App\Models\ProCertificate;
 use App\Models\ProCertificateDeliveryContact;
 use App\Models\ProCertificateReplacement;

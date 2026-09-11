@@ -15,15 +15,15 @@ final class JournalWorkflow
 {
     /** @var array<string, array<string, string>> */
     private const TRANSITIONS = [
-        'draft' => ['submit' => 'submitted'],
-        'submitted' => ['screen' => 'initial_screening'],
-        'initial_screening' => ['send_review' => 'under_review', 'accept' => 'accepted', 'request_revision' => 'revision_required'],
-        'under_review' => ['request_revision' => 'revision_required', 'accept' => 'accepted'],
-        'revision_required' => ['resubmit' => 'under_review'],
-        'accepted' => ['copyedit' => 'copyediting'],
-        'copyediting' => ['typeset' => 'typesetting'],
-        'typesetting' => ['ready' => 'ready_to_publish'],
-        'ready_to_publish' => ['publish' => 'published'],
+        'draft' => ['submit' => 'submitted', 'publish_professional' => 'published'],
+        'submitted' => ['screen' => 'initial_screening', 'publish_professional' => 'published'],
+        'initial_screening' => ['send_review' => 'under_review', 'accept' => 'accepted', 'request_revision' => 'revision_required', 'publish_professional' => 'published'],
+        'under_review' => ['request_revision' => 'revision_required', 'accept' => 'accepted', 'publish_professional' => 'published'],
+        'revision_required' => ['resubmit' => 'under_review', 'publish_professional' => 'published'],
+        'accepted' => ['copyedit' => 'copyediting', 'publish_professional' => 'published'],
+        'copyediting' => ['typeset' => 'typesetting', 'publish_professional' => 'published'],
+        'typesetting' => ['ready' => 'ready_to_publish', 'publish_professional' => 'published'],
+        'ready_to_publish' => ['publish' => 'published', 'publish_professional' => 'published'],
         'published' => ['retract' => 'retracted'],
     ];
 
@@ -114,7 +114,7 @@ final class JournalWorkflow
 
     private function authorize(User $actor, string $action): void
     {
-        $permission = in_array($action, ['accept', 'publish', 'retract'], true)
+        $permission = in_array($action, ['accept', 'publish', 'publish_professional', 'retract'], true)
             ? 'journal.publish'
             : 'journal.manage';
 
@@ -123,6 +123,16 @@ final class JournalWorkflow
 
     private function assertPublicationRequirements(JournalArticle $article, string $action): void
     {
+        if ($article->type === 'peer_reviewed_research' && $action === 'publish_professional') {
+            throw ValidationException::withMessages(['action' => trans('journal.errors.research_workflow_required')]);
+        }
+
+        if ($article->type === 'professional_article' && in_array($action, [
+            'submit', 'screen', 'send_review', 'request_revision', 'resubmit', 'accept', 'copyedit', 'typeset', 'ready', 'publish',
+        ], true)) {
+            throw ValidationException::withMessages(['action' => trans('journal.errors.professional_direct_publish')]);
+        }
+
         if ($action === 'accept' && $article->type === 'peer_reviewed_research') {
             $minimumReviews = max(1, (int) ($article->journal->settings['minimum_peer_reviews'] ?? 2));
             $completedReviews = $article->reviews()->where('status', 'submitted')->count();
@@ -133,7 +143,7 @@ final class JournalWorkflow
             }
         }
 
-        if ($action !== 'publish') {
+        if (! in_array($action, ['publish', 'publish_professional'], true)) {
             return;
         }
 

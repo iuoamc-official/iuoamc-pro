@@ -186,6 +186,10 @@
 .journal-form-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px; }
 .journal-form-grid.single { grid-template-columns: 1fr; }
 .journal-form-grid label,.journal-tracking form label { display: grid; gap: 7px; }
+.journal-fixed-class { padding: 13px; display: grid; gap: 5px; background: #edf7f4; border: 1px solid #b9d8ce; border-radius: 8px; }
+.journal-fixed-class > span { color: #587069; font-size: .7rem; font-weight: 750; }
+.journal-fixed-class > strong { color: var(--journal-research); font-size: .84rem; }
+.journal-fixed-class > small { color: #5d716b; font-size: .68rem; line-height: 1.5; }
 .journal-form-grid label > span,.journal-tracking form label > span { color: #4d6070; font-size: .76rem; font-weight: 750; }
 .journal-form-grid input,.journal-form-grid select,.journal-form-grid textarea,.journal-tracking input { width: 100%; box-sizing: border-box; padding: 12px 13px; color: var(--journal-ink); background: #fbfcfc; border: 1px solid #cbd6dc; border-radius: 8px; font: inherit; }
 .journal-form-grid textarea { resize: vertical; line-height: 1.65; }

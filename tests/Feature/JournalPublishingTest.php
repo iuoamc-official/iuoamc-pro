@@ -93,6 +93,43 @@ final class JournalPublishingTest extends TestCase
         app(JournalWorkflow::class)->transition($user, $article->id, $article->lock_version, 'accept');
     }
 
+    public function test_professional_article_can_be_published_directly_without_research_procedures(): void
+    {
+        $this->installIntegrityKeys();
+        $article = $this->createArticle('professional_article', 'draft', 'Direct editorial article');
+        $publisher = $this->superAdmin();
+
+        $published = app(JournalWorkflow::class)->transition(
+            $publisher,
+            $article->id,
+            $article->lock_version,
+            'publish_professional'
+        );
+
+        $this->assertSame('published', $published->status);
+        $this->assertSame(1, $published->version_of_record);
+        $this->assertSame(0, $published->reviews()->count());
+        $this->assertDatabaseHas('journal_article_versions', [
+            'journal_article_id' => $published->id,
+            'kind' => 'version_of_record',
+        ]);
+    }
+
+    public function test_scientific_research_cannot_use_direct_professional_publication(): void
+    {
+        $article = $this->createArticle('peer_reviewed_research', 'draft', 'Research requiring review');
+        $publisher = $this->superAdmin();
+
+        $this->expectException(ValidationException::class);
+
+        app(JournalWorkflow::class)->transition(
+            $publisher,
+            $article->id,
+            $article->lock_version,
+            'publish_professional'
+        );
+    }
+
     public function test_publishing_creates_an_immutable_version_of_record(): void
     {
         $this->installIntegrityKeys();
@@ -178,6 +215,18 @@ final class JournalPublishingTest extends TestCase
         $this->assertSame(64, strlen($submission->file_sha256));
         Storage::disk('local')->assertExists($submission->manuscript_path);
         $this->assertDatabaseMissing('journal_articles', ['slug' => Str::slug($submission->title)]);
+    }
+
+    public function test_public_research_intake_rejects_professional_articles(): void
+    {
+        Storage::fake('local');
+        $payload = $this->validSubmissionPayload();
+        $payload['type'] = 'professional_article';
+
+        $this->post('/en/journal/submit', $payload)
+            ->assertSessionHasErrors('type');
+
+        $this->assertDatabaseCount('journal_submissions', 0);
     }
 
     public function test_submission_tracking_requires_the_private_token(): void

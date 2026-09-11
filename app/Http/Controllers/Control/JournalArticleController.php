@@ -150,7 +150,7 @@ final class JournalArticleController extends Controller
     {
         $validated = $request->validate([
             'lock_version' => ['required', 'integer', 'min:1'],
-            'action' => ['required', Rule::in(['submit', 'screen', 'send_review', 'request_revision', 'resubmit', 'accept', 'copyedit', 'typeset', 'ready', 'publish', 'retract'])],
+            'action' => ['required', Rule::in(['submit', 'screen', 'send_review', 'request_revision', 'resubmit', 'accept', 'copyedit', 'typeset', 'ready', 'publish', 'publish_professional', 'retract'])],
             'reason' => [Rule::requiredIf(in_array((string) $request->input('action'), ['request_revision', 'retract'], true)), 'nullable', 'string', 'max:3000'],
         ]);
 

@@ -10,7 +10,7 @@
         @if($errors->any())<div class="journal-form-error" role="alert">{{ $errors->first() }}</div>@endif
         <label class="journal-honeypot" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
         <fieldset><legend>01 · {{ __('journal.manuscript_identity') }}</legend><div class="journal-form-grid">
-            <label><span>{{ __('journal.type') }} *</span><select name="type" required>@foreach(\App\Models\JournalArticle::TYPES as $type)<option value="{{ $type }}" @selected(old('type')===$type)>{{ __('journal.types.'.$type) }}</option>@endforeach</select></label>
+            <div class="journal-fixed-class"><span>{{ __('journal.type') }}</span><strong>{{ __('journal.types.peer_reviewed_research') }}</strong><small>{{ __('journal.research_submission_only') }}</small><input type="hidden" name="type" value="peer_reviewed_research"></div>
             <label><span>{{ __('journal.primary_language') }} *</span><select name="primary_locale" required>@foreach(['ar'=>'العربية','en'=>'English','fr'=>'Français'] as $code=>$label)<option value="{{ $code }}" @selected(old('primary_locale','ar')===$code)>{{ $label }}</option>@endforeach</select></label>
             <label class="wide"><span>{{ __('journal.article_title') }} *</span><input name="title" value="{{ old('title') }}" maxlength="500" required></label>
             <label class="wide"><span>{{ __('journal.abstract') }} *</span><textarea name="abstract" rows="7" maxlength="12000" required>{{ old('abstract') }}</textarea></label>

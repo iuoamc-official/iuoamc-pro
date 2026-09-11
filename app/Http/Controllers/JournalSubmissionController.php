@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Journal;
-use App\Models\JournalArticle;
 use App\Models\JournalSubmission;
 use App\Models\PublicPage;
 use App\Services\AuditTrail;
@@ -31,7 +30,7 @@ final class JournalSubmissionController extends Controller
     {
         $validated = $request->validate([
             'website' => ['prohibited'],
-            'type' => ['required', Rule::in(JournalArticle::TYPES)],
+            'type' => ['required', Rule::in(['peer_reviewed_research'])],
             'primary_locale' => ['required', Rule::in(['ar', 'en', 'fr'])],
             'title' => ['required', 'string', 'max:500'],
             'abstract' => ['required', 'string', 'max:12000'],

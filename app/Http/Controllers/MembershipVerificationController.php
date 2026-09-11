@@ -98,7 +98,7 @@ final class MembershipVerificationController extends Controller
                     'signing_certificate_sha256' => $credential->signing_certificate_sha256,
                     'record_hash' => $credential->record_hash,
                     'verified_at' => now()->utc()->format('Y-m-d H:i:s').' UTC',
-                ], 200, $this->headers(), JSON_UNESCAPED_SL_UNICODE | JSON_UNESCAPED_SLASHES);
+                ], 200, $this->headers(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             }
         } catch (Throwable $error) {
             report($error);
@@ -107,6 +107,4 @@ final class MembershipVerificationController extends Controller
         return response()->json(['message' => trans('memberships.verification_unavailable')], 404, $this->headers());
     }
 }
-}
-
 }

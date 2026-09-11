@@ -30,7 +30,7 @@ h1 { margin:3mm 0 2mm; font-size:24pt; color:#071f35; }
 <td>Valid until<br><bdi dir="ltr">{{ $payload['valid_until'] }}</bdi></td>
 <td>Membership number<br><bdi dir="ltr">{{ $payload['membership_number'] }}</bdi></td>
 </tr></table>
-<table width="88%" align="center"><"><tr>
+<table width="88%" align="center"><tr>
 <td width="25%"><img class="photo" src="{{ $photoPath }}"></td>
 <td width="50%" class="number">Issued: {{ substr($payload['issued_at'],0,10) }}<br>{{ $payload['template_version'] }}<br>PAdES / X.509 digitally signed</td>
 <td width="25%" class="qr"><barcode code="{{ $payload['verification_url'] }}" type="QR" error="M" size="0.7" disableborder="0" /><br>Scan to verify</td>

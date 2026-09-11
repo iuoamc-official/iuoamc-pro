@@ -88,8 +88,6 @@ body { margin:0; padding:0; color:#102b43; font-family:dejavusans; font-size:9pt
 <td><svg xmlns="http://www.w3.org/2000/svg" width="40mm" height="40mm" viewBox="0 0 40 40" aria-label="40 mm physical gold seal placement">
 <circle cx="20" cy="20" r="19.3" fill="none" stroke="#c7a23e" stroke-width=".28" stroke-dasharray="1.2 1.2"/>
 <circle cx="20" cy="20" r="17.8" fill="none" stroke="#e6dac1" stroke-width=".18"/>
-<text x="20" y="18.5" text-anchor="middle" font-family="DejaVu Sans" font-size="2.5" fill="#9d7b26">PHYSICAL GOLD SEAL</text>
-<text x="20" y="22.5" text-anchor="middle" font-family="DejaVu Sans" font-size="3" font-weight="bold" fill="#9d7b26">40 mm</text>
 </svg></td>
 </tr></table></div>
 

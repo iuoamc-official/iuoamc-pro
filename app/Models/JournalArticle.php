@@ -19,6 +19,8 @@ final class JournalArticle extends Model
         'record_uuid', 'journal_id', 'journal_issue_id', 'correction_of_id', 'article_code',
         'slug', 'type', 'status', 'primary_locale', 'doi', 'license', 'page_start', 'page_end',
         'received_at', 'accepted_at', 'published_at', 'retracted_at', 'declarations', 'pdf_path',
+        'pdf_sha256', 'pdf_size', 'pdf_downloads_count', 'wicp_registration_number',
+        'wicp_registered_at', 'wicp_verification_url', 'wicp_verified_at',
         'lock_version', 'version_of_record', 'version_of_record_hash', 'created_by', 'updated_by',
     ];
 
@@ -29,7 +31,11 @@ final class JournalArticle extends Model
             'accepted_at' => 'date',
             'published_at' => 'datetime',
             'retracted_at' => 'datetime',
+            'wicp_registered_at' => 'date',
+            'wicp_verified_at' => 'datetime',
             'declarations' => 'array',
+            'pdf_size' => 'integer',
+            'pdf_downloads_count' => 'integer',
             'lock_version' => 'integer',
             'version_of_record' => 'integer',
         ];
@@ -42,7 +48,7 @@ final class JournalArticle extends Model
                 return;
             }
 
-            $allowed = ['status', 'retracted_at', 'lock_version', 'updated_by', 'updated_at'];
+            $allowed = ['status', 'retracted_at', 'lock_version', 'updated_by', 'updated_at', 'pdf_downloads_count'];
             $changed = array_keys($article->getDirty());
             if (array_diff($changed, $allowed) !== []) {
                 throw new LogicException('A published journal version of record is immutable. Create a correction instead.');

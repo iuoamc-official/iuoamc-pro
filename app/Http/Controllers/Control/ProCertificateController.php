@@ -224,7 +224,7 @@ final class ProCertificateController extends Controller
 
     private function profile(Request $request): array
     {
-        return $request->only(['organization_id', 'recipient_name', 'public_name', 'program_title', 'certificate_title',
+        return $request->only(['organization_id', 'recipient_name', 'public_name', 'recipient_email', 'program_title', 'certificate_title',
             'certificate_type', 'credential_basis', 'accreditation_reference', 'accreditation_date', 'language',
             'achievement_date', 'expires_on', 'statement', 'signatory_name', 'signatory_title', 'catalog_type_id', 'specialization']);
     }

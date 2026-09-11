@@ -25,6 +25,10 @@ final class ProCertificateRegistry
         'language', 'achievement_date', 'expires_on', 'statement', 'signatory_name', 'signatory_title',
     ];
     private const CREDENTIAL_FIELDS = ['credential_basis', 'accreditation_reference', 'accreditation_date'];
+    private const PADES_FIELDS = [
+        'pdf_signature_profile', 'pdf_signature_status', 'pdf_signature_field',
+        'pdf_signing_certificate_sha256', 'pdf_signed_at',
+    ];
     public const TEMPLATE_VERSION = 'IUOAMC-PRO-CERT-1.0.0';
 
     private const POLICY = [
@@ -69,7 +73,7 @@ final class ProCertificateRegistry
             app(InstitutionalAccess::class)->authorizeOrganization($actor, $organization);
             $this->requireActiveOrganization($organization);
             $prepared = $this->validateDraft($actor, $data);
-            $version = isset($prepared['catalog_type_id']) ? 3 : 1;
+            $version = isset($prepared['catalog_type_id']) ? 4 : 1;
             $prepared['credential_basis'] ??= ProCertificateClaimPolicy::PROGRAMME_COMPLETION;
             $values = $this->validatedProfile($prepared, $version);
             $catalog = $version >= 2 ? app(ProCertificateCatalog::class)->snapshotFor(
@@ -178,10 +182,29 @@ final class ProCertificateRegistry
                     $certificate->issued_at = $time;
                     $certificate->issued_by = (int) $actor->id;
                     $payload = $this->pdfPayload($certificate, $this->issuerSnapshot($organization));
-                    $bytes = app(ProCertificatePdf::class)->render($payload);
-                    if (! str_starts_with($bytes, '%PDF-')) { $this->stop('pdf_unavailable'); }
+                    $unsignedBytes = app(ProCertificatePdf::class)->render($payload);
+                    if (! str_starts_with($unsignedBytes, '%PDF-')) { $this->stop('pdf_unavailable'); }
+                    $bytes = $unsignedBytes;
+                    if ($this->version($certificate) >= 4) {
+                        $pades = app(ProCertificatePadesSigner::class)->sign($unsignedBytes);
+                        $bytes = $pades['bytes'];
+                        $certificate->pdf_signature_profile = $pades['profile'];
+                        $certificate->pdf_signature_status = $pades['status'];
+                        $certificate->pdf_signature_field = $pades['field'];
+                        $certificate->pdf_signing_certificate_sha256 = $pades['certificate_sha256'];
+                        $certificate->pdf_signed_at = $pades['signed_at'];
+                    }
                     $certificate->pdf_sha256 = hash('sha256', $bytes);
                     $payload['pdf_sha256'] = $certificate->pdf_sha256;
+                    if ($this->version($certificate) >= 4) {
+                        $payload['pdf_signature'] = [
+                            'profile' => $certificate->pdf_signature_profile,
+                            'status' => $certificate->pdf_signature_status,
+                            'field' => $certificate->pdf_signature_field,
+                            'certificate_sha256' => $certificate->pdf_signing_certificate_sha256,
+                            'signed_at' => $this->iso($certificate->pdf_signed_at),
+                        ];
+                    }
                     $certificate->issued_payload = $payload;
                     $certificate->fill(app(ProCertificateSigner::class)->sign($payload));
                     $certificate->pdf_path = 'pro-certificates/'.$time->format('Y').'/'.$certificate->record_uuid.'.pdf';
@@ -258,6 +281,15 @@ final class ProCertificateRegistry
                     return false;
                 }
                 $expected = $this->pdfPayload($certificate, $issuer) + ['pdf_sha256' => $certificate->pdf_sha256];
+                if ($this->version($certificate) >= 4) {
+                    $expected['pdf_signature'] = [
+                        'profile' => $certificate->pdf_signature_profile,
+                        'status' => $certificate->pdf_signature_status,
+                        'field' => $certificate->pdf_signature_field,
+                        'certificate_sha256' => $certificate->pdf_signing_certificate_sha256,
+                        'signed_at' => $this->iso($certificate->pdf_signed_at),
+                    ];
+                }
                 if (ProCertificateSigner::canonicalJson($payload) !== ProCertificateSigner::canonicalJson($expected)
                     || ! app(ProCertificateSigner::class)->verify($payload, $certificate->only(['payload_sha256', 'signature', 'signing_key_id']))) {
                     return false;
@@ -338,6 +370,14 @@ final class ProCertificateRegistry
             $attestation['accreditation_date'] = $certificate->accreditation_date?->toDateString();
             $attestation['pdf_signature_profile'] = 'registry-seal-ed25519-sha256';
         }
+        if ($this->version($certificate) >= 4) {
+            $attestation['schema'] = 'iuoamc-pro-certificate-public-attestation-v4';
+            $attestation['pdf_signature_profile'] = $certificate->pdf_signature_profile;
+            $attestation['pdf_signature_status'] = $certificate->pdf_signature_status;
+            $attestation['pdf_signature_field'] = $certificate->pdf_signature_field;
+            $attestation['pdf_signing_certificate_sha256'] = $certificate->pdf_signing_certificate_sha256;
+            $attestation['pdf_signed_at'] = $this->iso($certificate->pdf_signed_at);
+        }
         $signer = app(ProCertificateSigner::class);
 
         return [
@@ -401,6 +441,8 @@ final class ProCertificateRegistry
             $printAsset = ProMasterCertificatePdf::backgroundIsValid();
         }
 
+        $pades = $version >= 4 ? app(ProCertificatePadesSigner::class)->readiness()['ready'] : null;
+
         $checks = [
             'integrity' => $integrity,
             'approved' => $current->status === 'approved',
@@ -409,6 +451,7 @@ final class ProCertificateRegistry
             'catalog' => $catalog,
             'program_ip' => $programIp,
             'print_asset' => $printAsset,
+            'pades' => $pades,
             'authorization' => $actor->canDo('certificates.issue'),
         ];
         $requiredChecks = array_filter($checks, static fn (mixed $check): bool => $check !== null);
@@ -454,7 +497,7 @@ final class ProCertificateRegistry
         if (array_key_exists('certificate_type', $data) && $data['certificate_type'] !== $snapshot['category']) { $this->stop('transition'); }
         $profile = $this->validatedProfile(array_replace([
             'credential_basis' => ProCertificateClaimPolicy::PROGRAMME_COMPLETION,
-        ], $defaults, $data, ['certificate_type' => $snapshot['category']]), 3);
+        ], $defaults, $data, ['certificate_type' => $snapshot['category']]), 4);
         return $identity + $profile;
     }
 
@@ -463,6 +506,9 @@ final class ProCertificateRegistry
         $fields = $version >= 2 ? array_merge(self::PROFILE, ['specialization']) : self::PROFILE;
         if ($version >= 3) {
             $fields = array_merge($fields, self::CREDENTIAL_FIELDS);
+        }
+        if ($version >= 4) {
+            $fields[] = 'recipient_email';
         }
         $values = array_intersect_key($data, array_flip($fields));
         foreach ($values as $field => $value) {
@@ -479,6 +525,7 @@ final class ProCertificateRegistry
         $rules = [
             'recipient_name' => ['required', 'string', 'max:180', $short],
             'public_name' => ['required', 'string', 'max:120', $short],
+            'recipient_email' => ['nullable', 'string', 'email:rfc', 'max:254'],
             'program_title' => ['required', 'string', 'max:200', $short],
             'certificate_title' => ['required', 'string', 'max:120', $short],
             'certificate_type' => ['required', 'string', Rule::in($version >= 2
@@ -500,13 +547,17 @@ final class ProCertificateRegistry
         if ($version < 3) {
             unset($rules['credential_basis'], $rules['accreditation_reference'], $rules['accreditation_date']);
         }
+        if ($version < 4) {
+            unset($rules['recipient_email']);
+        }
         $validated = Validator::make($values, $rules)->validate() + ['expires_on' => null]
             + ($version >= 2 ? ['specialization' => null] : [])
             + ($version >= 3 ? [
                 'credential_basis' => null,
                 'accreditation_reference' => null,
                 'accreditation_date' => null,
-            ] : []);
+            ] : [])
+            + ($version >= 4 ? ['recipient_email' => null] : []);
         if ($version >= 3) {
             app(ProCertificateClaimPolicy::class)->enforce($validated);
         }
@@ -527,7 +578,7 @@ final class ProCertificateRegistry
 
     private function rejectSystemInput(array $data): void
     {
-        foreach (array_merge(self::ISSUED_FIELDS, [
+        foreach (array_merge(self::ISSUED_FIELDS, self::PADES_FIELDS, [
             'id', 'record_uuid', 'status', 'approved_at', 'approved_by', 'revoked_at', 'revoked_by',
             'created_by', 'updated_by', 'created_at', 'updated_at', 'last_reason', 'record_hash', 'integrity_audit_id',
             'schema_version', 'catalog_snapshot',
@@ -549,6 +600,9 @@ final class ProCertificateRegistry
             $profile['accreditation_reference'] = $certificate->accreditation_reference;
             $profile['accreditation_date'] = $certificate->accreditation_date?->toDateString();
         }
+        if ($this->version($certificate) >= 4) {
+            $profile['recipient_email'] = $certificate->recipient_email;
+        }
 
         return $profile;
     }
@@ -569,23 +623,28 @@ final class ProCertificateRegistry
 
     private function pdfPayload(ProCertificate $certificate, array $issuer): array
     {
+        $profile = $this->profile($certificate);
+        unset($profile['recipient_email']);
         $payload = [
             'schema' => 'iuoamc-pro-certificate-v1', 'record_uuid' => $certificate->record_uuid,
             'certificate_number' => $certificate->certificate_number,
-        ] + $this->profile($certificate) + [
+        ] + $profile + [
             'issued_at' => $this->iso($certificate->issued_at), 'issuer' => $issuer,
             'verification_url' => $certificate->public_token === null ? '' : 'https://iuoamc.pro/verify/c/'.$certificate->public_token,
             'template_version' => self::TEMPLATE_VERSION,
         ];
         if ($this->version($certificate) >= 2) {
-            $payload['schema'] = $this->version($certificate) >= 3
-                ? 'iuoamc-pro-certificate-v3'
-                : 'iuoamc-pro-certificate-v2';
+            $payload['schema'] = match (true) {
+                $this->version($certificate) >= 4 => 'iuoamc-pro-certificate-v4',
+                $this->version($certificate) >= 3 => 'iuoamc-pro-certificate-v3',
+                default => 'iuoamc-pro-certificate-v2',
+            };
             $payload['catalog_snapshot'] = $certificate->catalog_snapshot;
             $payload['template_version'] = $this->version($certificate) >= 3
                 ? 'IUOAMC-PRO-CERT-1.2.0'
                 : 'IUOAMC-PRO-CERT-1.1.0';
         }
+        $payload['statement'] = str_replace('[RECIPIENT NAME]', $certificate->recipient_name, $payload['statement']);
         return $payload;
     }
 
@@ -616,6 +675,8 @@ final class ProCertificateRegistry
 
     private function snapshot(ProCertificate $certificate): array
     {
+        $profile = $this->profile($certificate);
+        unset($profile['recipient_email']);
         $data = [
             'schema' => 'iuoamc-pro-certificate-current-state-v1', 'id' => (int) $certificate->id,
             'record_uuid' => $certificate->record_uuid, 'organization_id' => (int) $certificate->organization_id,
@@ -634,19 +695,29 @@ final class ProCertificateRegistry
         ];
 
         if ($this->version($certificate) >= 2) {
-            $data['schema'] = $this->version($certificate) >= 3
-                ? 'iuoamc-pro-certificate-current-state-v3'
-                : 'iuoamc-pro-certificate-current-state-v2';
+            $data['schema'] = match (true) {
+                $this->version($certificate) >= 4 => 'iuoamc-pro-certificate-current-state-v4',
+                $this->version($certificate) >= 3 => 'iuoamc-pro-certificate-current-state-v3',
+                default => 'iuoamc-pro-certificate-current-state-v2',
+            };
             $data['schema_version'] = $this->version($certificate);
             $data['catalog_type_id'] = (int) $certificate->catalog_type_id;
             $data['catalog_snapshot'] = $certificate->catalog_snapshot;
         }
-        return $data + $this->profile($certificate);
+        if ($this->version($certificate) >= 4) {
+            $data['recipient_email_encrypted'] = $certificate->getAttributes()['recipient_email'] ?? null;
+            foreach (self::PADES_FIELDS as $field) {
+                $data[$field] = $field === 'pdf_signed_at'
+                    ? $this->iso($certificate->pdf_signed_at)
+                    : $certificate->getAttribute($field);
+            }
+        }
+        return $data + $profile;
     }
 
     private function auditValues(ProCertificate $certificate): array
     {
-        return [
+        $values = [
             'record_uuid' => $certificate->record_uuid, 'organization_id' => (int) $certificate->organization_id,
             'certificate_number' => $certificate->certificate_number, 'status' => $certificate->status,
             'lock_version' => $certificate->lock_version, 'record_hash' => $certificate->record_hash,
@@ -654,6 +725,14 @@ final class ProCertificateRegistry
             'issued_by' => $certificate->issued_by, 'revoked_by' => $certificate->revoked_by,
             'payload_sha256' => $certificate->payload_sha256, 'pdf_sha256' => $certificate->pdf_sha256,
         ];
+        if ($this->version($certificate) >= 4) {
+            $values['pdf_signature_profile'] = $certificate->pdf_signature_profile;
+            $values['pdf_signature_status'] = $certificate->pdf_signature_status;
+            $values['pdf_signing_certificate_sha256'] = $certificate->pdf_signing_certificate_sha256;
+            $values['pdf_signed_at'] = $this->iso($certificate->pdf_signed_at);
+        }
+
+        return $values;
     }
 
     private function append(ProCertificate $certificate, User $actor, string $action, array $old): void
@@ -708,16 +787,26 @@ final class ProCertificateRegistry
             return false;
         }
         $version = $this->version($certificate);
+        if ($version < 4) {
+            if ($certificate->recipient_email !== null) {
+                return false;
+            }
+            foreach (self::PADES_FIELDS as $field) {
+                if ($certificate->getAttribute($field) !== null) {
+                    return false;
+                }
+            }
+        }
         if ($version === 1) {
             if ($certificate->catalog_type_id !== null || $certificate->catalog_snapshot !== null
                 || $certificate->specialization !== null || $certificate->credential_basis !== null
                 || $certificate->accreditation_reference !== null || $certificate->accreditation_date !== null) { return false; }
-        } elseif (in_array($version, [2, 3], true)) {
+        } elseif (in_array($version, [2, 3, 4], true)) {
             if (! ProCertificateCatalog::validSnapshot($certificate->catalog_snapshot, (int) $certificate->catalog_type_id, (int) $certificate->organization_id)
                 || $certificate->certificate_type !== $certificate->catalog_snapshot['category']) { return false; }
             if ($version === 2 && ($certificate->credential_basis !== null
                 || $certificate->accreditation_reference !== null || $certificate->accreditation_date !== null)) { return false; }
-            if ($version === 3 && $certificate->credential_basis === null) { return false; }
+            if ($version >= 3 && $certificate->credential_basis === null) { return false; }
         } else { return false; }
         $this->validatedProfile($this->profile($certificate), $version);
         $approved = in_array($certificate->status, ['approved', 'issued', 'revoked'], true);
@@ -735,12 +824,27 @@ final class ProCertificateRegistry
             foreach (self::ISSUED_FIELDS as $field) {
                 if ($certificate->getAttribute($field) === null || $certificate->getAttribute($field) === '') { return false; }
             }
+            if ($version >= 4) {
+                foreach (self::PADES_FIELDS as $field) {
+                    if ($certificate->getAttribute($field) === null || $certificate->getAttribute($field) === '') { return false; }
+                }
+                if ($certificate->pdf_signature_status !== 'valid'
+                    || ! in_array($certificate->pdf_signature_profile, ['PAdES-B-B', 'PAdES-B-T'], true)
+                    || preg_match('/\A[0-9a-f]{64}\z/D', (string) $certificate->pdf_signing_certificate_sha256) !== 1) {
+                    return false;
+                }
+            }
             return preg_match('/\A'.preg_quote($version >= 2 ? $certificate->catalog_snapshot['number_prefix'] : 'IUOAMC-PRO-CERT', '/').'-'.preg_quote($certificate->issued_at->format('Y'), '/').'-[0-9]{6}\z/D', $certificate->certificate_number) === 1
                 && preg_match('/\A[0-9a-f]{64}\z/D', $certificate->public_token) === 1
                 && preg_match('/\A[0-9a-f]{64}\z/D', $certificate->pdf_sha256) === 1;
         }
         foreach (self::ISSUED_FIELDS as $field) {
             if ($certificate->getAttribute($field) !== null) { return false; }
+        }
+        if ($version >= 4) {
+            foreach (self::PADES_FIELDS as $field) {
+                if ($certificate->getAttribute($field) !== null) { return false; }
+            }
         }
 
         return true;

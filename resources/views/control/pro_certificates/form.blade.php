@@ -22,6 +22,7 @@
                 </label>
                 <label class="pc-field"><span>{{ __('certificates.recipient_name') }} *</span><input name="recipient_name" required maxlength="180" autocomplete="off" value="{{ old('recipient_name',$certificate->recipient_name) }}" aria-describedby="pc-recipient-help"><small id="pc-recipient-help">{{ __('certificates.recipient_help') }}</small></label>
                 <label class="pc-field"><span>{{ __('certificates.public_name') }} *</span><input name="public_name" required maxlength="120" autocomplete="off" value="{{ old('public_name',$certificate->public_name) }}" aria-describedby="pc-public-help"><small id="pc-public-help">{{ __('certificates.public_name_help') }}</small></label>
+                @if(!$editing || (int)$certificate->schema_version>=4)<label class="pc-field"><span>{{ __('certificates.recipient_email') }}</span><input name="recipient_email" type="email" maxlength="254" autocomplete="off" dir="ltr" value="{{ old('recipient_email',$certificate->recipient_email) }}"><small>{{ __('certificates.recipient_email_help') }}</small></label>@endif
             </div>
         </section>
         <section class="pc-card"><header class="pc-card-heading"><span class="pc-step" aria-hidden="true">02</span><div><h2>{{ __('certificates.content') }}</h2><p>{{ __('certificates.statement_help') }}</p></div></header>

@@ -17,6 +17,12 @@
     @if(auth()->user()?->status === 'active' && auth()->user()->canDo('public-content.manage'))
         <a href="{{ route('public-content.pages.index',['locale'=>app()->getLocale()]) }}" class="{{ request()->routeIs('public-content.*')?'active':'' }}"><span class="module-sidebar-icon">@include('control.navigation._icon',['icon'=>'public-content'])</span>{{ __('public_site.control.title') }}</a>
     @endif
+    @if(\Illuminate\Support\Facades\Route::has('journal.control.articles.index') && auth()->user()?->canDo('journal.view'))
+        <a href="{{ route('journal.control.articles.index', ['locale' => app()->getLocale()]) }}" class="{{ request()->routeIs('journal.control.*') ? 'active' : '' }}" @if(request()->routeIs('journal.control.*')) aria-current="page" @endif>
+            <span class="module-sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 5.5v16M8 7h8M8 11h8M8 15h5"/></svg></span>
+            <span>{{ __('journal.title') }}</span>
+        </a>
+    @endif
 
     {{-- IUOAMC_WICP_SIDEBAR_1_0_0_BEGIN --}}
     @if(\Illuminate\Support\Facades\Route::has('wicp.index') && auth()->check() && auth()->user()->canDo('wicp.view'))

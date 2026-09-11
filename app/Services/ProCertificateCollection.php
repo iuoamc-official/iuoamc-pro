@@ -28,6 +28,7 @@ final class ProCertificateCollection
      *     language: string,
      *     program_title: string,
      *     achievement_date: string,
+     *     organization_name: string,
      *     batches: Collection<int, ProCertificateBatch>,
      *     members: Collection<int, ProCertificate>
      * }>
@@ -38,30 +39,20 @@ final class ProCertificateCollection
             ->with('organization')
             ->orderByDesc('id')
             ->get();
-        $currentIds = $this->workspace->partition(
-            $this->certificateRegistry->query($actor)->latest('id')->get([
-                'id',
-                'organization_id',
-                'catalog_type_id',
-                'certificate_type',
-                'program_title',
-                'recipient_name',
-                'public_name',
-                'achievement_date',
-                'status',
-                'expires_on',
-                'language',
-            ])
-        )['current']->pluck('id');
+        $currentCertificates = $this->workspace->partition(
+            $this->certificateRegistry->query($actor)
+                ->with('organization')
+                ->latest('id')
+                ->get()
+        )['current']->keyBy(
+            fn (ProCertificate $certificate): int => (int) $certificate->id
+        );
+        $currentIds = $currentCertificates->keys();
         $memberIds = $batches
             ->flatMap(fn (ProCertificateBatch $batch): array => $batch->member_ids)
             ->intersect($currentIds)
             ->unique()
             ->values();
-        $currentCertificates = $this->certificateRegistry->query($actor)
-            ->whereIn('id', $memberIds)
-            ->get()
-            ->keyBy(fn (ProCertificate $certificate): int => (int) $certificate->id);
         $collections = collect();
 
         foreach ($batches as $batch) {
@@ -89,10 +80,43 @@ final class ProCertificateCollection
             $collection = $collections->get($key, [
                 'key' => $key,
                 ...$identity,
+                'organization_name' => (string) ($batch->organization?->display_name
+                    ?? $members->first()?->organization?->display_name
+                    ?? ''),
                 'batches' => collect(),
                 'members' => collect(),
             ]);
             $collection['batches']->push($batch);
+            $collection['members'] = $collection['members']
+                ->concat($members)
+                ->unique(fn (ProCertificate $certificate): int => (int) $certificate->id)
+                ->sortBy(fn (ProCertificate $certificate): string => mb_strtolower((string) $certificate->public_name, 'UTF-8'))
+                ->values();
+            $collections->put($key, $collection);
+        }
+
+        $unbatchedGroups = $currentCertificates
+            ->except($memberIds->all())
+            ->filter(fn (ProCertificate $certificate): bool => $this->certificateRegistry->verify($certificate))
+            ->groupBy(fn (ProCertificate $certificate): string => hash(
+                'sha256',
+                json_encode($this->identity($certificate), JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE)
+            ));
+
+        foreach ($unbatchedGroups as $key => $members) {
+            $existing = $collections->get($key);
+            if ($existing === null && $members->count() < 2) {
+                continue;
+            }
+
+            $identity = $this->identity($members->first());
+            $collection = $existing ?? [
+                'key' => $key,
+                ...$identity,
+                'organization_name' => (string) ($members->first()?->organization?->display_name ?? ''),
+                'batches' => collect(),
+                'members' => collect(),
+            ];
             $collection['members'] = $collection['members']
                 ->concat($members)
                 ->unique(fn (ProCertificate $certificate): int => (int) $certificate->id)

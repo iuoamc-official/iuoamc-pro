@@ -12,7 +12,6 @@ use App\Models\JournalReview;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\JournalWorkflow;
-use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -21,7 +20,21 @@ use Tests\TestCase;
 
 final class JournalPublishingTest extends TestCase
 {
-    use LazilyRefreshDatabase;
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        foreach ([
+            '0001_01_01_000000_create_users_table.php',
+            '2026_09_07_160000_create_iuoamc_core_foundation.php',
+            '2026_09_07_230000_add_integrity_to_audit_logs.php',
+            '2026_09_10_060000_create_public_site_content.php',
+            '2026_09_11_150000_create_scientific_journal_core.php',
+        ] as $migrationFile) {
+            $migration = require database_path('migrations/'.$migrationFile);
+            $migration->up();
+        }
+    }
 
     public function test_public_catalog_separates_research_from_professional_articles_and_hides_drafts(): void
     {

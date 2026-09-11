@@ -141,3 +141,6 @@ require __DIR__.'/modules/pro_master_templates.php';
 
 // IUOAMC_CERTIFICATE_DATA_FORM_1_0_0
 require __DIR__.'/modules/pro_certificate_intakes.php';
+
+// MCIJ_SCIENTIFIC_JOURNAL_CORE_1_0_0
+require __DIR__.'/modules/journal.php';

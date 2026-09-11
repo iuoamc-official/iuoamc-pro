@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="{{ asset('assets/css/iuoamc-legacy-certificates-1.0.0.css') }}">
     {{-- IUOAMC_PRO_CERTIFICATE_CSS_1_0_0 --}}
     <link rel="stylesheet" href="{{ asset('assets/css/iuoamc-pro-certificates-1.0.0.css') }}">
+    @stack('styles')
 </head>
 <body class="control-body">
     <div class="control-shell" data-control-shell>

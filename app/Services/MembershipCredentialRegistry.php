@@ -145,6 +145,11 @@ final class MembershipCredentialRegistry
                 && (int) $audit->auditable_id === (int) $current->id
                 && ($audit->new_values['record_hash'] ?? null) === $current->record_hash
                 && (int) ($audit->new_values['lock_version'] ?? 0) === (int) $current->lock_version
+                && (int) \App\Models\AuditLog::query()
+                    ->where('auditable_type', $current->getMorphClass())
+                    ->where('auditable_id', $current->id)
+                    ->orderByDesc('sequence_number')
+                    ->value('id') === (int) $audit->id
                 && app(IntegrityService::class)->verifyAuditLog($audit)['valid']
                 && $this->validPhoto($current);
         } catch (Throwable) {
@@ -274,7 +279,12 @@ final class MembershipCredentialRegistry
             ->with(['membership.organization', 'membership.periods.audit', 'membership.integrityAudit', 'period.audit', 'integrityAudit'])
             ->first();
 
-        return $credential !== null && $this->verifyCredential($credential) ? $credential : null;
+        return $credential !== null
+            && $this->verifyCredential($credential)
+            && app(MembershipRegistry::class)->verify($credential->membership)
+            && app(MembershipRegistry::class)->verifyPeriod($credential->period)
+                ? $credential
+                : null;
     }
 
     public function verifyCredential(MembershipCredential $credential): bool
@@ -284,7 +294,12 @@ final class MembershipCredentialRegistry
             if ($current === null
                 || $current->record_hash !== $credential->record_hash
                 || ! hash_equals((string) $current->record_hash, MembershipRegistry::digest($this->credentialSnapshot($current)))
-                || ! hash_equals((string) $current->payload_sha256, MembershipRegistry::digest($current->payload))) {
+                || ! hash_equals((string) $current->payload_sha256, MembershipRegistry::digest($current->payload))
+                || (int) ($current->payload['membership_id'] ?? 0) !== (int) $current->membership_id
+                || (string) ($current->payload['membership_number'] ?? '') !== (string) $current->membership_number
+                || (int) ($current->payload['version'] ?? 0) !== (int) $current->version
+                || (string) ($current->payload['period_uuid'] ?? '') !== (string) $current->period?->period_uuid
+                || $current->pades_status !== 'valid') {
                 return false;
             }
             foreach ([

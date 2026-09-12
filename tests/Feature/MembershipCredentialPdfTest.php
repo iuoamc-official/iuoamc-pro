@@ -117,4 +117,23 @@ class MembershipCredentialPdfTest extends TestCase
             app_path('Services/MembershipCredentialRegistry.php')
         ));
     }
+
+    public function test_membership_certificate_uses_compact_oval_portrait(): void
+    {
+        $template = file_get_contents(resource_path('views/membership_credentials/certificate.blade.php'));
+
+        $this->assertIsString($template);
+        $this->assertStringContainsString('width: 22mm; height: 27mm', $template);
+        $this->assertStringContainsString('border-radius: 50%', $template);
+        $this->assertStringContainsString('class="nfc-seal"', $template);
+        $this->assertStringContainsString("format('d-m-Y')", $template);
+        $this->assertSame('IUOAMC-MEMBERSHIP-2.2.1', MembershipCredentialPdf::TEMPLATE_VERSION);
+        $this->assertContains('IUOAMC-MEMBERSHIP-2.2.0', MembershipCredentialPdf::PRINT_IMAGE_TEMPLATES);
+
+        $card = file_get_contents(resource_path('views/membership_credentials/card.blade.php'));
+        $this->assertIsString($card);
+        $this->assertStringContainsString('width: 16.6mm; height: 20.6mm', $card);
+        $this->assertStringContainsString('border-radius: 50%', $card);
+        $this->assertStringContainsString("format('d-m-Y')", $card);
+    }
 }

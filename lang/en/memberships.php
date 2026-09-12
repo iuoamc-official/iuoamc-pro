@@ -1,5 +1,7 @@
 <?php
 return [
+    'current_credential' => 'Current approved issue',
+    'archived_credential' => 'Archived previous issue',
     'title'=>'Memberships','lead'=>'Manage membership applications and approved periods within the responsible entity.','new'=>'New membership application','edit'=>'Edit member details',
     'member'=>'Member','number'=>'Membership number','organization'=>'Responsible entity','type'=>'Membership type','status'=>'Status','integrity'=>'Record integrity',
     'open'=>'Open record','search'=>'Search by name or membership number','all_organizations'=>'All permitted entities','all_statuses'=>'All statuses',

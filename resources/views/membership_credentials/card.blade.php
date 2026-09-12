@@ -14,9 +14,9 @@
         .brand img { width: 25.2mm; height: auto; }
         .card-label { position: fixed; top: 2.25mm; left: 30mm; width: 52.3mm; color: #ffffff; text-align: right; font-size: 6pt; font-weight: bold; letter-spacing: .55px; }
         .registration { position: fixed; top: 6.4mm; left: 30mm; width: 52.3mm; color: #e3c768; text-align: right; font-size: 4.25pt; }
-        .photo-frame { position: fixed; top: 14.4mm; left: 3.2mm; width: 19.8mm; height: 26.4mm; padding: .6mm; border: .35mm solid #c6a13c; background: #ffffff; }
-        .photo { width: 18.6mm; height: 25.2mm; }
-        .identity { position: fixed; top: 14.7mm; left: 25.2mm; width: 42.5mm; height: 27.5mm; }
+        .photo-frame { position: fixed; top: 15.8mm; left: 4mm; width: 16.6mm; height: 20.6mm; padding: .6mm; border: .32mm solid #c6a13c; border-radius: 50%; background: #ffffff; text-align: center; }
+        .photo { width: 15.4mm; height: 19.4mm; border-radius: 50%; }
+        .identity { position: fixed; top: 14.7mm; left: 22.5mm; width: 45.2mm; height: 27.5mm; }
         .name { color: #132947; font-size: 9pt; line-height: 1.12; font-weight: bold; }
         .name.long { font-size: 7.6pt; }
         .title { margin-top: 1.15mm; color: #9a731e; font-size: 5.7pt; line-height: 1.23; font-weight: bold; }
@@ -55,6 +55,8 @@
 </head>
 <body>
 @php($displayName = $payload['latin_name'] ?: $payload['full_name'])
+@php($validFrom = \Carbon\CarbonImmutable::parse($payload['valid_from'])->format('d-m-Y'))
+@php($validUntil = \Carbon\CarbonImmutable::parse($payload['valid_until'])->format('d-m-Y'))
 <div class="canvas"></div>
 <div class="top"></div>
 <div class="gold-line"></div>
@@ -70,7 +72,7 @@
     <div class="class-label">MEMBERSHIP CLASS</div>
     <div class="class-value"><bdi>{{ $payload['membership_type'] }}</bdi></div>
     <div class="number"><bdi dir="ltr">{{ $payload['membership_number'] }}</bdi></div>
-    <div class="dates">VALID FROM&nbsp; <bdi dir="ltr">{{ $payload['valid_from'] }}</bdi>&nbsp; - &nbsp;VALID UNTIL&nbsp; <bdi dir="ltr">{{ $payload['valid_until'] }}</bdi></div>
+    <div class="dates">VALID FROM&nbsp; <bdi dir="ltr">{{ $validFrom }}</bdi>&nbsp; - &nbsp;VALID UNTIL&nbsp; <bdi dir="ltr">{{ $validUntil }}</bdi></div>
 </div>
 <div class="qr"><barcode code="{{ $payload['verification_url'] }}" type="QR" error="M" size="0.43" disableborder="0" /><br>SCAN TO VERIFY<br>LIVE STATUS</div>
 <div class="verification-rule"></div>

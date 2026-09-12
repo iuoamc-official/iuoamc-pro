@@ -27,8 +27,10 @@
         .meta td { text-align: center; }
         .meta-label { color: #758291; font-size: 6.2pt; text-transform: uppercase; }
         .meta-value { margin-top: .7mm; color: #10283d; font-size: 7.5pt; font-weight: bold; }
-        .photo-frame { position: fixed; top: 139mm; left: 39mm; width: 30mm; height: 36mm; padding: .65mm; border: .35mm solid #b99536; background: #fff; }
-        .photo { width: 28.7mm; height: 34.7mm; }
+        .photo-frame { position: fixed; top: 143mm; left: 45mm; width: 22mm; height: 27mm; padding: .6mm; border: .32mm solid #b99536; border-radius: 50%; background: #fff; text-align: center; }
+        .photo { width: 20.8mm; height: 25.8mm; border-radius: 50%; }
+        .nfc-seal { position: fixed; top: 147mm; left: 72mm; width: 17mm; height: 17mm; padding-top: 2.1mm; border: .4mm solid #b99536; border-radius: 50%; color: #9b751f; text-align: center; font-size: 4.5pt; font-weight: bold; line-height: 1.15; }
+        .nfc-seal img { width: 8mm; height: 5.2mm; }
         .signature { position: fixed; top: 148mm; left: 94mm; width: 117mm; padding-top: 2mm; border-top: .25mm solid #b99536; color: #10283d; text-align: center; font-size: 7.5pt; line-height: 1.5; }
         .signature-name { font-size: 10pt; font-weight: bold; }
         .signature-title { color: #687888; font-size: 6pt; }
@@ -41,6 +43,8 @@
 </head>
 <body>
 @php($displayName = $payload['latin_name'] ?: $payload['full_name'])
+@php($validFrom = \Carbon\CarbonImmutable::parse($payload['valid_from'])->format('d-m-Y'))
+@php($validUntil = \Carbon\CarbonImmutable::parse($payload['valid_until'])->format('d-m-Y'))
 <div class="sheet"></div><div class="outer"></div><div class="inner"></div><div class="navy"></div><div class="gold"></div>
 <div class="masthead"><table><tr><td width="50%"><img class="logo" src="{{ $logo }}"></td><td width="50%" class="company"><bdi>{{ $payload['organization']['legal_name'] }}</bdi><br>UK Company Registration No. <bdi dir="ltr">{{ $payload['organization']['registration_number'] }}</bdi></td></tr></table></div>
 <div class="eyebrow">OFFICIAL MEMBERSHIP CREDENTIAL</div>
@@ -53,11 +57,12 @@
 <div class="meta"><table><tr>
     <td width="28%"><div class="meta-label">Membership class</div><div class="meta-value"><bdi>{{ $payload['membership_type'] }}</bdi></div></td>
     <td width="25%"><div class="meta-label">Membership number</div><div class="meta-value"><bdi dir="ltr">{{ $payload['membership_number'] }}</bdi></div></td>
-    <td width="17%"><div class="meta-label">Valid from</div><div class="meta-value"><bdi dir="ltr">{{ $payload['valid_from'] }}</bdi></div></td>
-    <td width="17%"><div class="meta-label">Valid until</div><div class="meta-value"><bdi dir="ltr">{{ $payload['valid_until'] }}</bdi></div></td>
+    <td width="17%"><div class="meta-label">Valid from</div><div class="meta-value"><bdi dir="ltr">{{ $validFrom }}</bdi></div></td>
+    <td width="17%"><div class="meta-label">Valid until</div><div class="meta-value"><bdi dir="ltr">{{ $validUntil }}</bdi></div></td>
     <td width="13%"><div class="meta-label">Version</div><div class="meta-value">{{ $payload['version'] }}</div></td>
 </tr></table></div>
 <div class="photo-frame"><img class="photo" src="{{ $photoPath }}"></div>
+<div class="nfc-seal"><img src="{{ $nfc }}"><br>NFC<br>ENABLED</div>
 <div class="signature">Electronically authorised by<br><span class="signature-name">{{ $payload['electronic_signature']['name'] }}</span><br><span class="signature-title">{{ $payload['electronic_signature']['title'] }}</span><br><span class="signature-standard">CRYPTOGRAPHICALLY SIGNED · {{ $payload['electronic_signature']['standard'] }}</span></div>
 <div class="qr"><barcode code="{{ $payload['verification_url'] }}" type="QR" error="M" size="0.72" disableborder="0" /><br>SCAN TO VERIFY<br>LIVE REGISTRY STATUS</div>
 <div class="evidence"><b>Digital evidence</b> · Issued <bdi dir="ltr">{{ $payload['issued_at'] }}</bdi> · {{ $payload['template_version'] }}<br>CREDENTIAL DATA SHA-256<div class="hash">{{ $payload['credential_data_sha256'] }}</div></div>

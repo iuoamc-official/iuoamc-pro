@@ -36,13 +36,16 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Prepare CI-only environment file
+      - name: Prepare temporary CI environment
         run: |
           cp .env.example .env
           sed -i -E 's/CHANGE_ME_[A-Z0-9_]+/ci-local-placeholder-0123456789abcdef/g' .env
 
       - name: Security preflight
         run: bash scripts/security-preflight.sh
+
+      - name: Remove temporary env before repository isolation tests
+        run: rm -f .env
 
       - name: Python syntax validation
         run: |
@@ -61,6 +64,11 @@ jobs:
       - name: Contract tests
         run: python -m pytest -q tests
 
+      - name: Recreate temporary environment for Compose validation
+        run: |
+          cp .env.example .env
+          sed -i -E 's/CHANGE_ME_[A-Z0-9_]+/ci-local-placeholder-0123456789abcdef/g' .env
+
       - name: Docker Compose configuration validation
         run: |
           docker compose \
@@ -69,6 +77,10 @@ jobs:
             -f compose.shadow.yaml \
             -f compose.supervisor.yaml \
             config --quiet
+
+      - name: Remove temporary environment
+        if: always()
+        run: rm -f .env
 
   no-production-deploy:
     runs-on: ubuntu-latest

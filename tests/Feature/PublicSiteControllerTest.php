@@ -117,6 +117,17 @@ final class PublicSiteControllerTest extends TestCase
         self::assertStringContainsString("'nonce-{$nonce[1]}'", (string) $response->headers->get('Content-Security-Policy'));
     }
 
+    public function test_guest_can_open_login_and_registration_from_the_public_header(): void
+    {
+        $this->get('/ar')
+            ->assertOk()
+            ->assertSee('/ar/login', false)
+            ->assertSee('/ar/register', false)
+            ->assertSee('تسجيل الدخول')
+            ->assertSee('فتح حساب')
+            ->assertSee('mobile-auth-actions', false);
+    }
+
     public function test_renders_the_french_edition_of_a_public_page(): void
     {
         $this->get('/fr/about')

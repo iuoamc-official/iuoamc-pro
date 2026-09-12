@@ -69,6 +69,12 @@
                 @foreach($navigation as $item)
                     <a class="{{ $page->is($item) || ($page->template === 'entity' && $item->slug === 'entities') ? 'active' : '' }}" href="{{ route('public.pages.show', ['locale' => app()->getLocale(), 'public_page' => $item]) }}">{{ $item->localized('navigation_label') }}</a>
                 @endforeach
+                @guest
+                    <div class="mobile-auth-actions" aria-label="{{ __('account.secure_portal') }}">
+                        <a href="{{ route('login',['locale'=>app()->getLocale()]) }}">{{ __('ui.sign_in') }}</a>
+                        <a class="primary" href="{{ route('register',['locale'=>app()->getLocale()]) }}">{{ __('account.create_account') }}</a>
+                    </div>
+                @endguest
             </nav>
             <div class="header-tools">
                 <nav class="public-languages" aria-label="{{ __('public_site.languages') }}">
@@ -92,7 +98,10 @@
                         </div>
                     </details>
                 @else
-                    <a class="control-link" href="{{ route('login',['locale'=>app()->getLocale()]) }}">{{ __('ui.sign_in') }}</a>
+                    <div class="guest-auth-actions" aria-label="{{ __('account.secure_portal') }}">
+                        <a class="control-link" href="{{ route('login',['locale'=>app()->getLocale()]) }}">{{ __('ui.sign_in') }}</a>
+                        <a class="register-link" href="{{ route('register',['locale'=>app()->getLocale()]) }}">{{ __('account.create_account') }}</a>
+                    </div>
                 @endauth
             </div>
         </div>

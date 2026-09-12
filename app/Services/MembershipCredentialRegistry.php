@@ -309,6 +309,64 @@ final class MembershipCredentialRegistry
         }
     }
 
+    public function preview(User $actor, Membership $membership, string $kind): string
+    {
+        abort_unless(in_array($kind, ['card', 'certificate'], true), 404);
+
+        $registry = app(MembershipRegistry::class);
+        $registry->requirePermission($actor, 'memberships.issue');
+        $membership = $registry->scoped($actor)
+            ->with(['organization', 'periods.audit', 'integrityAudit'])
+            ->findOrFail($membership->id);
+
+        abort_unless($registry->verify($membership), 409, trans('memberships.errors.integrity'));
+        abort_unless($this->ready($membership), 409, trans('memberships.errors.application_incomplete'));
+
+        $application = $this->applicationFor($membership);
+        $period = $membership->periods->sortByDesc('version')->first();
+        abort_unless($application !== null && $period instanceof MembershipPeriod
+            && $registry->verifyPeriod($period), 409, trans('memberships.errors.integrity'));
+
+        $nextVersion = (int) MembershipCredential::query()
+            ->where('membership_id', $membership->id)->max('version') + 1;
+        $payload = [
+            'schema' => 'iuoamc-membership-credential-v1',
+            'membership_id' => (int) $membership->id,
+            'record_uuid' => $membership->record_uuid,
+            'membership_number' => $membership->membership_number,
+            'period_uuid' => $period->period_uuid,
+            'version' => $nextVersion,
+            'full_name' => $membership->full_name,
+            'latin_name' => $membership->latin_name,
+            'membership_type' => $membership->membership_type,
+            'professional_title' => $membership->professional_title,
+            'country_code' => $membership->country_code,
+            'nationality_code' => $application->nationality_code,
+            'organization' => $membership->organization->only([
+                'id', 'code', 'legal_name', 'display_name', 'jurisdiction', 'registration_number',
+            ]),
+            'valid_from' => $period->valid_from->toDateString(),
+            'valid_until' => $period->valid_until->toDateString(),
+            'photo_sha256' => $application->photo_sha256,
+            'verification_url' => url('/verify/m/'.str_repeat('0', 64)),
+            'issued_by' => (int) $actor->id,
+            'issued_at' => now()->utc()->startOfSecond()->toIso8601String(),
+            'template_version' => MembershipCredentialPdf::TEMPLATE_VERSION,
+            'electronic_signature' => [
+                'name' => 'Master Chef Ahmad Maadarani',
+                'title' => 'President General & Authorised Signatory',
+                'standard' => 'PAdES/X.509',
+            ],
+        ];
+        $payload['credential_data_sha256'] = MembershipRegistry::digest($payload);
+        $photoPath = $this->safePrivatePath($application->photo_path);
+        $pdf = app(MembershipCredentialPdf::class);
+
+        return $kind === 'card'
+            ? $pdf->renderCard($payload, $photoPath, true)
+            : $pdf->renderCertificate($payload, $photoPath, true);
+    }
+
     public function issue(User $actor, Membership $membership): MembershipCredential
     {
         $registry = app(MembershipRegistry::class);

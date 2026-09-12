@@ -69,27 +69,23 @@ services:
       context: ..
       dockerfile: broadcast-nexus/services/orchestrator/Dockerfile
     restart: "no"
-    env_file:
-      - .env
+    env_file: [.env]
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       NATS_URL: nats://${NATS_USER}:${NATS_PASSWORD}@nats:4222
       JWT_SECRET: ${JWT_SECRET}
       JWT_ISSUER: ${JWT_ISSUER}
       JWT_AUDIENCE: ${JWT_AUDIENCE}
-    ports:
-      - "127.0.0.1:58100:8100"
+    ports: ["127.0.0.1:58100:8100"]
     depends_on:
-      postgres:
-        condition: service_healthy
+      postgres: {condition: service_healthy}
 
   media-library:
     build:
       context: ..
       dockerfile: broadcast-nexus/services/media-library/Dockerfile
     restart: "no"
-    env_file:
-      - .env
+    env_file: [.env]
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       NATS_URL: nats://${NATS_USER}:${NATS_PASSWORD}@nats:4222
@@ -100,97 +96,81 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_ISSUER: ${JWT_ISSUER}
       JWT_AUDIENCE: ${JWT_AUDIENCE}
-    ports:
-      - "127.0.0.1:58101:8101"
+    ports: ["127.0.0.1:58101:8101"]
     depends_on:
-      postgres:
-        condition: service_healthy
-      minio-init:
-        condition: service_completed_successfully
+      postgres: {condition: service_healthy}
+      minio-init: {condition: service_completed_successfully}
 
   scheduler:
     build:
       context: ..
       dockerfile: broadcast-nexus/services/scheduler/Dockerfile
     restart: "no"
-    env_file:
-      - .env
+    env_file: [.env]
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       NATS_URL: nats://${NATS_USER}:${NATS_PASSWORD}@nats:4222
       JWT_SECRET: ${JWT_SECRET}
       JWT_ISSUER: ${JWT_ISSUER}
       JWT_AUDIENCE: ${JWT_AUDIENCE}
-    ports:
-      - "127.0.0.1:58102:8102"
+    ports: ["127.0.0.1:58102:8102"]
     depends_on:
-      postgres:
-        condition: service_healthy
+      postgres: {condition: service_healthy}
 
   playout:
     build:
       context: ..
       dockerfile: broadcast-nexus/services/playout/Dockerfile
     restart: "no"
-    env_file:
-      - .env
+    env_file: [.env]
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       NATS_URL: nats://${NATS_USER}:${NATS_PASSWORD}@nats:4222
       JWT_SECRET: ${JWT_SECRET}
       JWT_ISSUER: ${JWT_ISSUER}
       JWT_AUDIENCE: ${JWT_AUDIENCE}
-    ports:
-      - "127.0.0.1:58103:8103"
+    ports: ["127.0.0.1:58103:8103"]
     depends_on:
-      postgres:
-        condition: service_healthy
+      postgres: {condition: service_healthy}
 
   live-studio:
     build:
       context: ..
       dockerfile: broadcast-nexus/services/live-studio/Dockerfile
     restart: "no"
-    env_file:
-      - .env
+    env_file: [.env]
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       NATS_URL: nats://${NATS_USER}:${NATS_PASSWORD}@nats:4222
       JWT_SECRET: ${JWT_SECRET}
       JWT_ISSUER: ${JWT_ISSUER}
       JWT_AUDIENCE: ${JWT_AUDIENCE}
-    ports:
-      - "127.0.0.1:58104:8104"
+    ports: ["127.0.0.1:58104:8104"]
     depends_on:
-      postgres:
-        condition: service_healthy
+      postgres: {condition: service_healthy}
 
   media-router:
     build:
       context: ..
       dockerfile: broadcast-nexus/services/media-router/Dockerfile
     restart: "no"
-    env_file:
-      - .env
+    env_file: [.env]
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       NATS_URL: nats://${NATS_USER}:${NATS_PASSWORD}@nats:4222
       JWT_SECRET: ${JWT_SECRET}
       JWT_ISSUER: ${JWT_ISSUER}
       JWT_AUDIENCE: ${JWT_AUDIENCE}
-    ports:
-      - "127.0.0.1:58105:8105"
+    ports: ["127.0.0.1:58105:8105"]
     depends_on:
-      postgres:
-        condition: service_healthy
+      postgres: {condition: service_healthy}
 
   iso-recorder:
     build:
       context: ..
       dockerfile: broadcast-nexus/services/iso-recorder/Dockerfile
     restart: "no"
-    env_file:
-      - .env
+    env_file: [.env]
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       NATS_URL: nats://${NATS_USER}:${NATS_PASSWORD}@nats:4222
@@ -201,32 +181,74 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_ISSUER: ${JWT_ISSUER}
       JWT_AUDIENCE: ${JWT_AUDIENCE}
-    ports:
-      - "127.0.0.1:58106:8106"
+    ports: ["127.0.0.1:58106:8106"]
     depends_on:
-      postgres:
-        condition: service_healthy
-      minio-init:
-        condition: service_completed_successfully
+      postgres: {condition: service_healthy}
+      minio-init: {condition: service_completed_successfully}
 
   rtc-gateway:
     build:
       context: ..
       dockerfile: broadcast-nexus/services/rtc-gateway/Dockerfile
     restart: "no"
-    env_file:
-      - .env
+    env_file: [.env]
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       NATS_URL: nats://${NATS_USER}:${NATS_PASSWORD}@nats:4222
       JWT_SECRET: ${JWT_SECRET}
       JWT_ISSUER: ${JWT_ISSUER}
       JWT_AUDIENCE: ${JWT_AUDIENCE}
-    ports:
-      - "127.0.0.1:58107:8107"
+    ports: ["127.0.0.1:58107:8107"]
     depends_on:
-      postgres:
-        condition: service_healthy
+      postgres: {condition: service_healthy}
+
+  encoder:
+    build:
+      context: ..
+      dockerfile: broadcast-nexus/services/encoder/Dockerfile
+    restart: "no"
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      NATS_URL: nats://${NATS_USER}:${NATS_PASSWORD}@nats:4222
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ISSUER: ${JWT_ISSUER}
+      JWT_AUDIENCE: ${JWT_AUDIENCE}
+    ports: ["127.0.0.1:58108:8108"]
+    depends_on:
+      postgres: {condition: service_healthy}
+
+  distribution:
+    build:
+      context: ..
+      dockerfile: broadcast-nexus/services/distribution/Dockerfile
+    restart: "no"
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      NATS_URL: nats://${NATS_USER}:${NATS_PASSWORD}@nats:4222
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ISSUER: ${JWT_ISSUER}
+      JWT_AUDIENCE: ${JWT_AUDIENCE}
+    ports: ["127.0.0.1:58109:8109"]
+    depends_on:
+      postgres: {condition: service_healthy}
+
+  iptv:
+    build:
+      context: ..
+      dockerfile: broadcast-nexus/services/iptv/Dockerfile
+    restart: "no"
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      NATS_URL: nats://${NATS_USER}:${NATS_PASSWORD}@nats:4222
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ISSUER: ${JWT_ISSUER}
+      JWT_AUDIENCE: ${JWT_AUDIENCE}
+    ports: ["127.0.0.1:58110:8110"]
+    depends_on:
+      postgres: {condition: service_healthy}
 
 volumes:
   nexus_postgres:

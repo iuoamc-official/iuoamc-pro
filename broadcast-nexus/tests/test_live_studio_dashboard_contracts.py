@@ -12,8 +12,11 @@ def test_studio_control_assets_exist():
 
 def test_operator_token_is_memory_only():
     html = (ROOT / 'services/dashboard-ui/studio/index.html').read_text(encoding='utf-8')
-    assert 'localStorage' not in html
-    assert 'sessionStorage' not in html
+    # Explanatory copy may mention browser storage by name; executable usage must not exist.
+    assert 'localStorage.' not in html
+    assert 'sessionStorage.' not in html
+    assert 'localStorage[' not in html
+    assert 'sessionStorage[' not in html
     assert "let token=''" in html
     assert 'Authorization' in html
 

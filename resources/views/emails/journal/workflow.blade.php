@@ -11,7 +11,7 @@
         @if($event === 'submission_received')
             <p><strong>{{ __('journal.submission_code') }}:</strong> <bdi dir="ltr">{{ $payload['code'] }}</bdi><br><strong>{{ __('journal.tracking_token') }}:</strong> <bdi dir="ltr">{{ $payload['token'] }}</bdi></p>
             <p><a href="{{ $payload['tracking_url'] }}">{{ __('journal.track_submission') }}</a></p>
-        @elseif(in_array($event, ['review_assigned', 'new_submission_received', 'review_completed'], true))
+        @elseif(in_array($event, ['review_assigned', 'review_reminder', 'revision_received', 'new_submission_received', 'review_completed'], true))
             <p><a href="{{ $payload['workspace_url'] }}">{{ __('journal.open_editorial_record') }}</a></p>
         @elseif($event === 'article_published')
             <p><a href="{{ $payload['record_url'] }}">{{ __('journal.public_view') }}</a></p>

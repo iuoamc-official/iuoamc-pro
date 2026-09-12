@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\JournalArticle;
 use App\Models\JournalAuthor;
 use App\Models\JournalSubmission;
+use App\Models\JournalSubmissionRevision;
 use App\Services\AuditTrail;
 use App\Services\JournalNotificationService;
 use Illuminate\Http\RedirectResponse;
@@ -55,7 +56,7 @@ final class JournalSubmissionController extends Controller
 
     public function show(string $locale, JournalSubmission $submission): View
     {
-        $submission->load(['convertedArticle', 'handler']);
+        $submission->load(['convertedArticle', 'handler', 'revisions']);
 
         return view('control.journal.submissions.show', compact('submission'));
     }
@@ -174,6 +175,20 @@ final class JournalSubmissionController extends Controller
         return response()->download(
             Storage::disk('local')->path($submission->manuscript_path),
             $submission->original_filename,
+            ['X-Content-Type-Options' => 'nosniff']
+        );
+    }
+
+    public function downloadRevision(string $locale, JournalSubmission $submission, JournalSubmissionRevision $revision, string $file): BinaryFileResponse
+    {
+        abort_unless($revision->journal_submission_id === $submission->id, 404);
+        $path = $file === 'response-letter' ? $revision->response_letter_path : $revision->manuscript_path;
+        $filename = $file === 'response-letter' ? $revision->response_letter_filename : $revision->original_filename;
+        abort_unless(filled($path) && Storage::disk('local')->exists($path), 404);
+
+        return response()->download(
+            Storage::disk('local')->path($path),
+            $filename,
             ['X-Content-Type-Options' => 'nosniff']
         );
     }

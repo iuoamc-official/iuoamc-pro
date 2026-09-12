@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use LogicException;
 
 final class JournalSubmission extends Model
@@ -63,5 +64,10 @@ final class JournalSubmission extends Model
     public function handler(): BelongsTo
     {
         return $this->belongsTo(User::class, 'handled_by');
+    }
+
+    public function revisions(): HasMany
+    {
+        return $this->hasMany(JournalSubmissionRevision::class)->orderByDesc('revision_number');
     }
 }

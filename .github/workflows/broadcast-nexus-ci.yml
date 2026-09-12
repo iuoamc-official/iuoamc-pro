@@ -70,10 +70,6 @@ jobs:
             -f compose.supervisor.yaml \
             config --quiet
 
-      - name: Confirm workflow cannot deploy
-        run: |
-          ! grep -RInE 'ssh |scp |rsync |kubectl |helm |systemctl|docker context|a\.rtmp\.youtube\.com|rtmps?://' ../.github/workflows/broadcast-nexus-ci.yml
-
   no-production-deploy:
     runs-on: ubuntu-latest
     steps:

@@ -23,7 +23,7 @@ final class PublicArticleController extends Controller
         $filters = $request->validate(['q' => ['nullable', 'string', 'max:160']]);
         if ($section) abort_unless($section->status === 'active', 404);
         $articles = ContentArticle::query()->published()->with('section')
-            ->when($section, fn ($q) => $q->whereBelongsTo($section))
+            ->when($section, fn ($q) => $q->whereBelongsTo($section, 'section'))
             ->when($filters['q'] ?? null, fn ($q, $v) => $q->where(function ($s) use ($v): void { $s->where('title', 'like', '%'.$v.'%')->orWhere('excerpt', 'like', '%'.$v.'%')->orWhere('tags', 'like', '%'.$v.'%'); }))
             ->orderByDesc('is_featured')->orderByDesc('published_at')->paginate(12)->withQueryString();
         return view('articles.index', $this->shared($locale, $profile) + ['articles' => $articles, 'sections' => ContentSection::query()->active()->orderBy('sort_order')->get(), 'currentSection' => $section, 'filters' => $filters]);

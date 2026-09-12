@@ -90,6 +90,8 @@ final class JournalPublishingTest extends TestCase
 
     public function test_general_articles_publish_directly_and_drafts_never_appear_publicly(): void
     {
+        Storage::fake('public');
+        Storage::disk('public')->put('editorial/articles/unsupported.webp', 'invalid-image-data');
         $section = \App\Models\ContentSection::query()->where('slug', 'culinary-knowledge')->firstOrFail();
         ContentArticle::query()->create([
             'record_uuid' => (string) Str::uuid(), 'content_section_id' => $section->id, 'slug' => 'public-culinary-story',
@@ -97,7 +99,7 @@ final class JournalPublishingTest extends TestCase
             'excerpt' => ['ar' => 'ملخص عام', 'en' => 'Public summary', 'fr' => 'Résumé public'],
             'body' => ['ar' => 'نص عام', 'en' => 'Public editorial body', 'fr' => 'Texte éditorial public'],
             'seo_title' => ['ar' => 'قصة', 'en' => 'Story', 'fr' => 'Récit'], 'seo_description' => ['ar' => 'وصف', 'en' => 'Description', 'fr' => 'Description'],
-            'author_name' => 'Ahmad Maadarani', 'publisher_name' => 'Ahmad Maadarani', 'status' => 'published', 'published_at' => now(),
+            'author_name' => 'Ahmad Maadarani', 'publisher_name' => 'Ahmad Maadarani', 'cover_image_path' => 'editorial/articles/unsupported.webp', 'status' => 'published', 'published_at' => now(),
         ]);
         ContentArticle::query()->create([
             'record_uuid' => (string) Str::uuid(), 'content_section_id' => $section->id, 'slug' => 'private-editorial-draft',

@@ -20,6 +20,10 @@ final class MembershipApplicationPolicyTest extends TestCase
             ['general', 'professional', 'elite', 'international_expert'],
             $policy->categoryCodes()
         );
+        self::assertContains('master-chef', $policy->professionalTitleCodes());
+        self::assertContains('complimentary-request', $policy->paymentMethodCodes());
+        self::assertTrue($policy->paymentMethodRequiresWaiverReason('complimentary-request'));
+        self::assertFalse($policy->paymentMethodRequiresWaiverReason('stripe'));
     }
 
     public function test_refund_uses_standard_fee_before_discount(): void

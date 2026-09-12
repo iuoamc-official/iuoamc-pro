@@ -22,6 +22,8 @@
                     <div><dt>{{ __('memberships.payable_fee') }}</dt><dd><bdi dir="ltr">£{{ number_format((int)$application->payable_fee_pence / 100,2) }}</bdi></dd></div>
                     <div><dt>{{ __('memberships.terms_version') }}</dt><dd><bdi dir="ltr">{{ $application->terms_version }}</bdi></dd></div>
                     <div><dt>{{ __('memberships.service_start_at') }}</dt><dd><bdi dir="ltr">{{ $application->service_start_at?->format('Y-m-d H:i') }} UTC</bdi></dd></div>
+                    @if($application->requested_payment_method_code)<div><dt>{{ __('memberships.payment_method') }}</dt><dd>{{ app(\App\Services\MembershipApplicationPolicy::class)->paymentMethods(app()->getLocale())[$application->requested_payment_method_code] ?? $application->requested_payment_method_code }}</dd></div>@endif
+                    @if($application->fee_waiver_reason)<div><dt>{{ __('memberships.fee_waiver_reason') }}</dt><dd>{{ $application->fee_waiver_reason }}</dd></div>@endif
                 </dl>
             @endif
         </section>

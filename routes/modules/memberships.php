@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Control\MembershipController;
+use App\Http\Controllers\Control\MembershipCatalogController;
 use App\Http\Controllers\Control\GovernanceHubController;
 use App\Http\Controllers\MembershipVerificationController;
 use Illuminate\Support\Facades\Route;
@@ -13,6 +14,13 @@ Route::prefix('{locale}/control/memberships')->where(['locale' => 'ar|en|fr'])
     ->middleware(['locale', 'auth', 'active', 'password.changed', 'control.access', 'permission:memberships.view'])
     ->name('memberships.')->group(function (): void {
         Route::get('/', [MembershipController::class, 'index'])->name('index');
+        Route::get('/settings', [MembershipCatalogController::class, 'index'])->middleware('permission:memberships.manage')->name('settings');
+        Route::post('/settings/titles', [MembershipCatalogController::class, 'storeTitle'])->middleware(['permission:memberships.manage', 'throttle:30,1'])->name('settings.titles.store');
+        Route::put('/settings/titles/{title}', [MembershipCatalogController::class, 'updateTitle'])->whereNumber('title')->middleware(['permission:memberships.manage', 'throttle:60,1'])->name('settings.titles.update');
+        Route::post('/settings/plans', [MembershipCatalogController::class, 'storePlan'])->middleware(['permission:memberships.manage', 'throttle:30,1'])->name('settings.plans.store');
+        Route::put('/settings/plans/{plan}', [MembershipCatalogController::class, 'updatePlan'])->whereNumber('plan')->middleware(['permission:memberships.manage', 'throttle:60,1'])->name('settings.plans.update');
+        Route::post('/settings/payments', [MembershipCatalogController::class, 'storePaymentMethod'])->middleware(['permission:memberships.manage', 'throttle:30,1'])->name('settings.payments.store');
+        Route::put('/settings/payments/{paymentMethod}', [MembershipCatalogController::class, 'updatePaymentMethod'])->whereNumber('paymentMethod')->middleware(['permission:memberships.manage', 'throttle:60,1'])->name('settings.payments.update');
         Route::get('/create', [MembershipController::class, 'create'])->middleware('permission:memberships.manage')->name('create');
         Route::post('/', [MembershipController::class, 'store'])->middleware(['permission:memberships.manage', 'throttle:60,1'])->name('store');
         Route::get('/{membership}', [MembershipController::class, 'show'])->whereNumber('membership')->name('show');

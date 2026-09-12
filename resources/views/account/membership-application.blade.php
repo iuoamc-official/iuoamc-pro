@@ -10,7 +10,9 @@
         <label><span>{{ __('account.membership_term') }} *</span><select name="membership_term_years" required><option value="">{{ __('account.choose') }}</option>@foreach($membershipTermFees as $years=>$fee)<option value="{{ $years }}" @selected((string)old('membership_term_years')===(string)$years)>{{ trans_choice('account.years', $years, ['count'=>$years]) }} — £{{ number_format($fee / 100, 0) }}</option>@endforeach</select></label>
         <label><span>{{ __('account.full_name') }} *</span><input name="full_name" required maxlength="255" value="{{ old('full_name',auth()->user()->name) }}"></label>
         <label><span>{{ __('account.latin_name') }}</span><input name="latin_name" dir="ltr" maxlength="255" value="{{ old('latin_name') }}"></label>
-        <label><span>{{ __('account.professional_title') }}</span><input name="professional_title" maxlength="160" value="{{ old('professional_title') }}"></label>
+        <label><span>{{ __('account.professional_title') }} *</span><select name="member_title_code" required><option value="">{{ __('account.choose') }}</option>@foreach($memberTitles as $code=>$label)<option value="{{ $code }}" @selected(old('member_title_code')===$code)>{{ $label }}</option>@endforeach</select></label>
+        <label><span>{{ __('account.payment_method') }} *</span><select id="requested-payment-method" name="requested_payment_method_code" required><option value="">{{ __('account.choose') }}</option>@foreach($paymentMethods as $code=>$label)<option value="{{ $code }}" @selected(old('requested_payment_method_code')===$code)>{{ $label }}</option>@endforeach</select><small>{{ __('account.payment_method_notice') }}</small></label>
+        <label id="fee-waiver-reason-field" class="wide" hidden><span>{{ __('account.fee_waiver_reason') }} *</span><textarea id="fee-waiver-reason" name="fee_waiver_reason" rows="4" minlength="20" maxlength="1500">{{ old('fee_waiver_reason') }}</textarea><small>{{ __('account.fee_waiver_notice') }}</small></label>
         <label><span>{{ __('account.country_code') }} *</span><input name="country_code" dir="ltr" maxlength="2" placeholder="GB" required value="{{ old('country_code') }}"></label>
         <label><span>{{ __('account.email') }}</span><input type="email" readonly value="{{ auth()->user()->email }}"></label>
         <label><span>{{ __('account.phone') }} *</span><input name="phone" type="tel" dir="ltr" maxlength="40" required value="{{ old('phone') }}"></label>
@@ -47,4 +49,19 @@
     </section>
     <div class="form-footer"><a class="button secondary" href="{{ route('account.dashboard',['locale'=>app()->getLocale()]) }}">{{ __('account.cancel') }}</a><button class="button" type="submit">{{ __('account.submit_application') }}</button></div>
 </form>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
+(() => {
+    const select = document.getElementById('requested-payment-method');
+    const field = document.getElementById('fee-waiver-reason-field');
+    const reason = document.getElementById('fee-waiver-reason');
+    const waiverCodes = @json($waiverPaymentMethods);
+    const sync = () => {
+        const required = waiverCodes.includes(select.value);
+        field.hidden = !required;
+        reason.required = required;
+    };
+    select.addEventListener('change', sync);
+    sync();
+})();
+</script>
 @endsection

@@ -44,6 +44,9 @@ final class MembershipCredentialRegistry
         $validated = validator($data, [
             'membership_category_code' => ['required', Rule::in(app(MembershipApplicationPolicy::class)->categoryCodes())],
             'membership_term_years' => ['required', 'integer', Rule::in(app(MembershipApplicationPolicy::class)->termYears())],
+            'member_title_code' => ['required', Rule::in(app(MembershipApplicationPolicy::class)->professionalTitleCodes())],
+            'requested_payment_method_code' => ['required', Rule::in(app(MembershipApplicationPolicy::class)->paymentMethodCodes())],
+            'fee_waiver_reason' => ['nullable', 'string', 'min:20', 'max:1500'],
             'discount_pence' => ['nullable', 'integer', 'min:0'],
             'date_of_birth' => ['required', 'date_format:Y-m-d', 'before:today'],
             'nationality_code' => ['required', 'regex:/^[A-Z]{2}$/'],
@@ -133,6 +136,9 @@ final class MembershipCredentialRegistry
         $validated = validator($data, [
             'membership_category_code' => ['required', Rule::in(app(MembershipApplicationPolicy::class)->categoryCodes())],
             'membership_term_years' => ['required', 'integer', Rule::in(app(MembershipApplicationPolicy::class)->termYears())],
+            'member_title_code' => ['required', Rule::in(app(MembershipApplicationPolicy::class)->professionalTitleCodes())],
+            'requested_payment_method_code' => ['required', Rule::in(app(MembershipApplicationPolicy::class)->paymentMethodCodes())],
+            'fee_waiver_reason' => ['nullable', 'string', 'min:20', 'max:1500'],
             'date_of_birth' => ['required', 'date_format:Y-m-d', 'before:today'],
             'nationality_code' => ['required', 'regex:/^[A-Z]{2}$/'],
             'address' => ['required', 'string', 'max:1000'],
@@ -202,6 +208,19 @@ final class MembershipCredentialRegistry
                 if ($application->getAttribute($field) === null || $application->getAttribute($field) === '') {
                     return false;
                 }
+            }
+        }
+
+        if ($application->member_title_code !== null || $application->requested_payment_method_code !== null) {
+            foreach (['member_title_code', 'requested_payment_method_code'] as $field) {
+                if ($application->getAttribute($field) === null || $application->getAttribute($field) === '') {
+                    return false;
+                }
+            }
+            if (app(MembershipApplicationPolicy::class)->paymentMethodRequiresWaiverReason(
+                (string) $application->requested_payment_method_code
+            ) && blank($application->fee_waiver_reason)) {
+                return false;
             }
         }
 
@@ -480,7 +499,7 @@ final class MembershipCredentialRegistry
             return $snapshot;
         }
 
-        return [
+        $v2 = [
             ...$snapshot,
             'schema' => 'iuoamc-membership-application-v2',
             'membership_category_code' => $application->membership_category_code,
@@ -494,6 +513,18 @@ final class MembershipCredentialRegistry
             'terms_accepted_at' => $application->terms_accepted_at?->utc()->format('Y-m-d\TH:i:sP'),
             'immediate_service_requested' => (bool) $application->immediate_service_requested,
             'service_start_at' => $application->service_start_at?->utc()->format('Y-m-d\TH:i:sP'),
+        ];
+
+        if ($application->member_title_code === null && $application->requested_payment_method_code === null) {
+            return $v2;
+        }
+
+        return [
+            ...$v2,
+            'schema' => 'iuoamc-membership-application-v3',
+            'member_title_code' => $application->member_title_code,
+            'requested_payment_method_code' => $application->requested_payment_method_code,
+            'fee_waiver_reason_encrypted' => $attributes['fee_waiver_reason'] ?? null,
         ];
     }
 
@@ -521,6 +552,15 @@ final class MembershipCredentialRegistry
             ];
         }
 
+
+        if ($application->member_title_code !== null || $application->requested_payment_method_code !== null) {
+            $values += [
+                'member_title_code' => $application->member_title_code,
+                'requested_payment_method_code' => $application->requested_payment_method_code,
+                'fee_waiver_reason_recorded' => filled($application->fee_waiver_reason),
+            ];
+        }
+
         return $values;
     }
 
@@ -529,6 +569,17 @@ final class MembershipCredentialRegistry
     {
         $policy = app(MembershipApplicationPolicy::class);
         $standardFee = $policy->feePence((int) $validated['membership_term_years']);
+        $paymentMethod = (string) $validated['requested_payment_method_code'];
+        $waiverReason = trim((string) ($validated['fee_waiver_reason'] ?? ''));
+        $requiresWaiverReason = $policy->paymentMethodRequiresWaiverReason($paymentMethod);
+        if ($requiresWaiverReason && mb_strlen($waiverReason) < 20) {
+            throw ValidationException::withMessages([
+                'fee_waiver_reason' => trans('memberships.fee_waiver_reason_required'),
+            ]);
+        }
+        if (! $requiresWaiverReason) {
+            $waiverReason = '';
+        }
         $discount = $allowDiscount ? (int) ($validated['discount_pence'] ?? 0) : 0;
         if ($discount > $standardFee) {
             throw ValidationException::withMessages([
@@ -541,11 +592,14 @@ final class MembershipCredentialRegistry
 
         return [
             'membership_category_code' => $validated['membership_category_code'],
+            'member_title_code' => $validated['member_title_code'],
             'membership_term_years' => (int) $validated['membership_term_years'],
             'standard_fee_pence' => $standardFee,
             'discount_pence' => $discount,
             'payable_fee_pence' => $standardFee - $discount,
             'fee_currency' => MembershipApplicationPolicy::CURRENCY,
+            'requested_payment_method_code' => $paymentMethod,
+            'fee_waiver_reason' => $waiverReason !== '' ? $waiverReason : null,
             'terms_version' => MembershipApplicationPolicy::TERMS_VERSION,
             'privacy_version' => MembershipApplicationPolicy::PRIVACY_VERSION,
             'terms_accepted_at' => $acceptedAt,

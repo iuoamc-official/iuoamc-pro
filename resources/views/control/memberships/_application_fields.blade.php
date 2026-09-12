@@ -2,6 +2,8 @@
     <header><span class="form-step">03</span><div><h2>{{ __('memberships.application_data') }}</h2><p>{{ __('memberships.application_privacy') }}</p></div></header>
     <div class="form-grid two-columns">
         <label class="field"><span>{{ __('memberships.membership_term') }} *</span><select name="membership_term_years" required><option value="">{{ __('memberships.choose_term') }}</option>@foreach($membershipTermFees as $years=>$fee)<option value="{{ $years }}" @selected((string)old('membership_term_years',$application?->membership_term_years)===(string)$years)>{{ trans_choice('account.years',$years,['count'=>$years]) }} — £{{ number_format($fee / 100, 0) }}</option>@endforeach</select></label>
+        <label class="field"><span>{{ __('memberships.payment_method') }} *</span><select id="requested-payment-method" name="requested_payment_method_code" required><option value="">{{ __('memberships.choose_payment_method') }}</option>@foreach($paymentMethods as $code=>$label)<option value="{{ $code }}" @selected(old('requested_payment_method_code',$application?->requested_payment_method_code)===$code)>{{ $label }}</option>@endforeach</select><small>{{ __('memberships.payment_method_notice') }}</small></label>
+        <label id="fee-waiver-reason-field" class="field" hidden><span>{{ __('memberships.fee_waiver_reason') }} *</span><textarea id="fee-waiver-reason" name="fee_waiver_reason" rows="4" minlength="20" maxlength="1500">{{ old('fee_waiver_reason',$application?->fee_waiver_reason) }}</textarea><small>{{ __('memberships.fee_waiver_notice') }}</small></label>
         <label class="field"><span>{{ __('memberships.discount_amount') }}</span><input type="number" name="discount_amount" min="0" step="0.01" inputmode="decimal" value="{{ old('discount_amount',$application ? number_format((int)$application->discount_pence / 100,2,'.','') : '0.00') }}"><small>{{ __('memberships.discount_basis_notice') }}</small></label>
         <label class="field"><span>{{ __('memberships.photo') }} @if($photoRequired)*@endif</span><input type="file" name="photo" accept="image/jpeg,image/png,image/webp" @required($photoRequired)><small>{{ __('memberships.photo_help') }}</small></label>
         @if($application)<div class="field"><span>{{ __('memberships.current_photo') }}</span><strong>{{ __('memberships.photo_secured') }}</strong><small><code dir="ltr">{{ $application->photo_sha256 }}</code></small></div>@endif
@@ -23,3 +25,14 @@
     <label class="field"><input type="checkbox" name="application_consent" value="1" required @checked(old('application_consent'))> <span>{{ __('memberships.application_consent') }}</span></label>
     <label class="field"><input type="checkbox" name="terms_consent" value="1" required @checked(old('terms_consent'))> <span>{{ __('memberships.terms_consent') }}</span></label>
 </section>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
+(() => {
+    const select = document.getElementById('requested-payment-method');
+    const field = document.getElementById('fee-waiver-reason-field');
+    const reason = document.getElementById('fee-waiver-reason');
+    if (!select || !field || !reason) return;
+    const waiverCodes = @json($waiverPaymentMethods);
+    const sync = () => { const required = waiverCodes.includes(select.value); field.hidden = !required; reason.required = required; };
+    select.addEventListener('change', sync); sync();
+})();
+</script>

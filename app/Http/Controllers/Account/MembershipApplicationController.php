@@ -9,6 +9,7 @@ use App\Models\Membership;
 use App\Models\Organization;
 use App\Services\AccountRecordAccess;
 use App\Services\MembershipCredentialRegistry;
+use App\Services\MembershipApplicationPolicy;
 use App\Services\MembershipRegistry;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,9 +22,15 @@ final class MembershipApplicationController extends Controller
 {
     public function create(Request $request): View
     {
+        $policy = app(MembershipApplicationPolicy::class);
+
         return view('account.membership-application', [
             'organizations' => Organization::query()->where('status', 'active')->orderByDesc('is_root')
                 ->orderBy('display_name')->get(['id', 'display_name', 'legal_name']),
+            'membershipCategories' => collect($policy->categories())->mapWithKeys(
+                fn (string $name, string $code): array => [$code => __('account.membership_categories.'.$code)]
+            ),
+            'membershipTermFees' => $policy->termFees(),
         ]);
     }
 
@@ -37,7 +44,8 @@ final class MembershipApplicationController extends Controller
         }
         $data = $request->validate([
             'organization_id' => ['required', 'integer', Rule::in($organizations)],
-            'membership_type' => ['required', 'string', 'max:120'],
+            'membership_category_code' => ['required', Rule::in(app(MembershipApplicationPolicy::class)->categoryCodes())],
+            'membership_term_years' => ['required', 'integer', Rule::in(app(MembershipApplicationPolicy::class)->termYears())],
             'full_name' => ['required', 'string', 'max:255'],
             'latin_name' => ['nullable', 'string', 'max:255'],
             'professional_title' => ['nullable', 'string', 'max:160'],
@@ -54,10 +62,13 @@ final class MembershipApplicationController extends Controller
             'qualifications' => ['nullable', 'string', 'max:3000'],
             'photo' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
             'application_consent' => ['accepted'],
+            'terms_consent' => ['accepted'],
+            'service_start_choice' => ['required', Rule::in(['immediate', 'after_cooling_off'])],
         ]);
+        $membershipType = app(MembershipApplicationPolicy::class)->categoryName($data['membership_category_code']);
         $user = $request->user();
         $duplicate = Membership::query()->where('organization_id', $data['organization_id'])
-            ->where('membership_type', trim($data['membership_type']))
+            ->where('membership_type', $membershipType)
             ->whereIn('status', ['draft', 'pending', 'active', 'suspended'])
             ->get(['id', 'email'])->contains(function (Membership $membership) use ($user): bool {
                 return hash_equals(
@@ -66,13 +77,13 @@ final class MembershipApplicationController extends Controller
                 );
             });
         if ($duplicate) {
-            throw ValidationException::withMessages(['membership_type' => __('account.duplicate_application')]);
+            throw ValidationException::withMessages(['membership_category_code' => __('account.duplicate_application')]);
         }
 
-        DB::transaction(function () use ($user, $data, $request): void {
+        DB::transaction(function () use ($user, $data, $request, $membershipType): void {
             $profile = [
                 'organization_id' => (int) $data['organization_id'],
-                'membership_type' => trim($data['membership_type']),
+                'membership_type' => $membershipType,
                 'full_name' => trim($data['full_name']),
                 'latin_name' => trim((string) ($data['latin_name'] ?? '')) ?: null,
                 'professional_title' => trim((string) ($data['professional_title'] ?? '')) ?: null,
@@ -87,7 +98,7 @@ final class MembershipApplicationController extends Controller
             app(MembershipCredentialRegistry::class)->saveApplicationForVerifiedAccount(
                 $user,
                 $membership,
-                $data + ['application_consent' => true],
+                $data + ['application_consent' => true, 'terms_consent' => true],
                 $request->file('photo')
             );
             app(MembershipRegistry::class)->submitForVerifiedAccount($user, $membership);

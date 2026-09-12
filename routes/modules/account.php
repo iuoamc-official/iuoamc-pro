@@ -4,8 +4,17 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Account\AccountController;
 use App\Http\Controllers\Account\MembershipApplicationController;
+use App\Http\Controllers\LegalDocumentController;
 use App\Http\Middleware\EnsureVerifiedAccountEmail;
 use Illuminate\Support\Facades\Route;
+
+Route::prefix('{locale}/legal')->where(['locale' => 'ar|en|fr'])
+    ->middleware('locale')->name('legal.')->group(function (): void {
+        Route::get('/membership-terms', [LegalDocumentController::class, 'membershipTerms'])
+            ->name('membership-terms');
+        Route::get('/membership-privacy', [LegalDocumentController::class, 'membershipPrivacy'])
+            ->name('membership-privacy');
+    });
 
 Route::prefix('{locale}/account')->where(['locale' => 'ar|en|fr'])
     ->middleware(['locale', 'auth', 'active', EnsureVerifiedAccountEmail::class])

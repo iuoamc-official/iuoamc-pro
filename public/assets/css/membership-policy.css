@@ -1,0 +1,87 @@
+.membership-policy-summary {
+    margin-block: 16px;
+    padding: 18px;
+    border: 1px solid rgba(189, 139, 36, .35);
+    border-radius: 14px;
+    background: linear-gradient(180deg, #fffdf8, #fff);
+}
+
+.membership-policy-summary .policy-warning {
+    padding: 14px 16px;
+    border-inline-start: 4px solid #bd8b24;
+    border-radius: 8px;
+    background: #fff7e6;
+    font-weight: 800;
+}
+
+.membership-policy-summary a,
+.legal-document a {
+    color: #8a6012;
+    font-weight: 800;
+    text-decoration: underline;
+}
+
+.service-start-choice {
+    display: grid;
+    gap: 12px;
+    margin-block: 18px;
+    padding: 16px;
+    border: 1px solid rgba(12, 39, 62, .14);
+    border-radius: 13px;
+}
+
+.service-start-choice label {
+    display: grid !important;
+    grid-template-columns: auto 1fr;
+    align-items: start;
+    gap: 10px;
+}
+
+.service-start-choice input {
+    width: 20px !important;
+    min-height: 20px !important;
+    margin-top: 2px;
+}
+
+.legal-document {
+    display: grid;
+    gap: 20px;
+}
+
+.legal-document > header {
+    display: flex;
+    gap: 16px;
+}
+
+.legal-document section {
+    padding: 20px;
+    border: 1px solid rgba(12, 39, 62, .14);
+    border-radius: 14px;
+    background: #fff;
+}
+
+.legal-document li {
+    margin-block: 8px;
+}
+
+.legal-table-wrap {
+    overflow-x: auto;
+}
+
+.legal-document table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.legal-document th,
+.legal-document td {
+    padding: 11px;
+    border-bottom: 1px solid rgba(12, 39, 62, .14);
+    text-align: start;
+}
+
+.legal-document footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}

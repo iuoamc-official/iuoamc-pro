@@ -1,0 +1,55 @@
+<?php
+
+return [
+    'effective_date' => 'Date d’entrée en vigueur :',
+    'fees_title' => 'Frais selon la durée d’adhésion',
+    'fees_intro' => 'Ces frais couvrent la demande et les services d’adhésion pour la durée choisie. Le paiement ou le dépôt de la demande n’accorde pas automatiquement l’adhésion.',
+    'term' => 'Durée demandée',
+    'total_fee' => 'Frais totaux',
+    'years' => '{1} Un an|[2,*] :count ans',
+    'allocation_title' => 'Répartition des frais par étape',
+    'allocation_intro' => 'Les pourcentages indiquent la part affectée à chaque étape. Seules les étapes réellement exécutées et les coûts externes documentés permis par la loi peuvent être déduits. En cas de réduction, chaque étape est calculée sur le tarif standard avant réduction, puis déduite du montant réellement payé.',
+    'stage' => 'Étape du service',
+    'percentage' => 'Pourcentage',
+    'allocations' => [
+        'file_review' => 'Ouverture du dossier et examen initial',
+        'identity_verification' => 'Vérification de l’identité et des documents',
+        'eligibility_assessment' => 'Évaluation de l’éligibilité professionnelle',
+        'registration' => 'Enregistrement et numéro d’adhésion après acceptation',
+        'credentials' => 'Production de la carte et du certificat après émission',
+        'account_support' => 'Service du compte et communications après activation',
+    ],
+    'back_to_application' => 'Retour à la demande d’adhésion',
+    'documents' => [
+        'membership_terms' => [
+            'title' => 'Conditions d’adhésion, frais et remboursements',
+            'intro' => 'Conditions régissant la demande, l’examen, l’acceptation et les justificatifs d’adhésion IUOAMC.',
+            'sections' => [
+                ['title' => '1. Entité contractante et champ d’application', 'paragraphs' => ['INTERNATIONAL UNION OF ARAB MASTER CHEFS LTD, société britannique nº 16649793 (IUOAMC), administre les demandes couvertes par ces conditions. Elles s’appliquent aux demandes en ligne sauf offre écrite spécifique contraire.', 'Ces conditions complètent les droits légaux impératifs du demandeur sans les exclure ni les limiter.']],
+                ['title' => '2. Catégories et éligibilité', 'paragraphs' => ['Le demandeur peut solliciter une adhésion Générale, Professionnelle, Élite ou Expert international. Il s’agit d’une catégorie demandée et non d’un statut acquis; l’identité, les preuves et l’expérience restent soumises à examen.', 'Si une autre catégorie convient mieux, IUOAMC présente une offre révisée sans imposer de modification substantielle sans accord. L’adhésion honoraire relève d’une décision administrative distincte et ne peut être achetée ni demandée par le formulaire public.']],
+                ['title' => '3. Aucune adhésion automatique', 'paragraphs' => ['La création d’un compte, le dépôt d’une demande ou le paiement ne crée ni adhésion, ni titre, ni accréditation, ni licence, ni pouvoir de représentation. L’adhésion commence uniquement après acceptation écrite, émission d’un numéro et inscription de la période de validité au registre officiel.', 'IUOAMC peut demander des preuves supplémentaires et accepter ou refuser selon les critères applicables d’éligibilité, d’intégrité et de gouvernance, avec décision enregistrée.']],
+                ['title' => '4. Paiement et début du traitement', 'paragraphs' => ['Le prix complet est affiché avant paiement, sans frais obligatoires cachés. Le demandeur peut demander expressément un examen immédiat pendant le délai d’annulation ou choisir un début après ce délai.', 'En cas de démarrage immédiat, le demandeur accepte de payer un montant proportionnel aux services réellement fournis avant l’annulation. La part de 35 % n’est pas une pénalité : elle devient la contrepartie non remboursable de l’ouverture et de l’examen initial seulement après exécution de cette étape et dans la mesure permise par la loi.']],
+                ['title' => '5. Droit d’annulation à distance', 'paragraphs' => ['Lorsque le demandeur est un consommateur et que les règles des contrats à distance s’appliquent, il dispose normalement de 14 jours après la conclusion du contrat de service pour annuler sans motif. Les droits impératifs du pays de résidence demeurent applicables.', 'Si l’exécution est expressément demandée pendant ce délai puis annulée, un montant proportionnel au travail réellement accompli peut être retenu. Si le service est entièrement exécuté après demande expresse et reconnaissance de la perte du droit à l’achèvement, ce droit peut prendre fin lorsque la loi le permet.']],
+                ['title' => '6. Refus et remboursement', 'paragraphs' => ['En cas de refus, le solde non acquis est remboursé par le moyen de paiement initial dans les 14 jours suivant la décision finale ou la réception des informations nécessaires, selon la date la plus tardive. Un relevé des étapes exécutées et des déductions est fourni.'], 'items' => ['Avant tout début de service : remboursement intégral, sauf exception légale valable et divulguée.', 'Après l’ouverture et l’examen initial : 35 % peuvent être retenus.', 'La vérification et l’évaluation ne sont déduites que si elles ont réellement été exécutées.', 'L’enregistrement, la production des justificatifs et l’assistance après activation ne sont pas déduits si le refus intervient avant ces étapes.', 'Les coûts de tiers réels, documentés et irrécupérables ne sont déduits que s’ils ont été divulgués et sont licites; les déductions ne dépassent jamais le montant payé.', 'En cas de réduction, les pourcentages des étapes achevées sont calculés sur le tarif standard avant réduction. Le remboursement correspond au montant réellement payé moins les étapes achevées et les coûts externes permis; il ne peut être négatif ni supérieur au montant payé.']],
+                ['title' => '7. Retrait et informations inexactes', 'paragraphs' => ['En cas de retrait après le début du travail, le même calcul par étapes s’applique. Si des informations manquent, un délai raisonnable est accordé avant clôture.', 'Une demande peut être refusée ou une adhésion révoquée pour des informations falsifiées ou matériellement trompeuses, sans supprimer le remboursement d’un service non exécuté ni les droits impératifs.']],
+                ['title' => '8. Durée et renouvellement', 'paragraphs' => ['La durée approuvée commence à la date inscrite dans la décision, et non à la date de demande ou de paiement. Aucun renouvellement automatique n’a lieu sans consentement exprès distinct indiquant prix et durée. L’expiration met fin aux avantages futurs sans effacer le registre historique de vérification.']],
+                ['title' => '9. Conduite, suspension et révocation', 'paragraphs' => ['Les membres maintiennent des données exactes et n’utilisent pas abusivement les noms, marques, cartes ou certificats ni ne revendiquent un pouvoir non accordé. Une suspension ou révocation peut suivre un examen équitable et un motif enregistré, sous réserve des droits légaux et de la durée déjà utilisée.']],
+                ['title' => '10. Réclamations et droit applicable', 'paragraphs' => ['Les annulations et réclamations sont adressées à info@iuoamc.uk avec la référence de demande. Le droit d’Angleterre et du pays de Galles régit ces conditions, sans priver le consommateur des protections impératives de son pays de résidence. La compétence judiciaire est déterminée par le droit applicable.']],
+            ],
+        ],
+        'membership_privacy' => [
+            'title' => 'Avis de confidentialité des demandes d’adhésion',
+            'intro' => 'Comment les données des demandeurs sont collectées, utilisées, protégées et conservées.',
+            'sections' => [
+                ['title' => '1. Responsable du traitement', 'paragraphs' => ['INTERNATIONAL UNION OF ARAB MASTER CHEFS LTD, société nº 16649793, est responsable des demandes IUOAMC. Référence ICO : ZB971358. Contact : info@iuoamc.uk.']],
+                ['title' => '2. Données collectées', 'items' => ['Compte, coordonnées, noms bilingues et profil professionnel.', 'Date de naissance, nationalité, adresse, résidence et données de la pièce d’identité.', 'Qualifications, expérience, photographie, demande et correspondance.', 'Plan tarifaire, paiements, dates de consentement, événements de sécurité et audit.']],
+                ['title' => '3. Finalités et bases juridiques', 'paragraphs' => ['Les données servent aux démarches précontractuelles demandées, à l’exécution d’une adhésion acceptée, aux obligations légales ainsi qu’à la prévention de la fraude et à la protection du registre au titre des intérêts légitimes. Le consentement est utilisé lorsque la loi l’exige.', 'La photographie ne sert pas à la reconnaissance faciale automatisée et aucune décision n’est prise exclusivement par un traitement automatisé.']],
+                ['title' => '4. Accès et partage', 'paragraphs' => ['L’accès est limité au titulaire et au personnel autorisé selon son rôle. Le minimum nécessaire peut être partagé avec les prestataires contractuels d’hébergement, de courrier, de paiement, de signature et de vérification, les conseillers et autorités sur une base légale et avec des garanties adaptées. Les données ne sont pas vendues.']],
+                ['title' => '5. Transferts internationaux et sécurité', 'paragraphs' => ['Tout transfert hors du Royaume-Uni utilise un mécanisme légal et des garanties appropriées. Les données d’identité et photos sont stockées de façon privée avec contrôles d’accès, audit et chiffrement approprié; aucun moyen électronique n’est totalement exempt de risque.']],
+                ['title' => '6. Conservation', 'paragraphs' => ['Les données sont conservées pendant l’examen et l’adhésion, puis seulement le temps nécessaire aux obligations légales et financières, aux litiges et à l’intégrité du registre. Elles sont supprimées ou anonymisées lorsque le besoin cesse, sous réserve du minimum d’émission et d’audit nécessaire contre la fraude.']],
+                ['title' => '7. Vos droits', 'paragraphs' => ['Selon la loi applicable, vous pouvez demander accès, rectification, effacement, limitation, opposition ou portabilité et retirer un consentement sans effet rétroactif. Vous pouvez saisir l’ICO ou l’autorité locale compétente.']],
+                ['title' => '8. Contact', 'paragraphs' => ['Adressez les demandes à info@iuoamc.uk depuis l’e-mail du compte. Une vérification d’identité appropriée peut être exigée avant toute divulgation ou modification.']],
+            ],
+        ],
+    ],
+];

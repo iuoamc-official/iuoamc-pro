@@ -14,6 +14,16 @@
             @if($integrity && auth()->user()->canDo('memberships.correct') && in_array($membership->status,['active','suspended'],true))<a class="secondary-action" href="{{ route('memberships.correct',['locale'=>app()->getLocale(),'membership'=>$membership->id]) }}">{{ __('memberships.correct_identity') }}</a>@endif
             @if($integrity && auth()->user()->canDo('memberships.manage') && in_array($membership->status,['draft','active','suspended'],true) && $credentials->isEmpty())<a class="secondary-action" href="{{ route('memberships.application',['locale'=>app()->getLocale(),'membership'=>$membership->id]) }}">{{ __($applicationReady ? 'memberships.edit_application' : 'memberships.complete_application') }}</a>@endif
             <p class="membership-notes"><strong>{{ __('memberships.application_status') }}:</strong> {{ __($applicationReady?'memberships.application_complete':'memberships.application_incomplete') }}</p>
+            @if($application?->terms_version)
+                <dl class="membership-facts">
+                    <div><dt>{{ __('memberships.membership_term') }}</dt><dd>{{ trans_choice('account.years',(int)$application->membership_term_years,['count'=>(int)$application->membership_term_years]) }}</dd></div>
+                    <div><dt>{{ __('memberships.standard_fee') }}</dt><dd><bdi dir="ltr">£{{ number_format((int)$application->standard_fee_pence / 100,2) }}</bdi></dd></div>
+                    <div><dt>{{ __('memberships.discount_amount') }}</dt><dd><bdi dir="ltr">£{{ number_format((int)$application->discount_pence / 100,2) }}</bdi></dd></div>
+                    <div><dt>{{ __('memberships.payable_fee') }}</dt><dd><bdi dir="ltr">£{{ number_format((int)$application->payable_fee_pence / 100,2) }}</bdi></dd></div>
+                    <div><dt>{{ __('memberships.terms_version') }}</dt><dd><bdi dir="ltr">{{ $application->terms_version }}</bdi></dd></div>
+                    <div><dt>{{ __('memberships.service_start_at') }}</dt><dd><bdi dir="ltr">{{ $application->service_start_at?->format('Y-m-d H:i') }} UTC</bdi></dd></div>
+                </dl>
+            @endif
         </section>
         <section class="form-card"><header><div><h2>{{ __('memberships.workflow') }}</h2><p>{{ __('memberships.workflow_notice') }}</p></div></header>
             @if($integrity)

@@ -6,7 +6,8 @@
     @csrf
     <section class="account-card form-section"><header><div><span>01</span><h2>{{ __('account.membership_details') }}</h2></div></header><div class="form-grid">
         <label><span>{{ __('account.organization') }} *</span><select name="organization_id" required><option value="">{{ __('account.choose') }}</option>@foreach($organizations as $organization)<option value="{{ $organization->id }}" @selected(old('organization_id')==$organization->id)>{{ $organization->display_name }}</option>@endforeach</select></label>
-        <label><span>{{ __('account.membership_type') }} *</span><input name="membership_type" required maxlength="120" value="{{ old('membership_type') }}"></label>
+        <label><span>{{ __('account.membership_type') }} *</span><select name="membership_category_code" required><option value="">{{ __('account.choose') }}</option>@foreach($membershipCategories as $code=>$label)<option value="{{ $code }}" @selected(old('membership_category_code')===$code)>{{ $label }}</option>@endforeach</select></label>
+        <label><span>{{ __('account.membership_term') }} *</span><select name="membership_term_years" required><option value="">{{ __('account.choose') }}</option>@foreach($membershipTermFees as $years=>$fee)<option value="{{ $years }}" @selected((string)old('membership_term_years')===(string)$years)>{{ trans_choice('account.years', $years, ['count'=>$years]) }} — £{{ number_format($fee / 100, 0) }}</option>@endforeach</select></label>
         <label><span>{{ __('account.full_name') }} *</span><input name="full_name" required maxlength="255" value="{{ old('full_name',auth()->user()->name) }}"></label>
         <label><span>{{ __('account.latin_name') }}</span><input name="latin_name" dir="ltr" maxlength="255" value="{{ old('latin_name') }}"></label>
         <label><span>{{ __('account.professional_title') }}</span><input name="professional_title" maxlength="160" value="{{ old('professional_title') }}"></label>
@@ -26,7 +27,24 @@
         <label class="wide"><span>{{ __('account.qualifications') }}</span><textarea name="qualifications" rows="4" maxlength="3000">{{ old('qualifications') }}</textarea></label>
         <label class="wide upload"><span>{{ __('account.photo') }} *</span><input type="file" name="photo" accept="image/jpeg,image/png,image/webp" required><small>{{ __('account.photo_help') }}</small></label>
     </div></section>
-    <section class="account-card consent"><label><input type="checkbox" name="application_consent" value="1" required @checked(old('application_consent'))><span>{{ __('account.consent') }}</span></label></section>
+    <section class="account-card membership-policy-summary">
+        <header><div><span>03</span><h2>{{ __('account.fees_and_terms') }}</h2></div></header>
+        <p class="policy-warning">{{ __('account.membership_not_automatic') }}</p>
+        <ul>
+            <li>{{ __('account.file_review_deduction') }}</li>
+            <li>{{ __('account.discount_refund_basis') }}</li>
+            <li>{{ __('account.rejected_application_refund') }}</li>
+        </ul>
+        <p><a href="{{ route('legal.membership-terms',['locale'=>app()->getLocale()]) }}" target="_blank" rel="noopener noreferrer">{{ __('account.read_membership_terms') }}</a> · <a href="{{ route('legal.membership-privacy',['locale'=>app()->getLocale()]) }}" target="_blank" rel="noopener noreferrer">{{ __('account.read_privacy_notice') }}</a></p>
+        <fieldset class="service-start-choice"><legend>{{ __('account.service_start_title') }} *</legend>
+            <label><input type="radio" name="service_start_choice" value="immediate" required @checked(old('service_start_choice')==='immediate')><span>{{ __('account.service_start_immediate') }}</span></label>
+            <label><input type="radio" name="service_start_choice" value="after_cooling_off" required @checked(old('service_start_choice')==='after_cooling_off')><span>{{ __('account.service_start_after') }}</span></label>
+        </fieldset>
+    </section>
+    <section class="account-card consent">
+        <label><input type="checkbox" name="application_consent" value="1" required @checked(old('application_consent'))><span>{{ __('account.consent') }}</span></label>
+        <label><input type="checkbox" name="terms_consent" value="1" required @checked(old('terms_consent'))><span>{{ __('account.terms_consent') }}</span></label>
+    </section>
     <div class="form-footer"><a class="button secondary" href="{{ route('account.dashboard',['locale'=>app()->getLocale()]) }}">{{ __('account.cancel') }}</a><button class="button" type="submit">{{ __('account.submit_application') }}</button></div>
 </form>
 @endsection

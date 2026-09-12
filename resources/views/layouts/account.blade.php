@@ -7,6 +7,7 @@
     <meta name="robots" content="noindex,nofollow,noarchive">
     <title>@yield('title') — IUOAMC</title>
     <link rel="stylesheet" href="{{ asset('assets/css/iuoamc-account-1.0.0.css') }}?v={{ filemtime(public_path('assets/css/iuoamc-account-1.0.0.css')) }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/membership-policy.css') }}?v={{ filemtime(public_path('assets/css/membership-policy.css')) }}">
 </head>
 <body class="account-body">
     <header class="account-header">

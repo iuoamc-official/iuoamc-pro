@@ -62,6 +62,7 @@ final class ContentArticleController extends Controller
     {
         $rules = ['revision' => [$article ? 'required' : 'nullable', 'integer', 'min:1'], 'content_section_id' => ['required', Rule::exists('content_sections', 'id')->where('status', 'active')], 'slug' => ['nullable', 'string', 'max:180'],
             'author_name' => ['required', 'string', 'max:255'], 'publisher_name' => ['required', 'string', 'max:255'], 'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
+            'source_url' => ['nullable', 'url:http,https', 'max:1000'], 'original_published_at' => ['nullable', 'date'],
             'status' => ['required', Rule::in(['draft', 'published', 'archived'])], 'is_featured' => ['nullable', 'boolean'], 'published_at' => ['nullable', 'date']];
         foreach (['ar', 'en', 'fr'] as $locale) {
             $rules["title.{$locale}"] = ['required', 'string', 'max:300']; $rules["excerpt.{$locale}"] = ['required', 'string', 'max:600'];
@@ -81,7 +82,9 @@ final class ContentArticleController extends Controller
         $minutes = max(1, (int) ceil(str_word_count(strip_tags($localized['body']['en'])) / 220));
         $status = $validated['status'];
         return $localized + ['content_section_id' => $validated['content_section_id'], 'author_name' => trim($validated['author_name']), 'publisher_name' => trim($validated['publisher_name']),
-            'cover_image_path' => $cover, 'status' => $status, 'is_featured' => $request->boolean('is_featured'), 'reading_minutes' => $minutes,
+            'cover_image_path' => $cover, 'source_url' => $validated['source_url'] ?? null,
+            'original_published_at' => $validated['original_published_at'] ?? null,
+            'status' => $status, 'is_featured' => $request->boolean('is_featured'), 'reading_minutes' => $minutes,
             'published_at' => $status === 'published' ? ($validated['published_at'] ?? $article?->published_at ?? now()) : null];
     }
     private function uniqueSlug(string $value, ?int $ignore = null): string

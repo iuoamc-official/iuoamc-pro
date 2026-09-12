@@ -36,10 +36,22 @@
     @foreach($article->authors as $author)<meta name="citation_author" content="{{ $author->latin_name ?: $author->name }}">@endforeach
     <meta name="citation_publication_date" content="{{ $article->published_at?->toDateString() }}">
     <meta name="citation_journal_title" content="{{ $journal->localized('name') }}">
+    <meta name="citation_language" content="{{ app()->getLocale() }}">
+    @if($article->issue)<meta name="citation_volume" content="{{ $article->issue->volume }}"><meta name="citation_issue" content="{{ $article->issue->number }}">@endif
+    @if($article->page_start)<meta name="citation_firstpage" content="{{ $article->page_start }}">@endif
+    @if($article->page_end)<meta name="citation_lastpage" content="{{ $article->page_end }}">@endif
+    @foreach($translation?->keywords ?? [] as $keyword)<meta name="citation_keywords" content="{{ $keyword }}">@endforeach
+    <meta name="DC.title" content="{{ $translation?->title }}">
+    <meta name="DC.publisher" content="{{ $journal->publisher_name }}">
+    <meta name="DC.date" content="{{ $article->published_at?->toDateString() }}">
+    <meta name="DC.language" content="{{ app()->getLocale() }}">
+    <meta name="DC.identifier" content="{{ $article->doi ? 'https://doi.org/'.$article->doi : $article->article_code }}">
     @if($article->doi)<meta name="citation_doi" content="{{ $article->doi }}">@endif
     @if($journal->issn)<meta name="citation_issn" content="{{ $journal->issn }}">@endif
     @if($coverImage)<meta property="og:image" content="{{ $coverImage }}"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="{{ $coverImage }}">@endif
     <?php if ($article->pdf_path) : ?><meta name="citation_pdf_url" content="{{ route('journal.public.articles.pdf', ['locale' => app()->getLocale(), 'article' => $article->slug]) }}"><?php endif; ?>
+    <link rel="alternate" type="application/x-bibtex" href="{{ route('journal.public.articles.citation', ['locale' => app()->getLocale(), 'article' => $article->slug, 'format' => 'bibtex']) }}">
+    <link rel="alternate" type="application/xml" href="{{ route('journal.public.articles.jats', ['locale' => app()->getLocale(), 'article' => $article->slug]) }}">
     <script type="application/ld+json" nonce="{{ request()->attributes->get('csp_nonce') }}">{!! json_encode($articleSchema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
 @endpush
 
@@ -101,6 +113,7 @@
             </dl>
             <aside><span>{{ __('journal.version_of_record') }}</span><strong>V{{ $article->version_of_record }}</strong><p>{{ __('journal.immutable_notice') }}</p></aside>
         </div>
+        <p class="journal-public-metrics">{{ __('journal.public_metrics', ['views' => number_format($article->html_views_count), 'downloads' => number_format($article->pdf_downloads_count)]) }}</p>
 
         <?php if ($article->pdf_path) : ?>
             <section class="journal-publication-assets">
@@ -109,6 +122,15 @@
                 <bdi dir="ltr">SHA-256 {{ $article->pdf_sha256 }}</bdi>
             </section>
         <?php endif; ?>
+
+        @if($journal->setting('citation_exports_enabled', false) === true)
+            <nav class="journal-citation-tools" aria-label="{{ __('journal.citation_tools') }}">
+                <strong>{{ __('journal.cite_article') }}</strong>
+                <a href="{{ route('journal.public.articles.citation', ['locale' => app()->getLocale(), 'article' => $article->slug, 'format' => 'bibtex']) }}">BibTeX</a>
+                <a href="{{ route('journal.public.articles.citation', ['locale' => app()->getLocale(), 'article' => $article->slug, 'format' => 'ris']) }}">RIS / EndNote</a>
+                @if($journal->setting('jats_export_enabled', false) === true)<a href="{{ route('journal.public.articles.jats', ['locale' => app()->getLocale(), 'article' => $article->slug]) }}">JATS XML</a>@endif
+            </nav>
+        @endif
 
         <section class="journal-abstract"><h2>{{ __('journal.abstract') }}</h2><p>{!! nl2br(e($translation?->abstract)) !!}</p><div>@foreach($translation?->keywords ?? [] as $keyword)<span>{{ $keyword }}</span>@endforeach</div></section>
         <section class="journal-body" id="article-body" tabindex="-1">{!! nl2br(e($bodyPage)) !!}</section>

@@ -163,6 +163,7 @@ final class JournalArticleController extends Controller
 
         $validated = $request->validate([
             'publication_pdf' => ['required', 'file', 'mimes:pdf', 'max:51200'],
+            'doi' => ['nullable', 'string', 'max:255', 'regex:/^10\.\d{4,9}\/\S+$/', Rule::unique('journal_articles', 'doi')->ignore($article->id)],
             'wicp_registration_number' => [
                 'required', 'string', 'max:120',
                 Rule::unique('journal_articles', 'wicp_registration_number')->ignore($article->id),
@@ -190,11 +191,12 @@ final class JournalArticleController extends Controller
                 abort_if(in_array($locked->status, ['published', 'retracted'], true), 409);
 
                 $old = $locked->only([
-                    'pdf_path', 'pdf_sha256', 'pdf_size', 'wicp_registration_number',
+                    'doi', 'pdf_path', 'pdf_sha256', 'pdf_size', 'wicp_registration_number',
                     'wicp_registered_at', 'wicp_verification_url', 'wicp_verified_at',
                 ]);
 
                 $locked->fill([
+                    'doi' => trim((string) ($validated['doi'] ?? '')) ?: null,
                     'pdf_path' => $path,
                     'pdf_sha256' => $pdfHash,
                     'pdf_size' => $pdfSize,

@@ -11,16 +11,19 @@ final class JournalReview extends Model
 {
     protected $fillable = [
         'journal_article_id', 'reviewer_id', 'round', 'status', 'recommendation',
-        'author_comments', 'confidential_comments', 'due_at', 'submitted_at', 'assigned_by',
+        'author_comments', 'confidential_comments', 'due_at', 'responded_at',
+        'decline_reason', 'submitted_at', 'assigned_by',
     ];
 
-    protected $hidden = ['reviewer_id', 'confidential_comments'];
+    protected $hidden = ['reviewer_id', 'confidential_comments', 'decline_reason'];
 
     protected function casts(): array
     {
         return [
             'confidential_comments' => 'encrypted',
+            'decline_reason' => 'encrypted',
             'due_at' => 'datetime',
+            'responded_at' => 'datetime',
             'submitted_at' => 'datetime',
         ];
     }

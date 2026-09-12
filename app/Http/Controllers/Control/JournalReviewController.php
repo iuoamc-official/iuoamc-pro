@@ -65,7 +65,7 @@ final class JournalReviewController extends Controller
     public function update(Request $request, string $locale, JournalReview $review): RedirectResponse
     {
         abort_unless($review->reviewer_id === $request->user()->id, 403);
-        abort_unless(in_array($review->status, ['invited', 'in_progress'], true), 409);
+        abort_unless($review->status === 'in_progress', 409);
         $validated = $request->validate([
             'recommendation' => ['required', Rule::in(['accept', 'minor_revision', 'major_revision', 'reject'])],
             'author_comments' => ['required', 'string', 'max:20000'],
@@ -99,5 +99,29 @@ final class JournalReviewController extends Controller
         });
 
         return back()->with('success', trans('journal.messages.review_submitted'));
+    }
+
+    public function respond(Request $request, string $locale, JournalReview $review): RedirectResponse
+    {
+        abort_unless($review->reviewer_id === $request->user()->id, 403);
+        abort_unless($review->status === 'invited', 409);
+        $validated = $request->validate([
+            'response' => ['required', Rule::in(['accept', 'decline'])],
+            'decline_reason' => [Rule::requiredIf($request->input('response') === 'decline'), 'nullable', 'string', 'max:2000'],
+        ]);
+
+        DB::transaction(function () use ($request, $review, $validated): void {
+            $review->update([
+                'status' => $validated['response'] === 'accept' ? 'in_progress' : 'declined',
+                'responded_at' => now()->utc()->startOfSecond(),
+                'decline_reason' => $validated['response'] === 'decline' ? trim((string) $validated['decline_reason']) : null,
+            ]);
+            AuditTrail::record('journal.review.'.$validated['response'].'ed', $review->article, ['status' => 'invited'], [
+                'review_id' => $review->id,
+                'status' => $review->status,
+            ], [], $request->user()->id);
+        }, 5);
+
+        return back()->with('success', trans('journal.messages.review_response_recorded'));
     }
 }

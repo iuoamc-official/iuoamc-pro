@@ -6,6 +6,8 @@ namespace App\Http\Controllers\Control;
 
 use App\Http\Controllers\Controller;
 use App\Models\Journal;
+use App\Models\JournalArticle;
+use App\Models\JournalSubmission;
 use App\Services\AuditTrail;
 use App\Services\JournalLaunchReadiness;
 use Illuminate\Http\RedirectResponse;
@@ -24,11 +26,21 @@ final class JournalOperationsController extends Controller
             ->selectRaw('status, count(*) as aggregate')
             ->groupBy('status')
             ->pluck('aggregate', 'status');
+        $publicationMetrics = [
+            'published_articles' => $journal->articles()->published()->count(),
+            'html_views' => $journal->articles()->published()->sum('html_views_count'),
+            'pdf_downloads' => $journal->articles()->published()->sum('pdf_downloads_count'),
+            'citation_downloads' => $journal->articles()->published()->sum('citation_downloads_count'),
+            'jats_downloads' => $journal->articles()->published()->sum('jats_downloads_count'),
+            'active_submissions' => JournalSubmission::query()->where('journal_id', $journal->id)->whereIn('status', ['submitted', 'screening'])->count(),
+            'under_review' => JournalArticle::query()->where('journal_id', $journal->id)->where('status', 'under_review')->count(),
+        ];
 
         return view('control.journal.operations.index', [
             'journal' => $journal,
             'checks' => $readiness->checks($journal),
             'outboxCounts' => $outboxCounts,
+            'publicationMetrics' => $publicationMetrics,
         ]);
     }
 

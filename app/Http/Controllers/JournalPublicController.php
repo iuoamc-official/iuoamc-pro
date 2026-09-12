@@ -51,6 +51,12 @@ final class JournalPublicController extends Controller
     public function show(Request $request, string $locale, JournalArticle $article, PublicSiteProfile $profile): View
     {
         abort_unless(in_array($article->status, ['published', 'retracted'], true), 404);
+        $viewKey = 'journal.article.viewed.'.$article->id.'.'.now()->toDateString();
+        if (! $request->session()->has($viewKey)) {
+            JournalArticle::query()->whereKey($article->id)->increment('html_views_count');
+            $article->html_views_count++;
+            $request->session()->put($viewKey, true);
+        }
         $reading = $request->validate([
             'page' => ['nullable', 'integer', 'min:1', 'max:10000'],
             'view' => ['nullable', Rule::in(['pages', 'full'])],

@@ -3,6 +3,19 @@
 $en = require __DIR__.'/../en/journal.php';
 
 return array_replace_recursive($en, [
+    'citation_tools' => 'أدوات الاستشهاد العلمي',
+    'cite_article' => 'الاستشهاد والتصدير',
+    'machine_access' => 'الوصول المقروء آليًا',
+    'publication_metrics' => 'مؤشرات النشر والتحرير',
+    'publication_metrics_help' => 'مؤشرات إجمالية تحافظ على الخصوصية للسجلات العامة ومسار العمل النشط.',
+    'public_metrics' => ':views قراءة للمقال · :downloads تنزيل PDF',
+    'metrics' => ['published_articles' => 'السجلات المنشورة', 'html_views' => 'قراءات المقالات', 'pdf_downloads' => 'تنزيلات PDF', 'citation_downloads' => 'تصدير الاستشهادات', 'jats_downloads' => 'تصدير JATS XML', 'active_submissions' => 'الأبحاث قيد الاستلام', 'under_review' => 'قيد التحكيم العلمي'],
+    'review_due' => 'الموعد النهائي للتحكيم',
+    'accept_review' => 'قبول مهمة التحكيم',
+    'decline_review' => 'الاعتذار عن المهمة',
+    'decline_reason' => 'سبب الاعتذار',
+    'review_response_recorded' => 'تم تسجيل وتدقيق رد المحكّم على المهمة.',
+    'doi_verified_only' => 'أدخل فقط DOI صادرًا ضمن بادئة Crossref الموثقة للمجلة، واتركه فارغًا حتى التخصيص.',
     'sections'=>'أقسام المجلة','section'=>'القسم','all_sections'=>'جميع الأقسام','sections_intro'=>'تصنيف علمي ومهني متعدد اللغات لتنظيم المحتوى وتسهيل اكتشافه.','add_section'=>'إضافة قسم','edit_section'=>'تعديل القسم','section_form_intro'=>'حدد الاسم والنطاق والوصف العام للقسم باللغات الثلاث.','save_section'=>'حفظ القسم','section_saved'=>'حُفظ قسم المجلة وسُجل.','section_scopes'=>['all'=>'كل أنواع النشر','peer_reviewed_research'=>'الأبحاث المحكمة فقط','professional_article'=>'المقالات المهنية فقط'],'section_statuses'=>['active'=>'نشط','inactive'=>'غير نشط'],'publisher_person'=>'اسم الناشر المسؤول','publisher_profile'=>'ملف الناشر','responsible_publisher'=>'الناشر المسؤول',
     'wicp_test_number'=>'رقم تجريبي قابل للتعديل — لا يسمح بالنشر',
     'download_pdf'=>'تحميل البحث PDF',

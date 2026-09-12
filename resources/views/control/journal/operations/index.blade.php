@@ -10,6 +10,13 @@
     @if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
 
     <section class="data-card">
+        <div class="data-card-header"><div><h2>{{ __('journal.publication_metrics') }}</h2><p>{{ __('journal.publication_metrics_help') }}</p></div></div>
+        <div class="journal-readiness-list">
+            @foreach($publicationMetrics as $metric => $value)<article class="passed"><strong>{{ number_format($value) }}</strong><p>{{ __('journal.metrics.'.$metric) }}</p></article>@endforeach
+        </div>
+    </section>
+
+    <section class="data-card">
         <div class="data-card-header"><div><h2>{{ __('journal.launch_checklist') }}</h2><p>{{ __('journal.launch_checklist_help') }}</p></div></div>
         <div class="journal-readiness-list">@foreach($checks as $key => $check)<article class="{{ $check['passed'] ? 'passed' : 'failed' }}"><strong>{{ $check['passed'] ? '✓' : '!' }} {{ __('journal.readiness.'.$key) }}</strong><p>{{ $check['detail'] }}</p></article>@endforeach</div>
     </section>

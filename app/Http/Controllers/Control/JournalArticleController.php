@@ -107,7 +107,11 @@ final class JournalArticleController extends Controller
             ? User::query()->where('status', 'active')->whereHas('roles', fn ($query) => $query->where('slug', 'journal-reviewer'))->orderBy('name')->get(['id', 'name', 'email'])
             : collect();
 
-        return view('control.journal.articles.show', compact('article', 'reviewers'));
+        $actions = $article->type === 'professional_article'
+            ? ($article->status === 'published' ? ['retract'] : ($article->status === 'retracted' ? [] : ['publish_professional']))
+            : (['draft' => ['submit'], 'submitted' => ['screen'], 'initial_screening' => ['send_review', 'request_revision', 'reject'], 'under_review' => ['accept', 'request_revision', 'reject'], 'revision_required' => ['resubmit', 'reject'], 'accepted' => ['copyedit'], 'copyediting' => ['typeset'], 'typesetting' => ['ready'], 'ready_to_publish' => ['publish'], 'published' => ['retract']][$article->status] ?? []);
+
+        return view('control.journal.articles.show', compact('article', 'reviewers', 'actions'));
     }
 
     public function edit(string $locale, JournalArticle $article): View

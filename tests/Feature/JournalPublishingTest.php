@@ -102,7 +102,7 @@ final class JournalPublishingTest extends TestCase
         $this->actingAs($user)->get('/ar/control/journal/articles/'.$article->id)
             ->assertOk()
             ->assertSee($article->article_code)
-            ->assertSee('WICP-TEST-PENDING-', false);
+            ->assertSee('name="publication_pdf"', false);
     }
 
     public function test_peer_reviewed_research_cannot_be_accepted_before_peer_review(): void

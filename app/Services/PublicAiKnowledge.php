@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Journal;
 use App\Models\JournalArticle;
 use App\Models\PublicPage;
+use App\Models\ContentArticle;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 
@@ -23,7 +24,8 @@ final class PublicAiKnowledge
         $terms = $this->terms($question);
         $pages = $this->pageCandidates($locale, $terms);
         $articles = $this->articleCandidates($locale, $terms, $currentPath, $canPreviewJournal);
-        $candidates = $pages->concat($articles);
+        $publicArticles = $this->publicArticleCandidates($locale, $terms, $currentPath);
+        $candidates = $pages->concat($articles)->concat($publicArticles);
 
         $selected = $candidates->sortByDesc('score')->filter(
             static fn (array $candidate): bool => $candidate['score'] > 0,
@@ -170,6 +172,26 @@ final class PublicAiKnowledge
             $parts,
             static fn (string $term): bool => mb_strlen($term) >= 2,
         )));
+    }
+
+    /** @param list<string> $terms */
+    private function publicArticleCandidates(string $locale, array $terms, ?string $currentPath): Collection
+    {
+        if (! Schema::hasTable('content_articles')) return collect();
+        $currentSlug = null;
+        if (is_string($currentPath) && preg_match('~^/(?:ar|en|fr)/articles/([^/]+)$~', $currentPath, $matches) === 1) $currentSlug = $matches[1];
+        $query = ContentArticle::query()->published()->with('section');
+        if ($currentSlug) $query->where('slug', $currentSlug);
+        elseif ($terms !== []) $query->where(function ($match) use ($terms): void {
+            foreach ($terms as $term) { $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term); foreach (['title', 'excerpt', 'body', 'tags'] as $column) $match->orWhere($column, 'like', '%'.$escaped.'%'); }
+        });
+        return $query->latest('published_at')->limit(40)->get()->map(function (ContentArticle $article) use ($locale, $terms, $currentSlug): array {
+            $tags = implode(', ', ($article->tags ?? [])[$locale] ?? []);
+            $text = implode("\n", array_filter(['Content type: general editorial article', 'Section: '.$article->section?->localized('name', $locale), 'Author: '.$article->author_name, 'Publisher: '.$article->publisher_name, 'Title: '.$article->localized('title', $locale), 'Excerpt: '.$article->localized('excerpt', $locale), 'Tags: '.$tags, 'Article text: '.$this->relevantExcerpt($article->localized('body', $locale), $terms, 3500)]));
+            $score = $this->score($article->localized('title', $locale), $terms) * 8 + $this->score($article->localized('excerpt', $locale), $terms) * 3 + $this->score($tags, $terms) * 5 + $this->score($article->localized('body', $locale), $terms);
+            if ($article->slug === $currentSlug) $score += 1000000;
+            return ['kind' => 'public_article', 'record' => $article, 'title' => $article->localized('title', $locale), 'url' => route('public.articles.show', ['locale' => $locale, 'article' => $article]), 'text' => $text, 'score' => $score];
+        });
     }
 
     /** @param list<string> $terms */

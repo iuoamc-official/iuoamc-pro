@@ -3,6 +3,7 @@
 $en = require __DIR__.'/../en/journal.php';
 
 return array_replace_recursive($en, [
+    'sections'=>'أقسام المجلة','section'=>'القسم','all_sections'=>'جميع الأقسام','sections_intro'=>'تصنيف علمي ومهني متعدد اللغات لتنظيم المحتوى وتسهيل اكتشافه.','add_section'=>'إضافة قسم','edit_section'=>'تعديل القسم','section_form_intro'=>'حدد الاسم والنطاق والوصف العام للقسم باللغات الثلاث.','save_section'=>'حفظ القسم','section_saved'=>'حُفظ قسم المجلة وسُجل.','section_scopes'=>['all'=>'كل أنواع النشر','peer_reviewed_research'=>'الأبحاث المحكمة فقط','professional_article'=>'المقالات المهنية فقط'],'section_statuses'=>['active'=>'نشط','inactive'=>'غير نشط'],'publisher_person'=>'اسم الناشر المسؤول','publisher_profile'=>'ملف الناشر','responsible_publisher'=>'الناشر المسؤول',
     'wicp_test_number'=>'رقم تجريبي قابل للتعديل — لا يسمح بالنشر',
     'download_pdf'=>'تحميل البحث PDF',
     'pdf_size'=>'حجم ملف PDF: :size ميغابايت',

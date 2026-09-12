@@ -3,7 +3,7 @@
 @section('content')
     <section class="page-heading compact-heading">
         <div><span class="eyebrow">PUBLIC EXPERIENCE / CMS</span><h1>{{ __('public_site.control.title') }}</h1><p>{{ __('public_site.control.intro') }}</p></div>
-        <div class="heading-actions"><a class="secondary-action" target="_blank" rel="noopener" href="{{ route('public.home', ['locale' => app()->getLocale()]) }}">{{ __('public_site.control.preview') }}</a><a class="primary-action" href="{{ route('public-content.settings.edit', ['locale' => app()->getLocale()]) }}">{{ __('public_site.control.identity') }}</a></div>
+        <div class="heading-actions"><a class="secondary-action" href="{{ route('public-content.articles.index',['locale'=>app()->getLocale()]) }}">{{ __('public_site.articles.title') }}</a><a class="secondary-action" target="_blank" rel="noopener" href="{{ route('public.home', ['locale' => app()->getLocale()]) }}">{{ __('public_site.control.preview') }}</a><a class="primary-action" href="{{ route('public-content.settings.edit', ['locale' => app()->getLocale()]) }}">{{ __('public_site.control.identity') }}</a></div>
     </section>
     <section class="form-card public-cms-assurance">
         <header><span class="form-step">CMS</span><div><h2>{{ __('public_site.control.governance_title') }}</h2><p>{{ __('public_site.control.governance_help') }}</p></div></header>

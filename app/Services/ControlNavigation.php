@@ -20,7 +20,7 @@ final class ControlNavigation
         $parameters = array_replace($current->parameters(), ['locale'=>$locale]);
         $query = [];
         // IUOAMC_LEGACY_CERTIFICATE_FILTER_1_0_0
-        foreach (['q','status','organization_id','page','ambiguity','scope'] as $key) {
+        foreach (['q','status','organization_id','page','ambiguity','scope','type','section'] as $key) {
             $value = $request->query($key);
             if (!array_key_exists($key, $parameters) && is_scalar($value) && strlen((string)$value) <= 160) {
                 $query[$key] = (string)$value;

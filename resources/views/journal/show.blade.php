@@ -56,6 +56,7 @@
         @endif
         <header class="journal-article-header">
             <span class="journal-type journal-type-{{ $article->type }}">{{ __('journal.types.'.$article->type) }}</span>
+            @if($article->sections->isNotEmpty())<nav class="journal-card-sections" aria-label="{{ __('journal.sections') }}">@foreach($article->sections as $section)<a href="{{ route('journal.public.index',['locale'=>app()->getLocale(),'section'=>$section->slug]) }}">{{ $section->localized('name') }}</a>@endforeach</nav>@endif
             <h1>{{ $translation?->title }}</h1>
             @if($translation?->subtitle)<p class="journal-subtitle">{{ $translation->subtitle }}</p>@endif
             <div class="journal-author-list">

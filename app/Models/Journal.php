@@ -43,6 +43,19 @@ final class Journal extends Model
         return $this->hasMany(JournalEditorialMember::class);
     }
 
+    public function sections(): HasMany
+    {
+        return $this->hasMany(JournalSection::class);
+    }
+
+    public function localizedSetting(string $key, ?string $locale = null): string
+    {
+        $values = $this->setting($key, []);
+        $locale ??= app()->getLocale();
+
+        return is_array($values) ? trim((string) ($values[$locale] ?? $values['en'] ?? $values['ar'] ?? '')) : trim((string) $values);
+    }
+
     public function notificationOutbox(): HasMany
     {
         return $this->hasMany(JournalNotificationOutbox::class);

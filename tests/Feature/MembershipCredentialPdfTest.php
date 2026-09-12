@@ -84,7 +84,7 @@ class MembershipCredentialPdfTest extends TestCase
         $this->assertStringContainsString('NATIONALITY', $template);
         $this->assertStringContainsString('VALID FROM', $template);
         $this->assertStringContainsString('VALID UNTIL', $template);
-        $this->assertStringContainsString('NFC ENABLED', $template);
+        $this->assertStringContainsString('&nbsp; NFC', $template);
         $this->assertFileExists(public_path('assets/brand/nfc-contactless-gold.svg'));
         $this->assertStringContainsString("payload['nationality_code']", $template);
         $this->assertStringNotContainsString('gradient', $template);

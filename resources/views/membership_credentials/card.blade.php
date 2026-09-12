@@ -61,7 +61,7 @@
 <div class="nationality">NATIONALITY · <bdi dir="ltr">{{ $payload['nationality_code'] }}</bdi></div>
 <div class="edition">VERSION {{ $payload['version'] }} · {{ $payload['template_version'] }}</div>
 <div class="trust-right">PAdES/X.509 ELECTRONIC SIGNATURE</div>
-<div class="nfc"><img src="{{ $nfc }}">&nbsp; NFC ENABLED</div>
+<div class="nfc"><img src="{{ $nfc }}">&nbsp; NFC</div>
 <div class="hash-label">CREDENTIAL DATA SHA-256</div>
 <div class="hash">{{ $payload['credential_data_sha256'] }}</div>
 <div class="footer-left">PVC ID-1 · 85.60 × 54.00 MM</div>

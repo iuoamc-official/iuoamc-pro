@@ -76,7 +76,11 @@ jobs:
             -f compose.noc.yaml \
             -f compose.shadow.yaml \
             -f compose.supervisor.yaml \
+            -f compose.staging.yaml \
             config --quiet
+
+      - name: Staging preflight contract
+        run: bash scripts/staging-preflight.sh
 
       - name: Remove temporary environment
         if: always()

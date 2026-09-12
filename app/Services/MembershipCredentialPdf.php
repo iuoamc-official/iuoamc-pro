@@ -10,7 +10,7 @@ use RuntimeException;
 
 final class MembershipCredentialPdf
 {
-    public const TEMPLATE_VERSION = 'IUOAMC-MEMBERSHIP-1.0.0';
+    public const TEMPLATE_VERSION = 'IUOAMC-MEMBERSHIP-2.0.0';
 
     public function renderCard(array $payload, string $photoPath): string
     {
@@ -72,7 +72,7 @@ final class MembershipCredentialPdf
     {
         foreach ([
             'membership_number', 'full_name', 'membership_type', 'valid_from',
-            'valid_until', 'verification_url', 'issued_at',
+            'valid_until', 'verification_url', 'issued_at', 'credential_data_sha256',
         ] as $required) {
             if (! is_string($payload[$required] ?? null) || trim($payload[$required]) === '') {
                 throw new RuntimeException('MEMBERSHIP_CREDENTIAL_PAYLOAD_INVALID');
@@ -80,6 +80,9 @@ final class MembershipCredentialPdf
         }
         if (($payload['schema'] ?? null) !== 'iuoamc-membership-credential-v1'
             || ($payload['template_version'] ?? null) !== self::TEMPLATE_VERSION
+            || ! preg_match('/\A[a-f0-9]{64}\z/D', (string) $payload['credential_data_sha256'])
+            || trim((string) data_get($payload, 'organization.registration_number')) === ''
+            || data_get($payload, 'electronic_signature.standard') !== 'PAdES/X.509'
             || ! preg_match('~\Ahttps://iuoamc\.pro/verify/m/[a-f0-9]{64}\z~D', $payload['verification_url'])
             || ! is_file($photoPath)
             || is_link($photoPath)) {

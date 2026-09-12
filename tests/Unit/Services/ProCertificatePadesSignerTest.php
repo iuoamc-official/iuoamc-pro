@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Services;
 
 use App\Services\ProCertificatePadesSigner;
+use ReflectionMethod;
 use Tests\TestCase;
 
 final class ProCertificatePadesSignerTest extends TestCase
@@ -16,6 +17,21 @@ final class ProCertificatePadesSignerTest extends TestCase
         self::assertSame(
             ['ready' => false, 'reason' => 'PADES_NOT_ENABLED'],
             app(ProCertificatePadesSigner::class)->readiness(),
+        );
+    }
+
+    public function test_an_invisible_signature_uses_only_the_field_name_for_small_pages(): void
+    {
+        $signer = app(ProCertificatePadesSigner::class);
+        $method = new ReflectionMethod($signer, 'signatureFieldArgument');
+
+        self::assertSame(
+            'IUOAMC_Authorized_Signature',
+            $method->invoke($signer, '1/392,76,580,130/IUOAMC_Authorized_Signature', false),
+        );
+        self::assertSame(
+            '1/392,76,580,130/IUOAMC_Authorized_Signature',
+            $method->invoke($signer, '1/392,76,580,130/IUOAMC_Authorized_Signature', true),
         );
     }
 

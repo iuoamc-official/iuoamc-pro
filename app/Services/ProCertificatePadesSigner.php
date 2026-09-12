@@ -25,7 +25,7 @@ final class ProCertificatePadesSigner
     /**
      * @return array{bytes: string, profile: string, status: string, field: string, certificate_sha256: string, signed_at: string}
      */
-    public function sign(string $unsignedPdf): array
+    public function sign(string $unsignedPdf, ?bool $visibleSignature = null): array
     {
         if (! str_starts_with($unsignedPdf, '%PDF-')) {
             throw new RuntimeException('PADES_INPUT_INVALID');
@@ -41,7 +41,10 @@ final class ProCertificatePadesSigner
             $this->writePrivateFile($input, $unsignedPdf);
             $command = [
                 $configuration['binary'], 'sign', 'addsig',
-                '--field', $this->signatureFieldArgument($configuration['field'], $configuration['visible_signature']), '--use-pades',
+                '--field', $this->signatureFieldArgument(
+                    $configuration['field'],
+                    $visibleSignature ?? $configuration['visible_signature'],
+                ), '--use-pades',
             ];
             if ($configuration['timestamp_url'] !== null) {
                 $command[] = '--timestamp-url';

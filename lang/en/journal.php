@@ -1,6 +1,16 @@
 <?php
 
 return [
+    'kickers' => [
+        'scholarly_publishing' => 'Scholarly publishing',
+        'editorial_governance' => 'Editorial governance',
+        'submission' => 'Submission',
+        'private_tracking' => 'Private tracking',
+        'received' => 'Received',
+        'authors' => 'Authors',
+        'archive' => 'Archive',
+        'governance' => 'Governance',
+    ],
     'citation_tools' => 'Scholarly citation tools',
     'cite_article' => 'Cite and export',
     'machine_access' => 'Machine-readable access',

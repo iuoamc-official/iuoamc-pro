@@ -3,6 +3,16 @@
 $en = require __DIR__.'/../en/journal.php';
 
 return array_replace_recursive($en, [
+    'kickers' => [
+        'scholarly_publishing' => 'النشر العلمي',
+        'editorial_governance' => 'الحوكمة التحريرية',
+        'submission' => 'تقديم بحث',
+        'private_tracking' => 'التتبع الخاص',
+        'received' => 'تم الاستلام',
+        'authors' => 'المؤلفون',
+        'archive' => 'الأرشيف',
+        'governance' => 'الحوكمة',
+    ],
     'citation_tools' => 'أدوات الاستشهاد العلمي',
     'cite_article' => 'الاستشهاد والتصدير',
     'machine_access' => 'الوصول المقروء آليًا',

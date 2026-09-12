@@ -2,7 +2,7 @@
 @section('title', __('journal.track_submission'))
 @push('metadata')<meta name="robots" content="noindex,nofollow,noarchive">@endpush
 @section('content')
-<section class="journal-page-head"><div class="public-container"><span>MCIJ · PRIVATE TRACKING</span><h1>{{ __('journal.track_submission') }}</h1><p>{{ __('journal.tracking_intro') }}</p></div></section>
+<section class="journal-page-head"><div class="public-container"><span>MCIJ · {{ __('journal.kickers.private_tracking') }}</span><h1>{{ __('journal.track_submission') }}</h1><p>{{ __('journal.tracking_intro') }}</p></div></section>
 <div class="public-container journal-tracking">
     @if(session('success'))<div class="journal-form-success" role="status">{{ session('success') }}</div>@endif
     <form method="post" action="{{ route('journal.public.submissions.track',['locale'=>app()->getLocale()]) }}">@csrf<label><span>{{ __('journal.submission_code') }}</span><input dir="ltr" name="submission_code" maxlength="80" required value="{{ old('submission_code') }}"></label><label><span>{{ __('journal.tracking_token') }}</span><input dir="ltr" name="tracking_token" maxlength="64" minlength="64" required></label><button>{{ __('journal.view_status') }}</button></form>

@@ -78,6 +78,21 @@ final class JournalPublishingTest extends TestCase
             ->assertDontSee($draft->translation('en')->title);
     }
 
+    public function test_public_journal_kickers_follow_the_selected_language(): void
+    {
+        $this->enablePublicLaunch();
+
+        $this->get('/ar/journal')
+            ->assertOk()
+            ->assertSee('MCIJ · النشر العلمي')
+            ->assertDontSee('SCHOLARLY PUBLISHING');
+
+        $this->get('/fr/journal/author-guidelines')
+            ->assertOk()
+            ->assertSee('MCIJ · Auteurs')
+            ->assertDontSee('MCIJ · AUTHORS');
+    }
+
     public function test_public_catalog_filters_articles_by_managed_section(): void
     {
         $this->enablePublicLaunch();

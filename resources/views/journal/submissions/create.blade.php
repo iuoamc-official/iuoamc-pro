@@ -3,7 +3,7 @@
 @section('description', __('journal.submission_intro'))
 @push('metadata')<meta name="robots" content="noindex,nofollow,noarchive">@endpush
 @section('content')
-<section class="journal-page-head"><div class="public-container"><span>MCIJ · SUBMISSION</span><h1>{{ __('journal.submit_manuscript') }}</h1><p>{{ __('journal.submission_intro') }}</p></div></section>
+<section class="journal-page-head"><div class="public-container"><span>MCIJ · {{ __('journal.kickers.submission') }}</span><h1>{{ __('journal.submit_manuscript') }}</h1><p>{{ __('journal.submission_intro') }}</p></div></section>
 <div class="public-container journal-submission-shell">
     <aside><strong>{{ __('journal.submission_security') }}</strong><p>{{ __('journal.submission_security_text') }}</p><ul><li>{{ __('journal.submission_check_file') }}</li><li>{{ __('journal.submission_check_metadata') }}</li><li>{{ __('journal.submission_check_declarations') }}</li></ul><a href="{{ route('journal.public.author-guidelines',['locale'=>app()->getLocale()]) }}">{{ __('journal.author_guidelines') }} →</a></aside>
     <form class="journal-submission-form" method="post" enctype="multipart/form-data" action="{{ route('journal.public.submissions.store',['locale'=>app()->getLocale()]) }}">@csrf

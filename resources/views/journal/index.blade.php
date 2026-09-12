@@ -5,7 +5,7 @@
     <section class="journal-hero">
         <div class="public-container journal-hero-grid">
             <div>
-                <span class="journal-kicker">MCIJ · SCHOLARLY PUBLISHING</span>
+                <span class="journal-kicker">MCIJ · {{ __('journal.kickers.scholarly_publishing') }}</span>
                 <h1>{{ $journal->localized('name') }}</h1>
                 <p>{{ $journal->localized('description') }}</p>
                 <div class="journal-assurance">

@@ -1,7 +1,7 @@
 @extends('layouts.journal')
 @section('title', __('journal.issues'))
 @section('content')
-<section class="journal-page-head"><div class="public-container"><span>MCIJ / ARCHIVE</span><h1>{{ __('journal.issues') }}</h1><p>{{ __('journal.issues_intro') }}</p></div></section>
+<section class="journal-page-head"><div class="public-container"><span>MCIJ · {{ __('journal.kickers.archive') }}</span><h1>{{ __('journal.issues') }}</h1><p>{{ __('journal.issues_intro') }}</p></div></section>
 <section class="public-container journal-issue-grid">
     @forelse($issues as $issue)
         <a class="journal-issue-card" href="{{ route('journal.public.issues.show', ['locale' => app()->getLocale(), 'issue' => $issue->slug]) }}">

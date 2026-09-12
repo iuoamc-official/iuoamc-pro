@@ -22,6 +22,7 @@ final class ContentArticlePdf
     {
         $temporary = $this->temporaryDirectory();
         $body = $this->formatter->toHtml($article->localized('body', $locale));
+        $watermark = $this->watermarkLogoPath();
         $cover = $this->temporaryCoverPng($article, $temporary);
         $direction = $locale === 'ar' ? 'rtl' : 'ltr';
 
@@ -45,6 +46,8 @@ final class ContentArticlePdf
             $mpdf->SetCreator('IUOAMC Editorial Publishing System');
             $mpdf->SetSubject($article->section?->localized('name', $locale) ?? 'IUOAMC Editorial Article');
             $mpdf->SetFooter('{PAGENO} / {nbpg}');
+            $mpdf->SetWatermarkImage($watermark, 0.06, [150, 61], 'P');
+            $mpdf->showWatermarkImage = true;
 
             $document = view('articles.pdf', [
                 ...compact('article', 'locale', 'siteProfile', 'cover', 'direction'),
@@ -70,6 +73,22 @@ final class ContentArticlePdf
         }
 
         return $bytes;
+    }
+
+    private function watermarkLogoPath(): string
+    {
+        $logo = public_path('assets/brand/iuoamc-pro-logo.png');
+        $resolved = realpath($logo);
+        $brandDirectory = realpath(public_path('assets/brand'));
+
+        if ($resolved === false
+            || $brandDirectory === false
+            || is_link($logo)
+            || ! str_starts_with($resolved, $brandDirectory.DIRECTORY_SEPARATOR)) {
+            throw new RuntimeException('CONTENT_ARTICLE_PDF_WATERMARK_MISSING');
+        }
+
+        return $resolved;
     }
 
     private function temporaryDirectory(): string

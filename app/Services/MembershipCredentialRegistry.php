@@ -740,7 +740,7 @@ final class MembershipCredentialRegistry
             $image = new \Imagick();
             $image->readImageBlob($bytes);
             $image->setIteratorIndex(0);
-            $image->setImageBackgroundColor('white');
+            $image->setImageBackgroundColor('#fbfaf6');
             $flattened = $image->mergeImageLayers(\Imagick::LAYERMETHOD_FLATTEN);
             $flattened->stripImage();
             $flattened->setImageFormat('jpeg');
@@ -776,8 +776,8 @@ final class MembershipCredentialRegistry
                     $sourceY = max(0, (int) floor(($height - $sourceHeight) / 2));
                 }
                 $target = imagecreatetruecolor(900, 1200);
-                $white = imagecolorallocate($target, 255, 255, 255);
-                imagefill($target, 0, 0, $white);
+                $certificateIvory = imagecolorallocate($target, 251, 250, 246);
+                imagefill($target, 0, 0, $certificateIvory);
                 imagecopyresampled(
                     $target,
                     $source,

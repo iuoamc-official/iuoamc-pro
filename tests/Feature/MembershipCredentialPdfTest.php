@@ -118,22 +118,34 @@ class MembershipCredentialPdfTest extends TestCase
         ));
     }
 
-    public function test_membership_certificate_uses_compact_oval_portrait(): void
+    public function test_membership_portraits_stay_inside_identity_frames(): void
     {
         $template = file_get_contents(resource_path('views/membership_credentials/certificate.blade.php'));
 
         $this->assertIsString($template);
-        $this->assertStringContainsString('width: 22mm; height: 27mm', $template);
+        $this->assertStringContainsString('class="identity-photo-frame"', $template);
+        $this->assertStringContainsString('top: 65mm; left: 47mm', $template);
+        $this->assertStringContainsString('overflow: hidden', $template);
+        $this->assertStringContainsString('background: #fbfaf6', $template);
+        $this->assertStringNotContainsString('class="photo-frame"', $template);
         $this->assertStringContainsString('border-radius: 50%', $template);
         $this->assertStringContainsString('class="nfc-seal"', $template);
         $this->assertStringContainsString("format('d-m-Y')", $template);
-        $this->assertSame('IUOAMC-MEMBERSHIP-2.2.1', MembershipCredentialPdf::TEMPLATE_VERSION);
+        $this->assertSame('IUOAMC-MEMBERSHIP-2.2.2', MembershipCredentialPdf::TEMPLATE_VERSION);
         $this->assertContains('IUOAMC-MEMBERSHIP-2.2.0', MembershipCredentialPdf::PRINT_IMAGE_TEMPLATES);
+        $this->assertContains('IUOAMC-MEMBERSHIP-2.2.1', MembershipCredentialPdf::PRINT_IMAGE_TEMPLATES);
 
         $card = file_get_contents(resource_path('views/membership_credentials/card.blade.php'));
         $this->assertIsString($card);
         $this->assertStringContainsString('width: 16.6mm; height: 20.6mm', $card);
+        $this->assertStringContainsString('overflow: hidden', $card);
+        $this->assertStringContainsString('padding: 0', $card);
         $this->assertStringContainsString('border-radius: 50%', $card);
         $this->assertStringContainsString("format('d-m-Y')", $card);
+
+        $registry = file_get_contents(app_path('Services/MembershipCredentialRegistry.php'));
+        $this->assertIsString($registry);
+        $this->assertStringContainsString("setImageBackgroundColor('#fbfaf6')", $registry);
+        $this->assertStringContainsString('imagecolorallocate($target, 251, 250, 246)', $registry);
     }
 }

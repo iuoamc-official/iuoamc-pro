@@ -282,8 +282,10 @@ final class JournalPublishingTest extends TestCase
     {
         $user = $this->superAdmin();
 
-        $response = $this->actingAs($user)->get('/en/control/journal')->assertOk();
+        $response = $this->actingAs($user)->get('/en/control/journal');
 
+        $this->assertNull($response->exception, $response->exception?->getMessage() ?? 'Unexpected journal workspace exception.');
+        $this->assertSame(200, $response->getStatusCode());
         $this->assertSame('noindex, nofollow, noarchive', $response->headers->get('X-Robots-Tag'));
     }
 

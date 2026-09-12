@@ -1,0 +1,63 @@
+services:
+  monitoring:
+    build:
+      context: ..
+      dockerfile: broadcast-nexus/services/monitoring/Dockerfile
+    restart: "no"
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      NATS_URL: nats://${NATS_USER}:${NATS_PASSWORD}@nats:4222
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ISSUER: ${JWT_ISSUER}
+      JWT_AUDIENCE: ${JWT_AUDIENCE}
+    ports: ["127.0.0.1:58111:8111"]
+    depends_on:
+      postgres: {condition: service_healthy}
+
+  alerts:
+    build:
+      context: ..
+      dockerfile: broadcast-nexus/services/alerts/Dockerfile
+    restart: "no"
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      NATS_URL: nats://${NATS_USER}:${NATS_PASSWORD}@nats:4222
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ISSUER: ${JWT_ISSUER}
+      JWT_AUDIENCE: ${JWT_AUDIENCE}
+    ports: ["127.0.0.1:58112:8112"]
+    depends_on:
+      postgres: {condition: service_healthy}
+
+  failover:
+    build:
+      context: ..
+      dockerfile: broadcast-nexus/services/failover/Dockerfile
+    restart: "no"
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      NATS_URL: nats://${NATS_USER}:${NATS_PASSWORD}@nats:4222
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ISSUER: ${JWT_ISSUER}
+      JWT_AUDIENCE: ${JWT_AUDIENCE}
+    ports: ["127.0.0.1:58113:8113"]
+    depends_on:
+      postgres: {condition: service_healthy}
+
+  noc:
+    build:
+      context: ..
+      dockerfile: broadcast-nexus/services/noc/Dockerfile
+    restart: "no"
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ISSUER: ${JWT_ISSUER}
+      JWT_AUDIENCE: ${JWT_AUDIENCE}
+    ports: ["127.0.0.1:58114:8114"]
+    depends_on:
+      postgres: {condition: service_healthy}

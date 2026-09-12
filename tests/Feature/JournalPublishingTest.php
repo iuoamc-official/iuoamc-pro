@@ -280,6 +280,7 @@ final class JournalPublishingTest extends TestCase
 
     public function test_editorial_workspace_is_private_and_not_indexable(): void
     {
+        $this->withoutExceptionHandling();
         $user = $this->superAdmin();
 
         $response = $this->actingAs($user)->get('/en/control/journal');

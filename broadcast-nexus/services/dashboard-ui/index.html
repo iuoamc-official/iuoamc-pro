@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>IUOAMC Broadcast Nexus</title>
+<style>
+:root{--bg:#07111f;--panel:#0d1a2d;--panel2:#12223a;--line:#20324f;--text:#eef4ff;--muted:#95a5bc;--gold:#d6aa4b;--green:#18b57b;--red:#d95a63;--amber:#e7a83d;--blue:#5ea6ff;--shadow:0 18px 50px rgba(0,0,0,.22)}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Arial;background:linear-gradient(180deg,#06101d 0%,#091523 100%);color:var(--text);min-height:100vh}
+.shell{display:grid;grid-template-columns:250px 1fr;min-height:100vh}.sidebar{border-right:1px solid var(--line);background:rgba(8,18,32,.94);padding:22px 16px;position:sticky;top:0;height:100vh}.brand{display:flex;gap:12px;align-items:center;padding:4px 8px 22px}.mark{width:42px;height:42px;border:1px solid rgba(214,170,75,.55);border-radius:12px;display:grid;place-items:center;color:var(--gold);font-weight:800;letter-spacing:.06em}.brand h1{font-size:14px;margin:0}.brand small{display:block;color:var(--muted);margin-top:4px}.nav{display:grid;gap:6px}.nav button{all:unset;cursor:pointer;padding:11px 12px;border-radius:10px;color:#b9c7db;font-size:13px;display:flex;justify-content:space-between}.nav button:hover,.nav button.active{background:var(--panel2);color:#fff}.nav span{color:#6d7f9b}.sidebar .foot{position:absolute;bottom:20px;left:16px;right:16px;font-size:11px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px}.main{padding:24px 28px 40px}.topbar{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:24px}.title h2{margin:0;font-size:23px}.title p{margin:5px 0 0;color:var(--muted);font-size:13px}.env{display:flex;gap:8px;align-items:center}.pill{padding:7px 10px;border-radius:999px;border:1px solid var(--line);font-size:11px;color:var(--muted);background:#0b1728}.pill.safe{border-color:rgba(24,181,123,.35);color:#7fe0bb}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}.card{background:linear-gradient(180deg,rgba(18,34,58,.95),rgba(11,24,41,.95));border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--shadow)}.kpi{grid-column:span 3}.wide{grid-column:span 8}.side{grid-column:span 4}.full{grid-column:1/-1}.label{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em}.value{font-size:28px;font-weight:750;margin-top:8px}.sub{margin-top:5px;color:var(--muted);font-size:12px}.section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.section-title h3{margin:0;font-size:14px}.dot{width:9px;height:9px;border-radius:50%;background:#65758d;box-shadow:0 0 0 4px rgba(101,117,141,.12)}.dot.ok{background:var(--green);box-shadow:0 0 0 4px rgba(24,181,123,.12)}.dot.bad{background:var(--red)}.status-list{display:grid;gap:10px}.status-row{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:10px 11px;border-radius:11px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.04)}.status-row b{font-size:13px}.status-row small{color:var(--muted)}.badge{font-size:10px;padding:5px 7px;border-radius:8px;background:#16243a;color:#9aabc4;border:1px solid #243753}.badge.ok{color:#7fe0bb;border-color:rgba(24,181,123,.3);background:rgba(24,181,123,.07)}.badge.warn{color:#f4c56d;border-color:rgba(231,168,61,.3);background:rgba(231,168,61,.07)}.module-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.module{padding:13px;border-radius:12px;border:1px solid var(--line);background:#0b1728;min-height:92px}.module strong{display:block;font-size:13px}.module small{display:block;margin-top:7px;color:var(--muted);line-height:1.4}.module em{display:inline-block;margin-top:10px;font-style:normal;font-size:10px;color:var(--gold)}.safety{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid rgba(24,181,123,.25);background:rgba(24,181,123,.055);border-radius:12px}.safety b{font-size:12px}.safety span{font-size:11px;color:#8ecfb7}.panel{display:none}.panel.active{display:block}.empty{padding:38px 20px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:14px}.toolbar{display:flex;gap:8px}.btn{appearance:none;border:1px solid var(--line);background:#0c1930;color:#d9e5f7;border-radius:9px;padding:8px 10px;font-size:11px;cursor:pointer}.btn:hover{border-color:#3b5378}.stamp{font-size:10px;color:#6f809a}.rtl-note{font-family:Tahoma,Arial,sans-serif;color:#7f91ac;font-size:11px}.metric{height:8px;background:#0a1422;border-radius:999px;overflow:hidden;margin-top:12px}.metric i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--blue));width:68%}@media(max-width:1050px){.shell{grid-template-columns:84px 1fr}.brand div:last-child,.nav button .name,.sidebar .foot{display:none}.nav button{justify-content:center}.kpi{grid-column:span 6}.wide,.side{grid-column:1/-1}.module-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:680px){.shell{display:block}.sidebar{height:auto;position:static;border-right:0;border-bottom:1px solid var(--line)}.brand{padding-bottom:12px}.nav{grid-template-columns:repeat(4,1fr)}.nav button{font-size:10px;text-align:center}.nav button:nth-child(n+9){display:none}.main{padding:18px 14px 30px}.topbar{align-items:flex-start;flex-direction:column}.kpi{grid-column:1/-1}.module-grid{grid-template-columns:1fr}.env{flex-wrap:wrap}}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside class="sidebar">
+  <div class="brand"><div class="mark">BN</div><div><h1>IUOAMC Broadcast Nexus</h1><small>Mission-Critical Operations</small></div></div>
+  <div class="nav" id="nav">
+    <button class="active" data-panel="overview"><span class="name">Overview</span><span>01</span></button>
+    <button data-panel="studio"><span class="name">Live Studio</span><span>02</span></button>
+    <button data-panel="channels"><span class="name">Channels</span><span>03</span></button>
+    <button data-panel="scheduler"><span class="name">Scheduler</span><span>04</span></button>
+    <button data-panel="media"><span class="name">Media Library</span><span>05</span></button>
+    <button data-panel="playout"><span class="name">Playout</span><span>06</span></button>
+    <button data-panel="encoder"><span class="name">Encoder</span><span>07</span></button>
+    <button data-panel="distribution"><span class="name">Distribution</span><span>08</span></button>
+    <button data-panel="noc"><span class="name">NOC</span><span>09</span></button>
+    <button data-panel="failover"><span class="name">Failover</span><span>10</span></button>
+    <button data-panel="supervisor"><span class="name">Supervisor</span><span>11</span></button>
+    <button data-panel="health"><span class="name">System Health</span><span>12</span></button>
+  </div>
+  <div class="foot">STAGING ONLY · Production outputs disabled</div>
+</aside>
+<main class="main">
+  <div class="topbar">
+    <div class="title"><h2 id="pageTitle">Operations Overview</h2><p>Unified control surface for Broadcast Nexus staging.</p></div>
+    <div class="env"><span class="pill safe">STAGING</span><span class="pill safe">PRODUCTION SWITCHING OFF</span><span class="pill">v0.17</span></div>
+  </div>
+
+  <section class="panel active" id="overview">
+    <div class="grid">
+      <div class="card kpi"><div class="label">Gateway</div><div class="value" id="gatewayKpi">—</div><div class="sub">Staging ingress health</div></div>
+      <div class="card kpi"><div class="label">Supervisor</div><div class="value" id="supervisorKpi">—</div><div class="sub">Broadcast runtime state</div></div>
+      <div class="card kpi"><div class="label">NOC</div><div class="value" id="nocKpi">—</div><div class="sub">Monitoring control plane</div></div>
+      <div class="card kpi"><div class="label">Control Room</div><div class="value" id="controlKpi">—</div><div class="sub">Operational telemetry</div></div>
+
+      <div class="card wide"><div class="section-title"><h3>Core Service Status</h3><span class="stamp" id="lastUpdated">Waiting for staging runtime</span></div>
+        <div class="status-list">
+          <div class="status-row"><div><b>Staging Gateway</b><br><small>Reverse proxy + safety headers</small></div><span class="badge" id="gatewayBadge">UNKNOWN</span><span class="dot" id="gatewayDot"></span></div>
+          <div class="status-row"><div><b>Broadcast Supervisor</b><br><small>Runtime orchestration and recovery</small></div><span class="badge" id="supervisorBadge">UNKNOWN</span><span class="dot" id="supervisorDot"></span></div>
+          <div class="status-row"><div><b>NOC API</b><br><small>Monitoring, incidents and health</small></div><span class="badge" id="nocBadge">UNKNOWN</span><span class="dot" id="nocDot"></span></div>
+          <div class="status-row"><div><b>Control Room</b><br><small>Operational telemetry and simulations</small></div><span class="badge" id="controlBadge">UNKNOWN</span><span class="dot" id="controlDot"></span></div>
+        </div>
+      </div>
+      <div class="card side"><div class="section-title"><h3>Safety Envelope</h3><span class="dot ok"></span></div>
+        <div class="safety"><div class="dot ok"></div><div><b>Production outputs disabled</b><br><span>No live production switching in staging.</span></div></div>
+        <div style="height:12px"></div>
+        <div class="label">Readiness</div><div class="value" style="font-size:22px">68%</div><div class="metric"><i></i></div><div class="sub">Architecture ready; VPS deployment pending.</div>
+      </div>
+
+      <div class="card full"><div class="section-title"><h3>Broadcast Modules</h3><span class="rtl-note">لوحة تشغيل موحّدة — بيئة تجريبية معزولة</span></div>
+        <div class="module-grid">
+          <div class="module"><strong>Live Studio</strong><small>Hosts, guests, scenes, Preview / Program.</small><em>CONTROL PLANE READY</em></div>
+          <div class="module"><strong>Scheduler</strong><small>Programs, episodes, playlists, EPG slots.</small><em>READY</em></div>
+          <div class="module"><strong>Media Library</strong><small>Assets, object storage, presigned uploads.</small><em>READY</em></div>
+          <div class="module"><strong>Playout</strong><small>Deterministic rundown compiler and fallback.</small><em>READY</em></div>
+          <div class="module"><strong>Encoder</strong><small>House profiles and isolated output jobs.</small><em>STAGING LOCKED</em></div>
+          <div class="module"><strong>Distribution</strong><small>YouTube, IPTV, HLS, SRT, RTMP models.</small><em>OUTPUTS DISABLED</em></div>
+          <div class="module"><strong>NOC</strong><small>Black, freeze, silence, FPS, bitrate, latency.</small><em>READY</em></div>
+          <div class="module"><strong>Failover</strong><small>Decision engine, redundancy and cooldown.</small><em>DECISION ONLY</em></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="studio"><div class="card"><div class="section-title"><h3>Live Studio</h3><span class="badge">PHASE 17 UI</span></div><div class="empty">Studio control surface is prepared for room, guest, scene, Preview and Program bindings.</div></div></section>
+  <section class="panel" id="channels"><div class="card"><div class="section-title"><h3>Channels</h3><span class="badge">ISOLATED</span></div><div class="empty">Channel runtime inventory will bind to the Broadcast Supervisor API.</div></div></section>
+  <section class="panel" id="scheduler"><div class="card"><div class="section-title"><h3>Scheduler</h3><span class="badge">READY</span></div><div class="empty">Program grid, playlist and EPG views are reserved here.</div></div></section>
+  <section class="panel" id="media"><div class="card"><div class="section-title"><h3>Media Library</h3><span class="badge">READY</span></div><div class="empty">Asset browser and upload workflow will connect to the Media Library service.</div></div></section>
+  <section class="panel" id="playout"><div class="card"><div class="section-title"><h3>Playout</h3><span class="badge">SAFE</span></div><div class="empty">Rundown queue, fallback source and playout-run views are reserved here.</div></div></section>
+  <section class="panel" id="encoder"><div class="card"><div class="section-title"><h3>Encoder</h3><span class="badge warn">OUTPUTS OFF</span></div><div class="empty">Encoder jobs remain staging-only. No production stream keys are exposed.</div></div></section>
+  <section class="panel" id="distribution"><div class="card"><div class="section-title"><h3>Distribution</h3><span class="badge warn">LOCKED</span></div><div class="empty">YouTube, IPTV, HLS, SRT and RTMP destinations remain disabled in staging.</div></div></section>
+  <section class="panel" id="noc"><div class="card"><div class="section-title"><h3>NOC</h3><div class="toolbar"><button class="btn" onclick="probe()">Refresh Health</button></div></div><div class="empty">NOC health probes are active from the Overview. Authenticated incidents and dashboards will bind here.</div></div></section>
+  <section class="panel" id="failover"><div class="card"><div class="section-title"><h3>Failover</h3><span class="badge">DECISION ONLY</span></div><div class="empty">Failover recommendations can be simulated; production switching remains false.</div></div></section>
+  <section class="panel" id="supervisor"><div class="card"><div class="section-title"><h3>Broadcast Supervisor</h3><span class="badge">RUNTIME</span></div><div class="empty">Channel lifecycle, source mode, generation and service runtime registry will bind here.</div></div></section>
+  <section class="panel" id="health"><div class="card"><div class="section-title"><h3>System Health</h3><button class="btn" onclick="probe()">Run Health Probe</button></div><div class="status-list" id="healthRows"></div></div></section>
+</main>
+</div>
+<script>
+const titles={overview:'Operations Overview',studio:'Live Studio',channels:'Channels',scheduler:'Scheduler',media:'Media Library',playout:'Playout',encoder:'Encoder',distribution:'Distribution',noc:'Network Operations Center',failover:'Failover Control',supervisor:'Broadcast Supervisor',health:'System Health'};
+document.querySelectorAll('#nav button').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('#nav button').forEach(x=>x.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));document.getElementById(btn.dataset.panel).classList.add('active');document.getElementById('pageTitle').textContent=titles[btn.dataset.panel]||'Broadcast Nexus'}));
+const services=[['gateway','/health','Staging Gateway'],['supervisor','/supervisor/health','Broadcast Supervisor'],['noc','/noc/health','NOC API'],['control','/control-room/health','Control Room']];
+function setState(key,ok){const kpi=document.getElementById(key+'Kpi'),badge=document.getElementById(key+'Badge'),dot=document.getElementById(key+'Dot');if(kpi)kpi.textContent=ok?'OK':'DOWN';if(badge){badge.textContent=ok?'HEALTHY':'UNAVAILABLE';badge.className='badge '+(ok?'ok':'warn')}if(dot)dot.className='dot '+(ok?'ok':'bad')}
+async function probe(){const rows=[];for(const [key,url,name] of services){let ok=false,detail='No response';try{const r=await fetch(url,{cache:'no-store'});ok=r.ok;if(r.ok){const j=await r.json();detail=(j.service||name)+' · '+(j.status||'ok')}}catch(e){detail='Unavailable until staging is deployed'}setState(key,ok);rows.push(`<div class="status-row"><div><b>${name}</b><br><small>${detail}</small></div><span class="badge ${ok?'ok':'warn'}">${ok?'HEALTHY':'OFFLINE'}</span><span class="dot ${ok?'ok':'bad'}"></span></div>`)}document.getElementById('healthRows').innerHTML=rows.join('');document.getElementById('lastUpdated').textContent='Last probe: '+new Date().toLocaleTimeString()}
+probe();setInterval(probe,15000);
+</script>
+</body>
+</html>

@@ -14,13 +14,18 @@ use App\Http\Controllers\Control\RoleController;
 use App\Http\Controllers\Control\AuditLogController;
 use App\Http\Controllers\Control\PublicPageController;
 use App\Http\Controllers\Control\PublicSiteSettingController;
+use App\Http\Controllers\Control\ContentArticleController;
+use App\Http\Controllers\Control\ContentSectionController;
 use App\Http\Controllers\PublicSiteController;
+use App\Http\Controllers\PublicArticleController;
+use App\Http\Controllers\DiscoveryController;
 use App\Http\Controllers\PublicAiConciergeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return redirect()->route('public.home', ['locale' => auth()->user()?->preferred_locale ?: 'ar']);
 });
+Route::get('/sitemap.xml', [DiscoveryController::class, 'sitemap'])->name('public.sitemap');
 
 Route::prefix('{locale}')
     ->where(['locale' => 'ar|en|fr'])
@@ -30,6 +35,10 @@ Route::prefix('{locale}')
         Route::post('/ai/ask', [PublicAiConciergeController::class, 'ask'])
             ->middleware('throttle:12,1')
             ->name('public.ai.ask');
+        Route::get('/articles', [PublicArticleController::class, 'index'])->name('public.articles.index');
+        Route::get('/articles/feed.xml', [PublicArticleController::class, 'feed'])->name('public.articles.feed');
+        Route::get('/articles/sections/{section:slug}', [PublicArticleController::class, 'index'])->name('public.articles.sections.show');
+        Route::get('/articles/{article:slug}', [PublicArticleController::class, 'show'])->name('public.articles.show');
 
         Route::middleware('guest')->group(function (): void {
             Route::get('/login', [AuthenticatedSessionController::class, 'create'])
@@ -130,6 +139,16 @@ Route::prefix('{locale}')
                             Route::get('/', [PublicPageController::class, 'index'])->name('pages.index');
                             Route::get('/settings', [PublicSiteSettingController::class, 'edit'])->name('settings.edit');
                             Route::put('/settings', [PublicSiteSettingController::class, 'update'])->name('settings.update');
+                            Route::get('/articles', [ContentArticleController::class, 'index'])->name('articles.index');
+                            Route::get('/articles/create', [ContentArticleController::class, 'create'])->name('articles.create');
+                            Route::post('/articles', [ContentArticleController::class, 'store'])->middleware('throttle:20,1')->name('articles.store');
+                            Route::get('/articles/{article}/edit', [ContentArticleController::class, 'edit'])->whereNumber('article')->name('articles.edit');
+                            Route::put('/articles/{article}', [ContentArticleController::class, 'update'])->whereNumber('article')->middleware('throttle:30,1')->name('articles.update');
+                            Route::get('/article-sections', [ContentSectionController::class, 'index'])->name('sections.index');
+                            Route::get('/article-sections/create', [ContentSectionController::class, 'create'])->name('sections.create');
+                            Route::post('/article-sections', [ContentSectionController::class, 'store'])->middleware('throttle:20,1')->name('sections.store');
+                            Route::get('/article-sections/{section}/edit', [ContentSectionController::class, 'edit'])->whereNumber('section')->name('sections.edit');
+                            Route::put('/article-sections/{section}', [ContentSectionController::class, 'update'])->whereNumber('section')->middleware('throttle:20,1')->name('sections.update');
                             Route::get('/{public_page}/edit', [PublicPageController::class, 'edit'])->name('pages.edit');
                             Route::put('/{public_page}', [PublicPageController::class, 'update'])->name('pages.update');
                         });

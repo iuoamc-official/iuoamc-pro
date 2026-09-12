@@ -9,6 +9,7 @@ use App\Models\Journal;
 use App\Models\JournalArticle;
 use App\Models\JournalAuthor;
 use App\Models\JournalIssue;
+use App\Models\JournalSection;
 use App\Models\User;
 use App\Services\AuditTrail;
 use App\Services\JournalWorkflow;
@@ -39,7 +40,7 @@ final class JournalArticleController extends Controller
             ->when($filters['type'] ?? null, fn ($query, string $value) => $query->where('type', $value));
 
         $articles = (clone $base)
-            ->with(['translations', 'issue', 'authors'])
+            ->with(['translations', 'issue', 'authors', 'sections'])
             ->when($filters['q'] ?? null, function ($query, string $value): void {
                 $query->where(function ($subQuery) use ($value): void {
                     $subQuery->where('article_code', 'like', '%'.$value.'%')
@@ -67,6 +68,7 @@ final class JournalArticleController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate($this->rules(false));
+        $this->validateSections($validated);
         $article = DB::transaction(function () use ($request, $validated): JournalArticle {
             $journal = Journal::query()->where('status', 'active')->firstOrFail();
             $uuid = (string) Str::uuid();
@@ -88,6 +90,7 @@ final class JournalArticleController extends Controller
 
             $this->saveTranslations($article, $validated['translations']);
             $this->savePrimaryAuthor($article, $validated['author'], $request->user()->id);
+            $article->sections()->sync($validated['sections'] ?? []);
             AuditTrail::record('journal.article.created', $article, [], ['article_code' => $article->article_code, 'type' => $article->type]);
 
             return $article;
@@ -125,6 +128,7 @@ final class JournalArticleController extends Controller
     {
         abort_unless(in_array($article->status, ['draft', 'revision_required'], true), 403);
         $validated = $request->validate($this->rules(true));
+        $this->validateSections($validated);
 
         DB::transaction(function () use ($request, $article, $validated): void {
             $locked = JournalArticle::query()->lockForUpdate()->findOrFail($article->id);
@@ -145,6 +149,7 @@ final class JournalArticleController extends Controller
             ])->save();
             $this->saveTranslations($locked, $validated['translations']);
             $this->savePrimaryAuthor($locked, $validated['author'], $request->user()->id);
+            $locked->sections()->sync($validated['sections'] ?? []);
             AuditTrail::record('journal.article.updated', $locked, $old, $locked->fresh()->only(array_keys($old)));
         }, 5);
 
@@ -285,6 +290,7 @@ final class JournalArticleController extends Controller
                     'contribution' => $author->pivot->contribution,
                 ]);
             }
+            $copy->sections()->sync($source->sections()->pluck('journal_sections.id')->all());
 
             AuditTrail::record('journal.article.correction_created', $copy, [], ['source_article_id' => $source->id, 'reason' => $validated['reason']]);
 
@@ -299,6 +305,7 @@ final class JournalArticleController extends Controller
         return view('control.journal.articles.form', [
             'article' => $article,
             'issues' => JournalIssue::query()->orderByDesc('volume')->orderByDesc('number')->get(),
+            'sections' => JournalSection::query()->active()->orderBy('sort_order')->get(),
         ]);
     }
 
@@ -324,6 +331,8 @@ final class JournalArticleController extends Controller
             'primary_locale' => ['required', Rule::in(['ar', 'en', 'fr'])],
             'license' => ['required', Rule::in(['all-rights-reserved', 'CC-BY-4.0', 'CC-BY-NC-4.0'])],
             'received_at' => ['nullable', 'date_format:Y-m-d'],
+            'sections' => ['nullable', 'array', 'max:6'],
+            'sections.*' => ['integer', 'exists:journal_sections,id'],
             'author.name' => ['required', 'string', 'max:255'],
             'author.latin_name' => ['nullable', 'string', 'max:255'],
             'author.email' => ['nullable', 'email:rfc', 'max:254'],
@@ -410,6 +419,14 @@ final class JournalArticleController extends Controller
         $base = Str::slug($title) ?: 'article';
 
         return Str::limit($base, 160, '').'-'.Str::lower(Str::substr(str_replace('-', '', $uuid), 0, 8));
+    }
+
+    private function validateSections(array $validated): void
+    {
+        $ids = $validated['sections'] ?? [];
+        if ($ids !== [] && JournalSection::query()->whereIn('id', $ids)->whereNotIn('scope', ['all', $validated['type']])->exists()) {
+            throw ValidationException::withMessages(['sections' => trans('journal.errors.section_scope')]);
+        }
     }
 
     /** @return list<string> */

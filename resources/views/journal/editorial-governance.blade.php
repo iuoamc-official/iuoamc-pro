@@ -11,7 +11,7 @@
         @endforeach
     </div>
     <section class="journal-board-public"><h2>{{ __('journal.editorial_board') }}</h2>
-        <div class="journal-role-grid">@forelse($editorialMembers as $member)<article><span>{{ __('journal.board_roles.'.$member->role) }}</span><h3>{{ $member->name }}</h3>@if($member->localized('title'))<p>{{ $member->localized('title') }}</p>@endif @if($member->localized('affiliation'))<p>{{ $member->localized('affiliation') }}</p>@endif @if($member->orcid)<a rel="external noopener" href="https://orcid.org/{{ $member->orcid }}"><bdi dir="ltr">ORCID {{ $member->orcid }}</bdi></a>@endif</article>@empty<p class="journal-governance-note">{{ __('journal.governance_names_notice') }}</p>@endforelse</div>
+        <div class="journal-role-grid">@forelse($editorialMembers as $member)<article><span>{{ __('journal.board_roles.'.$member->role) }}</span><h3>{{ $member->name }}</h3>@if($member->localized('title'))<p>{{ $member->localized('title') }}</p>@endif @if($member->localized('affiliation'))<p>{{ $member->localized('affiliation') }}</p>@endif @if($member->localized('biography'))<p class="journal-member-biography">{{ $member->localized('biography') }}</p>@endif @if($member->orcid)<a rel="external noopener" href="https://orcid.org/{{ $member->orcid }}"><bdi dir="ltr">ORCID {{ $member->orcid }}</bdi></a>@endif</article>@empty<p class="journal-governance-note">{{ __('journal.governance_names_notice') }}</p>@endforelse</div>
     </section>
 </section>
 @endsection

@@ -69,6 +69,8 @@
                 @foreach($navigation as $item)
                     <a class="{{ $page->is($item) || ($page->template === 'entity' && $item->slug === 'entities') ? 'active' : '' }}" href="{{ route('public.pages.show', ['locale' => app()->getLocale(), 'public_page' => $item]) }}">{{ $item->localized('navigation_label') }}</a>
                 @endforeach
+                <a href="{{ route('public.articles.index', ['locale' => app()->getLocale()]) }}">{{ __('public_site.articles.public_title') }}</a>
+                <a href="{{ route('journal.public.index', ['locale' => app()->getLocale()]) }}">MCIJ</a>
             </nav>
             <div class="header-tools">
                 <nav class="public-languages" aria-label="{{ __('public_site.languages') }}">

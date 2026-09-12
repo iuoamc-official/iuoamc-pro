@@ -3,6 +3,7 @@
 $en = require __DIR__.'/../en/journal.php';
 
 return array_replace_recursive($en, [
+    'sections'=>'Rubriques de la revue','section'=>'Rubrique','all_sections'=>'Toutes les rubriques','sections_intro'=>'Une taxonomie scientifique et professionnelle multilingue pour organiser et découvrir les contenus.','add_section'=>'Ajouter une rubrique','edit_section'=>'Modifier la rubrique','section_form_intro'=>'Définissez le nom, le périmètre et la description publique dans les trois langues.','save_section'=>'Enregistrer la rubrique','section_saved'=>'La rubrique a été enregistrée et auditée.','section_scopes'=>['all'=>'Tous les types de publication','peer_reviewed_research'=>'Recherche évaluée uniquement','professional_article'=>'Articles professionnels uniquement'],'section_statuses'=>['active'=>'Active','inactive'=>'Inactive'],'publisher_person'=>'Nom de l’éditeur responsable','publisher_profile'=>'Profil de l’éditeur','responsible_publisher'=>'Éditeur responsable',
     'wicp_test_number'=>'Numéro de test modifiable — publication bloquée',
     'download_pdf'=>'Télécharger le PDF',
     'pdf_size'=>'Taille du PDF : :size Mo',

@@ -38,6 +38,13 @@ final class JournalOperationsController extends Controller
             'contact_email' => ['required', 'email:rfc', 'max:254'],
             'publication_frequency' => ['required', Rule::in(JournalLaunchReadiness::FREQUENCIES)],
             'fee_policy' => ['required', Rule::in(JournalLaunchReadiness::FEE_POLICIES)],
+            'publisher_person_name' => ['required', 'string', 'max:255'],
+            'publisher_title.ar' => ['required', 'string', 'max:255'],
+            'publisher_title.en' => ['required', 'string', 'max:255'],
+            'publisher_title.fr' => ['required', 'string', 'max:255'],
+            'publisher_biography.ar' => ['required', 'string', 'max:3000'],
+            'publisher_biography.en' => ['required', 'string', 'max:3000'],
+            'publisher_biography.fr' => ['required', 'string', 'max:3000'],
         ]);
 
         DB::transaction(function () use ($request, $validated): void {
@@ -47,16 +54,21 @@ final class JournalOperationsController extends Controller
                 'contact_email' => mb_strtolower(trim($validated['contact_email'])),
                 'publication_frequency' => $validated['publication_frequency'],
                 'fee_policy' => $validated['fee_policy'],
+                'publisher_person_name' => trim($validated['publisher_person_name']),
+                'publisher_title' => collect($validated['publisher_title'])->map(fn ($value) => trim($value))->all(),
+                'publisher_biography' => collect($validated['publisher_biography'])->map(fn ($value) => trim($value))->all(),
             ]);
             $journal->update(['settings' => $after, 'updated_by' => $request->user()->id]);
             AuditTrail::record('journal.operations.settings_updated', $journal, [
                 'contact_email' => $before['contact_email'] ?? null,
                 'publication_frequency' => $before['publication_frequency'] ?? null,
                 'fee_policy' => $before['fee_policy'] ?? null,
+                'publisher_person_name' => $before['publisher_person_name'] ?? null,
             ], [
                 'contact_email' => $after['contact_email'],
                 'publication_frequency' => $after['publication_frequency'],
                 'fee_policy' => $after['fee_policy'],
+                'publisher_person_name' => $after['publisher_person_name'],
             ]);
         }, 5);
 

@@ -40,6 +40,11 @@
             <a class="{{ ($filters['type'] ?? null) === 'professional_article' ? 'active' : '' }}" href="{{ route('journal.public.index', ['locale' => app()->getLocale(), 'type' => 'professional_article']) }}">{{ __('journal.types.professional_article') }}</a>
         </div>
 
+        <nav class="journal-section-filter" aria-label="{{ __('journal.sections') }}">
+            <a class="{{ empty($filters['section']) ? 'active' : '' }}" href="{{ route('journal.public.index', ['locale' => app()->getLocale(), 'type' => $filters['type'] ?? null]) }}">{{ __('journal.all_sections') }}</a>
+            @foreach($sections as $section)<a class="{{ ($filters['section'] ?? null) === $section->slug ? 'active' : '' }}" href="{{ route('journal.public.index', ['locale' => app()->getLocale(), 'type' => $filters['type'] ?? null, 'section' => $section->slug]) }}">{{ $section->localized('name') }} <small>{{ $section->articles_count }}</small></a>@endforeach
+        </nav>
+
         <div class="journal-article-grid">
             @forelse($articles as $article)
                 @php($translation = $article->translation())
@@ -54,6 +59,7 @@
                         <span class="journal-type journal-type-{{ $article->type }}">{{ __('journal.types.'.$article->type) }}</span>
                         <bdi dir="ltr">{{ $article->article_code }}</bdi>
                     </div>
+                    @if($article->sections->isNotEmpty())<div class="journal-card-sections">@foreach($article->sections as $section)<a href="{{ route('journal.public.index',['locale'=>app()->getLocale(),'section'=>$section->slug]) }}">{{ $section->localized('name') }}</a>@endforeach</div>@endif
                     <h3><a href="{{ route('journal.public.articles.show', ['locale' => app()->getLocale(), 'article' => $article->slug]) }}">{{ $translation?->title }}</a></h3>
                     <p>{{ \Illuminate\Support\Str::limit($translation?->abstract, 230) }}</p>
                     <div class="journal-byline">

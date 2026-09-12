@@ -1,0 +1,62 @@
+services:
+  shadow-encoder-a:
+    build:
+      context: ..
+      dockerfile: broadcast-nexus/services/shadow-media/Dockerfile
+    restart: "no"
+    command: ["/opt/shadow/encoder.sh"]
+    environment:
+      SHADOW_ENCODER_NAME: a
+    volumes:
+      - shadow_hls:/shadow-hls
+    networks: [shadow]
+
+  shadow-encoder-b:
+    build:
+      context: ..
+      dockerfile: broadcast-nexus/services/shadow-media/Dockerfile
+    restart: "no"
+    command: ["/opt/shadow/encoder.sh"]
+    environment:
+      SHADOW_ENCODER_NAME: b
+    volumes:
+      - shadow_hls:/shadow-hls
+    networks: [shadow]
+
+  shadow-source:
+    build:
+      context: ..
+      dockerfile: broadcast-nexus/services/shadow-media/Dockerfile
+    restart: "no"
+    command: ["/opt/shadow/source.sh"]
+    depends_on:
+      - shadow-encoder-a
+      - shadow-encoder-b
+    networks: [shadow]
+
+  shadow-hls:
+    image: nginx:1.27-alpine
+    restart: "no"
+    volumes:
+      - shadow_hls:/usr/share/nginx/html:ro
+    ports:
+      - "127.0.0.1:58118:80"
+    networks: [shadow]
+
+  shadow-validator:
+    build:
+      context: ..
+      dockerfile: broadcast-nexus/services/shadow-validator/Dockerfile
+    restart: "no"
+    ports:
+      - "127.0.0.1:58117:8117"
+    depends_on:
+      - shadow-hls
+    networks: [shadow]
+
+networks:
+  shadow:
+    internal: true
+
+volumes:
+  shadow_hls:

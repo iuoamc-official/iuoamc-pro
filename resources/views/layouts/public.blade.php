@@ -71,6 +71,12 @@
                 @endforeach
                 <a href="{{ route('public.articles.index', ['locale' => app()->getLocale()]) }}">{{ __('public_site.articles.public_title') }}</a>
                 <a href="{{ route('journal.public.index', ['locale' => app()->getLocale()]) }}">MCIJ</a>
+                @guest
+                    <div class="mobile-auth-actions" aria-label="{{ __('account.secure_portal') }}">
+                        <a href="{{ route('login',['locale'=>app()->getLocale()]) }}">{{ __('ui.sign_in') }}</a>
+                        <a class="primary" href="{{ route('register',['locale'=>app()->getLocale()]) }}">{{ __('account.create_account') }}</a>
+                    </div>
+                @endguest
             </nav>
             <div class="header-tools">
                 <nav class="public-languages" aria-label="{{ __('public_site.languages') }}">
@@ -94,7 +100,10 @@
                         </div>
                     </details>
                 @else
-                    <a class="control-link" href="{{ route('login',['locale'=>app()->getLocale()]) }}">{{ __('ui.sign_in') }}</a>
+                    <div class="guest-auth-actions" aria-label="{{ __('account.secure_portal') }}">
+                        <a class="control-link" href="{{ route('login',['locale'=>app()->getLocale()]) }}">{{ __('ui.sign_in') }}</a>
+                        <a class="register-link" href="{{ route('register',['locale'=>app()->getLocale()]) }}">{{ __('account.create_account') }}</a>
+                    </div>
                 @endauth
             </div>
         </div>
@@ -106,7 +115,7 @@
         <div class="public-container footer-grid">
             <div class="footer-brand"><img src="{{ asset($siteProfile['primary_logo']) }}" alt="IUOAMC"><p>{{ __('public_site.footer_statement') }}</p></div>
             <div><span class="footer-label">{{ __('public_site.registry') }}</span><strong>{{ $siteProfile['registration_label'] }}</strong><bdi>{{ $siteProfile['registration_number'] }}</bdi></div>
-            <div><span class="footer-label">{{ __('public_site.contact') }}</span><a href="mailto:{{ $siteProfile['contact_email'] }}">{{ $siteProfile['contact_email'] }}</a><a href="{{ route('login', ['locale' => app()->getLocale()]) }}">{{ __('public_site.secure_access') }}</a></div>
+            <div><span class="footer-label">{{ __('public_site.contact') }}</span><a href="mailto:{{ $siteProfile['contact_email'] }}">{{ $siteProfile['contact_email'] }}</a><a href="{{ route('login', ['locale' => app()->getLocale()]) }}">{{ __('public_site.secure_access') }}</a><a href="{{ route('legal.membership-terms', ['locale' => app()->getLocale()]) }}">{{ __('legal.documents.membership_terms.title') }}</a><a href="{{ route('legal.membership-privacy', ['locale' => app()->getLocale()]) }}">{{ __('legal.documents.membership_privacy.title') }}</a></div>
         </div>
         <div class="public-container footer-floor"><span>© {{ now()->year }} IUOAMC</span><span>{{ __('public_site.integrity_line') }}</span></div>
     </footer>

@@ -6,6 +6,7 @@
     <meta name="robots" content="noindex,nofollow">
     <title>@yield('title') — {{ __('ui.app_name') }}</title>
     <link rel="stylesheet" href="{{ asset('assets/css/iuoamc-control.css') }}?v={{ filemtime(public_path('assets/css/iuoamc-control.css')) }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/membership-policy.css') }}?v={{ filemtime(public_path('assets/css/membership-policy.css')) }}">
 </head>
 <body class="auth-body">
     <main class="auth-shell">
@@ -40,6 +41,8 @@
                             request()->routeIs('register') => route('register', ['locale' => $code]),
                             request()->routeIs('password.request') => route('password.request', ['locale' => $code]),
                             request()->routeIs('verification.notice') => route('verification.notice', ['locale' => $code]),
+                            request()->routeIs('legal.membership-terms') => route('legal.membership-terms', ['locale' => $code]),
+                            request()->routeIs('legal.membership-privacy') => route('legal.membership-privacy', ['locale' => $code]),
                             default => route('login', ['locale' => $code]),
                         };
                     @endphp

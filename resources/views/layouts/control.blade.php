@@ -6,6 +6,7 @@
     <meta name="robots" content="noindex,nofollow">
     <title>@yield('title') — {{ __('ui.app_name') }}</title>
     <link rel="stylesheet" href="{{ asset('assets/css/iuoamc-control.css') }}?v={{ filemtime(public_path('assets/css/iuoamc-control.css')) }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/membership-policy.css') }}?v={{ filemtime(public_path('assets/css/membership-policy.css')) }}">
     <link rel="stylesheet" href="{{ asset('assets/css/iuoamc-memberships-1.0.0.css') }}">
     {{-- IUOAMC_PLATFORM_HUB_1_0_1 --}}
     <link rel="stylesheet" href="{{ asset('assets/css/iuoamc-platform-hub-1.0.1.css') }}">

@@ -1,6 +1,8 @@
 <section class="form-card">
     <header><span class="form-step">03</span><div><h2>{{ __('memberships.application_data') }}</h2><p>{{ __('memberships.application_privacy') }}</p></div></header>
     <div class="form-grid two-columns">
+        <label class="field"><span>{{ __('memberships.membership_term') }} *</span><select name="membership_term_years" required><option value="">{{ __('memberships.choose_term') }}</option>@foreach($membershipTermFees as $years=>$fee)<option value="{{ $years }}" @selected((string)old('membership_term_years',$application?->membership_term_years)===(string)$years)>{{ trans_choice('account.years',$years,['count'=>$years]) }} — £{{ number_format($fee / 100, 0) }}</option>@endforeach</select></label>
+        <label class="field"><span>{{ __('memberships.discount_amount') }}</span><input type="number" name="discount_amount" min="0" step="0.01" inputmode="decimal" value="{{ old('discount_amount',$application ? number_format((int)$application->discount_pence / 100,2,'.','') : '0.00') }}"><small>{{ __('memberships.discount_basis_notice') }}</small></label>
         <label class="field"><span>{{ __('memberships.photo') }} @if($photoRequired)*@endif</span><input type="file" name="photo" accept="image/jpeg,image/png,image/webp" @required($photoRequired)><small>{{ __('memberships.photo_help') }}</small></label>
         @if($application)<div class="field"><span>{{ __('memberships.current_photo') }}</span><strong>{{ __('memberships.photo_secured') }}</strong><small><code dir="ltr">{{ $application->photo_sha256 }}</code></small></div>@endif
         <label class="field"><span>{{ __('memberships.date_of_birth') }} *</span><input type="date" name="date_of_birth" required value="{{ old('date_of_birth',$application?->date_of_birth) }}"></label>
@@ -13,5 +15,11 @@
     </div>
     <label class="field"><span>{{ __('memberships.address') }} *</span><textarea name="address" required rows="3" maxlength="1000">{{ old('address',$application?->address) }}</textarea></label>
     <label class="field"><span>{{ __('memberships.qualifications') }}</span><textarea name="qualifications" rows="4" maxlength="3000">{{ old('qualifications',$application?->qualifications) }}</textarea></label>
+    <fieldset class="field service-start-choice"><legend>{{ __('memberships.service_start_title') }} *</legend>
+        <label><input type="radio" name="service_start_choice" value="immediate" required @checked(old('service_start_choice',$application ? ($application->immediate_service_requested ? 'immediate' : 'after_cooling_off') : null)==='immediate')> <span>{{ __('memberships.service_start_immediate') }}</span></label>
+        <label><input type="radio" name="service_start_choice" value="after_cooling_off" required @checked(old('service_start_choice',$application ? ($application->immediate_service_requested ? 'immediate' : 'after_cooling_off') : null)==='after_cooling_off')> <span>{{ __('memberships.service_start_after') }}</span></label>
+    </fieldset>
+    <div class="membership-policy-summary"><strong>{{ __('memberships.refund_basis_title') }}</strong><p>{{ __('memberships.discount_refund_basis') }}</p><p><a href="{{ route('legal.membership-terms',['locale'=>app()->getLocale()]) }}" target="_blank" rel="noopener noreferrer">{{ __('memberships.read_terms') }}</a></p></div>
     <label class="field"><input type="checkbox" name="application_consent" value="1" required @checked(old('application_consent'))> <span>{{ __('memberships.application_consent') }}</span></label>
+    <label class="field"><input type="checkbox" name="terms_consent" value="1" required @checked(old('terms_consent'))> <span>{{ __('memberships.terms_consent') }}</span></label>
 </section>

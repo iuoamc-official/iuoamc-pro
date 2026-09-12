@@ -12,6 +12,7 @@ use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
 use Throwable;
@@ -41,6 +42,9 @@ final class MembershipCredentialRegistry
             trans('memberships.errors.application_locked'));
 
         $validated = validator($data, [
+            'membership_category_code' => ['required', Rule::in(app(MembershipApplicationPolicy::class)->categoryCodes())],
+            'membership_term_years' => ['required', 'integer', Rule::in(app(MembershipApplicationPolicy::class)->termYears())],
+            'discount_pence' => ['nullable', 'integer', 'min:0'],
             'date_of_birth' => ['required', 'date_format:Y-m-d', 'before:today'],
             'nationality_code' => ['required', 'regex:/^[A-Z]{2}$/'],
             'address' => ['required', 'string', 'max:1000'],
@@ -51,6 +55,8 @@ final class MembershipCredentialRegistry
             'identification_number' => ['required', 'string', 'max:120'],
             'qualifications' => ['nullable', 'string', 'max:3000'],
             'application_consent' => ['accepted'],
+            'terms_consent' => ['accepted'],
+            'service_start_choice' => ['required', Rule::in(['immediate', 'after_cooling_off'])],
         ])->validate();
 
         foreach ($validated as $field => $value) {
@@ -67,9 +73,10 @@ final class MembershipCredentialRegistry
             $this->stop('photo_required');
         }
 
+        $commercialFields = $this->commercialFields($validated, true);
         $photoData = $photo !== null ? $this->storePhoto($membership, $photo) : null;
 
-        return DB::transaction(function () use ($actor, $membership, $validated, $existing, $photoData): MembershipApplication {
+        return DB::transaction(function () use ($actor, $membership, $validated, $existing, $photoData, $commercialFields): MembershipApplication {
             $application = MembershipApplication::query()
                 ->where('membership_id', $membership->id)
                 ->lockForUpdate()
@@ -95,6 +102,7 @@ final class MembershipCredentialRegistry
                 'identification_number' => $validated['identification_number'],
                 'qualifications' => $validated['qualifications'] ?? null,
                 'consent_at' => now()->utc()->startOfSecond(),
+                ...$commercialFields,
                 'updated_by' => (int) $actor->id,
             ]);
             if ($photoData !== null) {
@@ -123,6 +131,8 @@ final class MembershipCredentialRegistry
         abort_unless(! MembershipCredential::query()->where('membership_id', $membership->id)->exists(), 409);
 
         $validated = validator($data, [
+            'membership_category_code' => ['required', Rule::in(app(MembershipApplicationPolicy::class)->categoryCodes())],
+            'membership_term_years' => ['required', 'integer', Rule::in(app(MembershipApplicationPolicy::class)->termYears())],
             'date_of_birth' => ['required', 'date_format:Y-m-d', 'before:today'],
             'nationality_code' => ['required', 'regex:/^[A-Z]{2}$/'],
             'address' => ['required', 'string', 'max:1000'],
@@ -133,13 +143,16 @@ final class MembershipCredentialRegistry
             'identification_number' => ['required', 'string', 'max:120'],
             'qualifications' => ['nullable', 'string', 'max:3000'],
             'application_consent' => ['accepted'],
+            'terms_consent' => ['accepted'],
+            'service_start_choice' => ['required', Rule::in(['immediate', 'after_cooling_off'])],
         ])->validate();
         foreach ($validated as $field => $value) {
             if (is_string($value)) { $validated[$field] = trim($value); }
         }
+        $commercialFields = $this->commercialFields($validated, false);
         $photoData = $this->storePhoto($membership, $photo);
 
-        return DB::transaction(function () use ($actor, $membership, $validated, $photoData): MembershipApplication {
+        return DB::transaction(function () use ($actor, $membership, $validated, $photoData, $commercialFields): MembershipApplication {
             abort_if(MembershipApplication::query()->where('membership_id', $membership->id)->exists(), 409);
             $application = new MembershipApplication([
                 'membership_id' => (int) $membership->id,
@@ -154,6 +167,7 @@ final class MembershipCredentialRegistry
                 'identification_number' => $validated['identification_number'],
                 'qualifications' => $validated['qualifications'] ?? null,
                 'consent_at' => now()->utc()->startOfSecond(),
+                ...$commercialFields,
                 'updated_by' => (int) $actor->id,
             ] + $photoData);
             $application->save();
@@ -176,6 +190,18 @@ final class MembershipCredentialRegistry
         ] as $field) {
             if ($application->getAttribute($field) === null || $application->getAttribute($field) === '') {
                 return false;
+            }
+        }
+
+        if ($application->terms_version !== null) {
+            foreach ([
+                'membership_category_code', 'membership_term_years', 'standard_fee_pence',
+                'discount_pence', 'payable_fee_pence', 'fee_currency', 'privacy_version',
+                'terms_accepted_at', 'immediate_service_requested', 'service_start_at',
+            ] as $field) {
+                if ($application->getAttribute($field) === null || $application->getAttribute($field) === '') {
+                    return false;
+                }
             }
         }
 
@@ -429,7 +455,7 @@ final class MembershipCredentialRegistry
     {
         $attributes = $application->getAttributes();
 
-        return [
+        $snapshot = [
             'schema' => 'iuoamc-membership-application-v1',
             'id' => (int) $application->id,
             'membership_id' => (int) $application->membership_id,
@@ -449,15 +475,82 @@ final class MembershipCredentialRegistry
             'lock_version' => (int) $application->lock_version,
             'updated_by' => (int) $application->updated_by,
         ];
+
+        if ($application->terms_version === null) {
+            return $snapshot;
+        }
+
+        return [
+            ...$snapshot,
+            'schema' => 'iuoamc-membership-application-v2',
+            'membership_category_code' => $application->membership_category_code,
+            'membership_term_years' => (int) $application->membership_term_years,
+            'standard_fee_pence' => (int) $application->standard_fee_pence,
+            'discount_pence' => (int) $application->discount_pence,
+            'payable_fee_pence' => (int) $application->payable_fee_pence,
+            'fee_currency' => $application->fee_currency,
+            'terms_version' => $application->terms_version,
+            'privacy_version' => $application->privacy_version,
+            'terms_accepted_at' => $application->terms_accepted_at?->utc()->format('Y-m-d\TH:i:sP'),
+            'immediate_service_requested' => (bool) $application->immediate_service_requested,
+            'service_start_at' => $application->service_start_at?->utc()->format('Y-m-d\TH:i:sP'),
+        ];
     }
 
     private function applicationAuditValues(MembershipApplication $application): array
     {
-        return [
+        $values = [
             'membership_id' => (int) $application->membership_id,
             'photo_sha256' => $application->photo_sha256,
             'lock_version' => (int) $application->lock_version,
             'record_hash' => $application->record_hash,
+        ];
+
+        if ($application->terms_version !== null) {
+            $values += [
+                'membership_category_code' => $application->membership_category_code,
+                'membership_term_years' => (int) $application->membership_term_years,
+                'standard_fee_pence' => (int) $application->standard_fee_pence,
+                'discount_pence' => (int) $application->discount_pence,
+                'payable_fee_pence' => (int) $application->payable_fee_pence,
+                'fee_currency' => $application->fee_currency,
+                'terms_version' => $application->terms_version,
+                'privacy_version' => $application->privacy_version,
+                'immediate_service_requested' => (bool) $application->immediate_service_requested,
+                'service_start_at' => $application->service_start_at?->utc()->format('Y-m-d\TH:i:sP'),
+            ];
+        }
+
+        return $values;
+    }
+
+    /** @param array<string, mixed> $validated */
+    private function commercialFields(array $validated, bool $allowDiscount): array
+    {
+        $policy = app(MembershipApplicationPolicy::class);
+        $standardFee = $policy->feePence((int) $validated['membership_term_years']);
+        $discount = $allowDiscount ? (int) ($validated['discount_pence'] ?? 0) : 0;
+        if ($discount > $standardFee) {
+            throw ValidationException::withMessages([
+                'discount_pence' => trans('memberships.discount_exceeds_fee'),
+            ]);
+        }
+
+        $acceptedAt = now()->utc()->startOfSecond();
+        $immediate = $validated['service_start_choice'] === 'immediate';
+
+        return [
+            'membership_category_code' => $validated['membership_category_code'],
+            'membership_term_years' => (int) $validated['membership_term_years'],
+            'standard_fee_pence' => $standardFee,
+            'discount_pence' => $discount,
+            'payable_fee_pence' => $standardFee - $discount,
+            'fee_currency' => MembershipApplicationPolicy::CURRENCY,
+            'terms_version' => MembershipApplicationPolicy::TERMS_VERSION,
+            'privacy_version' => MembershipApplicationPolicy::PRIVACY_VERSION,
+            'terms_accepted_at' => $acceptedAt,
+            'immediate_service_requested' => $immediate,
+            'service_start_at' => $immediate ? $acceptedAt : $acceptedAt->addDays(14),
         ];
     }
 

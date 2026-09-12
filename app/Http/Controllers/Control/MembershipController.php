@@ -10,6 +10,7 @@ use App\Models\MembershipCredential;
 use App\Models\Organization;
 use App\Services\InstitutionalAccess;
 use App\Services\MembershipCredentialRegistry;
+use App\Services\MembershipApplicationPolicy;
 use App\Services\MembershipRegistry;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,6 +25,17 @@ class MembershipController extends Controller
 {
     private function registry(): MembershipRegistry { return app(MembershipRegistry::class); }
     private function credentials(): MembershipCredentialRegistry { return app(MembershipCredentialRegistry::class); }
+    private function applicationPolicy(): MembershipApplicationPolicy { return app(MembershipApplicationPolicy::class); }
+
+    private function commercialOptions(): array
+    {
+        return [
+            'membershipCategories' => collect($this->applicationPolicy()->categories())->mapWithKeys(
+                fn (string $name, string $code): array => [$name => trans('account.membership_categories.'.$code)]
+            ),
+            'membershipTermFees' => $this->applicationPolicy()->termFees(),
+        ];
+    }
 
     private function organizations(Request $request)
     {
@@ -67,8 +79,11 @@ class MembershipController extends Controller
     public function create(Request $request): View
     {
         $this->registry()->requirePermission($request->user(), 'memberships.manage');
-        return view('control.memberships.form', ['membership' => new Membership(['preferred_locale' => app()->getLocale()]),
-            'organizations' => $this->organizations($request)->where('status', 'active')]);
+        return view('control.memberships.form', [
+            'membership' => new Membership(['preferred_locale' => app()->getLocale()]),
+            'organizations' => $this->organizations($request)->where('status', 'active'),
+            ...$this->commercialOptions(),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -93,7 +108,11 @@ class MembershipController extends Controller
         $membership = $this->record($request);
         abort_unless(in_array($membership->status, ['draft', 'active', 'suspended'], true), 403);
         abort_unless($this->registry()->verify($membership), 409, trans('memberships.errors.integrity'));
-        return view('control.memberships.form', ['membership' => $membership, 'organizations' => $this->organizations($request)]);
+        return view('control.memberships.form', [
+            'membership' => $membership,
+            'organizations' => $this->organizations($request),
+            ...$this->commercialOptions(),
+        ]);
     }
 
     public function update(Request $request): RedirectResponse
@@ -181,6 +200,7 @@ class MembershipController extends Controller
         return view('control.memberships.application', [
             'membership' => $membership,
             'application' => $membership->application,
+            ...$this->commercialOptions(),
         ]);
     }
 
@@ -244,7 +264,9 @@ class MembershipController extends Controller
             $request->merge(['residence_country_code' => strtoupper(trim((string) $request->input('residence_country_code')))]);
         }
 
-        return $request->validate([
+        $validated = $request->validate([
+            'membership_term_years' => ['required', 'integer', Rule::in($this->applicationPolicy()->termYears())],
+            'discount_amount' => ['nullable', 'numeric', 'min:0'],
             'date_of_birth' => ['required', 'date_format:Y-m-d', 'before:today'],
             'nationality_code' => ['required', 'regex:/^[A-Z]{2}$/'],
             'address' => ['required', 'string', 'max:1000'],
@@ -256,15 +278,43 @@ class MembershipController extends Controller
             'qualifications' => ['nullable', 'string', 'max:3000'],
             'photo' => [$photoRequired ? 'required' : 'nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
             'application_consent' => ['accepted'],
+            'terms_consent' => ['accepted'],
+            'service_start_choice' => ['required', Rule::in(['immediate', 'after_cooling_off'])],
         ]);
+
+        $membershipType = (string) $request->input('membership_type', '');
+        $routeMembership = $request->route('membership');
+        if ($membershipType === '' && $routeMembership instanceof Membership) {
+            $membershipType = (string) $routeMembership->membership_type;
+        } elseif ($membershipType === '' && is_numeric($routeMembership)) {
+            $membershipType = (string) Membership::query()->whereKey((int) $routeMembership)->value('membership_type');
+        }
+        $categoryCode = $this->applicationPolicy()->categoryCodeForName($membershipType);
+        if ($categoryCode === null) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'membership_type' => trans('memberships.membership_category_error'),
+            ]);
+        }
+
+        $validated['membership_category_code'] = $categoryCode;
+        $validated['discount_pence'] = (int) round((float) ($validated['discount_amount'] ?? 0) * 100);
+
+        return $validated;
     }
 
     private function profile(Request $request, bool $editing): array
     {
         if ($request->filled('country_code')) { $request->merge(['country_code' => strtoupper((string) $request->input('country_code'))]); }
+        $allowedMembershipTypes = $this->applicationPolicy()->categoryNames();
+        if ($editing && is_numeric($request->route('membership'))) {
+            $currentType = Membership::query()->whereKey((int) $request->route('membership'))->value('membership_type');
+            if (is_string($currentType) && $currentType !== '') {
+                $allowedMembershipTypes[] = $currentType;
+            }
+        }
         $rules = [
             'full_name' => ['required', 'string', 'max:255'], 'latin_name' => ['nullable', 'string', 'max:255'],
-            'membership_type' => ['required', 'string', 'max:120'], 'professional_title' => ['nullable', 'string', 'max:160'],
+            'membership_type' => ['required', Rule::in(array_unique($allowedMembershipTypes))], 'professional_title' => ['nullable', 'string', 'max:160'],
             'country_code' => ['nullable', 'regex:/^[A-Z]{2}$/'], 'preferred_locale' => ['required', Rule::in(['ar', 'en', 'fr'])],
             'email' => ['nullable', 'email:rfc', 'max:254'], 'phone' => ['nullable', 'string', 'max:40'],
             'private_notes' => ['nullable', 'string', 'max:5000'],

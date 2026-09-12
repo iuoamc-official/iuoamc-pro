@@ -1,4 +1,4 @@
-@extendsuhalten('layouts.control')
+@extends('layouts.control')
 @section('title', __('memberships.application_data'))
 @section('content')
 <div class="membership-module">

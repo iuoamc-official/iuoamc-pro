@@ -21,6 +21,13 @@ final class MembershipApplication extends Model
             'identification_number' => 'encrypted',
             'qualifications' => 'encrypted',
             'consent_at' => 'immutable_datetime',
+            'membership_term_years' => 'integer',
+            'standard_fee_pence' => 'integer',
+            'discount_pence' => 'integer',
+            'payable_fee_pence' => 'integer',
+            'terms_accepted_at' => 'immutable_datetime',
+            'immediate_service_requested' => 'boolean',
+            'service_start_at' => 'immutable_datetime',
             'lock_version' => 'integer',
         ];
     }

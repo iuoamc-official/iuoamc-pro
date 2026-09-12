@@ -82,6 +82,8 @@ class MembershipCredentialPdfTest extends TestCase
         $this->assertStringContainsString('#c6a13c', $template);
         $this->assertStringContainsString('<div class="brand"><img', $template);
         $this->assertStringContainsString('NATIONALITY', $template);
+        $this->assertStringContainsString('VALID FROM', $template);
+        $this->assertStringContainsString('VALID UNTIL', $template);
         $this->assertStringContainsString("payload['nationality_code']", $template);
         $this->assertStringNotContainsString('gradient', $template);
         $this->assertStringNotContainsString('opacity:', $template);

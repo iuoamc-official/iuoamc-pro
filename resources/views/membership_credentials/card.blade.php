@@ -52,7 +52,7 @@
     <div class="class-label">MEMBERSHIP CLASS</div>
     <div class="class-value"><bdi>{{ $payload['membership_type'] }}</bdi></div>
     <div class="number"><bdi dir="ltr">{{ $payload['membership_number'] }}</bdi></div>
-    <div class="dates">VALID&nbsp; <bdi dir="ltr">{{ $payload['valid_from'] }}</bdi>&nbsp; — &nbsp;<bdi dir="ltr">{{ $payload['valid_until'] }}</bdi></div>
+    <div class="dates">VALID FROM&nbsp; <bdi dir="ltr">{{ $payload['valid_from'] }}</bdi>&nbsp; - &nbsp;VALID UNTIL&nbsp; <bdi dir="ltr">{{ $payload['valid_until'] }}</bdi></div>
 </div>
 <div class="qr"><barcode code="{{ $payload['verification_url'] }}" type="QR" error="M" size="0.43" disableborder="0" /><br>SCAN TO VERIFY<br>LIVE STATUS</div>
 <div class="verification-rule"></div>

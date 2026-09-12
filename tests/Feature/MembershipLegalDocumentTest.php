@@ -20,7 +20,7 @@ final class MembershipLegalDocumentTest extends TestCase
             ->assertSee('£2,100.00')
             ->assertSee('35%')
             ->assertSee('الرسم الأساسي قبل الخصم')
-            ->assertSee('لا يضمن العضوية');
+            ->assertSee('لا ينشئ عضوية');
     }
 
     public function test_english_privacy_notice_is_public_and_versioned(): void

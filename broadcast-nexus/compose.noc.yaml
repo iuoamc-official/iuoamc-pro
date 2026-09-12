@@ -61,3 +61,28 @@ services:
     ports: ["127.0.0.1:58114:8114"]
     depends_on:
       postgres: {condition: service_healthy}
+
+  control-room:
+    build:
+      context: ..
+      dockerfile: broadcast-nexus/services/control-room/Dockerfile
+    restart: "no"
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      NATS_URL: nats://${NATS_USER}:${NATS_PASSWORD}@nats:4222
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ISSUER: ${JWT_ISSUER}
+      JWT_AUDIENCE: ${JWT_AUDIENCE}
+    ports: ["127.0.0.1:58115:8115"]
+    depends_on:
+      postgres: {condition: service_healthy}
+
+  noc-dashboard:
+    build:
+      context: ..
+      dockerfile: broadcast-nexus/apps/noc-dashboard/Dockerfile
+    restart: "no"
+    ports: ["127.0.0.1:58116:80"]
+    depends_on:
+      - control-room

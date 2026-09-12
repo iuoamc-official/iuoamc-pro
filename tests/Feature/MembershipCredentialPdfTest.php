@@ -79,6 +79,7 @@ class MembershipCredentialPdfTest extends TestCase
         $this->assertStringContainsString('position: fixed', $template);
         $this->assertStringContainsString('#172e57', $template);
         $this->assertStringContainsString('#c6a13c', $template);
+        $this->assertStringContainsString('<div class="brand"><img', $template);
         $this->assertStringNotContainsString('gradient', $template);
         $this->assertStringNotContainsString('opacity:', $template);
         $this->assertStringNotContainsString('filter:', $template);

@@ -10,7 +10,8 @@
         .gold-line { position: fixed; top: 11.7mm; left: 0; width: 85.6mm; height: .75mm; background: #c6a13c; }
         .bottom { position: fixed; top: 48.8mm; left: 0; width: 85.6mm; height: 5.2mm; background: #172e57; }
         .bottom-gold { position: fixed; top: 48.05mm; left: 0; width: 85.6mm; height: .75mm; background: #c6a13c; }
-        .logo { position: fixed; top: 1.7mm; left: 3.2mm; width: 25.2mm; height: auto; }
+        .brand { position: fixed; top: 1.7mm; left: 3.2mm; width: 25.2mm; height: 8.2mm; }
+        .brand img { width: 25.2mm; height: auto; }
         .card-label { position: fixed; top: 2.25mm; left: 30mm; width: 52.3mm; color: #ffffff; text-align: right; font-size: 6pt; font-weight: bold; letter-spacing: .55px; }
         .registration { position: fixed; top: 6.4mm; left: 30mm; width: 52.3mm; color: #e3c768; text-align: right; font-size: 4.25pt; }
         .photo-frame { position: fixed; top: 15.1mm; left: 3.2mm; width: 18.7mm; height: 24.9mm; padding: .6mm; border: .35mm solid #c6a13c; background: #ffffff; }
@@ -40,7 +41,7 @@
 <div class="gold-line"></div>
 <div class="bottom-gold"></div>
 <div class="bottom"></div>
-<img class="logo" src="{{ $logo }}">
+<div class="brand"><img src="{{ $logo }}"></div>
 <div class="card-label">OFFICIAL MEMBERSHIP CARD</div>
 <div class="registration">INTERNATIONAL UNION OF ARAB MASTER CHEFS LTD · UK REG. {{ $payload['organization']['registration_number'] }}</div>
 <div class="photo-frame"><img class="photo" src="{{ $photoPath }}"></div>

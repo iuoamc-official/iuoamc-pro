@@ -11,7 +11,7 @@
     <h1>{{ $article->localized('title', $locale) }}</h1>
     <div class="meta">{{ $article->author_name }} · {{ $article->published_at?->format('Y-m-d') }} · {{ $article->section?->localized('name', $locale) }}</div>
     @if($cover)<img class="cover" src="{{ $cover }}" alt="">@endif
-    <div>{!! $body !!}</div>
+    {!! $body !!}
     @if($article->source_url)<div class="source">{{ __('public_site.articles.legacy_source') }}: {{ $article->source_url }}<br>{{ __('public_site.articles.originally_published') }} {{ $article->original_published_at?->format('Y-m-d') }}</div>@endif
     <div class="footer">{{ $siteProfile['contact_email'] }} · {{ url('/') }} · {{ $article->record_uuid }}</div>
 </body>

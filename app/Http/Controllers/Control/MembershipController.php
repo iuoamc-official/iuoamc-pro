@@ -65,7 +65,9 @@ class MembershipController extends Controller
             'active' => (clone $base)->where('status', 'active')->whereHas('periods', fn ($q) => $q->whereDate('valid_from', '<=', today('UTC'))->whereDate('valid_until', '>=', today('UTC')))->count()];
         $query = $base->with(['organization', 'periods', 'integrityAudit'])
             ->when($filters['q'] ?? null, fn ($q, $value) => $q->where(fn ($sub) => $sub->where('full_name', 'like', '%'.$value.'%')
-                ->orWhere('latin_name', 'like', '%'.$value.'%')->orWhere('membership_number', 'like', '%'.$value.'%')->orWhere('record_uuid', $value)))
+                ->orWhere('latin_name', 'like', '%'.$value.'%')->orWhere('membership_number', 'like', '%'.$value.'%')
+                ->orWhereHas('credentials', fn ($credentialQuery) => $credentialQuery->where('membership_number', 'like', '%'.$value.'%'))
+                ->orWhere('record_uuid', $value)))
             ->when($filters['organization_id'] ?? null, fn ($q, $value) => $q->where('organization_id', $value));
         $state = $filters['status'] ?? null;
         if (in_array($state, ['active', 'scheduled', 'expired'], true)) {
@@ -143,6 +145,9 @@ class MembershipController extends Controller
 
         return view('control.memberships.correct', [
             'membership' => $membership,
+            'membershipCategories' => collect($this->applicationPolicy()->categories())->mapWithKeys(
+                fn (string $name, string $code): array => [$name => trans('account.membership_categories.'.$code)]
+            ),
             'memberTitles' => $this->applicationPolicy()->professionalTitles(app()->getLocale()),
             'selectedMemberTitle' => $this->applicationPolicy()->professionalTitleCodeForName($membership->professional_title),
         ]);
@@ -155,7 +160,12 @@ class MembershipController extends Controller
             'lock_version' => ['required', 'integer', 'min:1'],
             'full_name' => ['required', 'string', 'max:255'],
             'latin_name' => ['nullable', 'string', 'max:255'],
+            'membership_type' => ['required', Rule::in($this->applicationPolicy()->categoryNames())],
             'member_title_code' => ['required', Rule::in($this->applicationPolicy()->professionalTitleCodes())],
+            'replacement_membership_number' => [
+                'nullable', 'string', 'max:80', 'regex:/\A[A-Za-z0-9][A-Za-z0-9.\/_-]{4,79}\z/D',
+                Rule::unique('memberships', 'membership_number')->ignore($membership->id),
+            ],
             'reason' => ['required', 'string', 'max:1500'],
         ]);
         $data['professional_title'] = $this->applicationPolicy()->professionalTitleName($data['member_title_code']);
@@ -242,7 +252,7 @@ class MembershipController extends Controller
             ->findOrFail((int) $request->route('credential'));
         $kind = (string) $request->route('kind');
         $path = $this->credentials()->downloadPath($credential, $kind);
-        $filename = preg_replace('/[^A-Za-z0-9_-]/', '-', (string) $membership->membership_number)
+        $filename = preg_replace('/[^A-Za-z0-9_-]/', '-', (string) $credential->membership_number)
             .'-v'.$credential->version.'-'.$kind.'.pdf';
 
         return response()->download($path, $filename, [

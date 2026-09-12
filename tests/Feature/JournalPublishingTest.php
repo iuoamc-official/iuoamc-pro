@@ -363,6 +363,114 @@ final class JournalPublishingTest extends TestCase
         $this->assertSame('Sensory Memory in Restaurants', $result['sources'][0]['title']);
     }
 
+    public function test_public_ai_knowledge_understands_general_article_sections(): void
+    {
+        $section = \App\Models\ContentSection::query()->where('slug', 'recipes-techniques')->firstOrFail();
+        $result = app(PublicAiKnowledge::class)->forQuestion(
+            'en',
+            'Explain this editorial section',
+            '/en/articles/sections/'.$section->slug,
+        );
+
+        $this->assertSame($section->localized('name', 'en'), $result['sources'][0]['title']);
+        $this->assertSame(
+            route('public.articles.sections.show', ['locale' => 'en', 'section' => $section]),
+            $result['sources'][0]['url'],
+        );
+        $this->assertStringContainsString($section->localized('description', 'en'), $result['context']);
+    }
+
+    public function test_public_ai_knowledge_covers_journal_policies_guidelines_and_submission(): void
+    {
+        $this->enablePublicLaunch();
+
+        $policies = app(PublicAiKnowledge::class)->forQuestion(
+            'en',
+            'What is the artificial intelligence policy?',
+            '/en/journal/policies',
+        );
+        $this->assertSame('Editorial policies', $policies['sources'][0]['title']);
+        $this->assertStringContainsString('AI tools cannot be credited as authors', $policies['context']);
+
+        $guidelines = app(PublicAiKnowledge::class)->forQuestion(
+            'en',
+            'What must an author prepare?',
+            '/en/journal/author-guidelines',
+        );
+        $this->assertSame('Author guidelines', $guidelines['sources'][0]['title']);
+        $this->assertStringContainsString('Prepare the complete manuscript', $guidelines['context']);
+
+        $submission = app(PublicAiKnowledge::class)->forQuestion(
+            'en',
+            'How does this submission page protect my manuscript?',
+            '/en/journal/submit',
+        );
+        $this->assertSame('Submit scientific research', $submission['sources'][0]['title']);
+        $this->assertStringContainsString('Files are stored outside the public catalogue', $submission['context']);
+    }
+
+    public function test_public_ai_knowledge_exposes_only_published_issues_and_consented_editorial_members(): void
+    {
+        $this->enablePublicLaunch();
+        $journal = Journal::query()->firstOrFail();
+        $editor = $this->superAdmin();
+        JournalIssue::query()->create([
+            'journal_id' => $journal->id,
+            'volume' => 11,
+            'number' => 1,
+            'slug' => 'public-ai-issue',
+            'title' => ['ar' => 'عدد عام', 'en' => 'Public AI Issue', 'fr' => 'Numéro IA public'],
+            'description' => ['ar' => 'وصف', 'en' => 'Published culinary research issue', 'fr' => 'Description'],
+            'status' => 'published',
+            'published_at' => now(),
+            'created_by' => $editor->id,
+            'updated_by' => $editor->id,
+        ]);
+        JournalIssue::query()->create([
+            'journal_id' => $journal->id,
+            'volume' => 12,
+            'number' => 1,
+            'slug' => 'private-ai-issue',
+            'title' => ['ar' => 'مسودة عدد', 'en' => 'Private Draft Issue', 'fr' => 'Brouillon privé'],
+            'description' => ['ar' => 'خاص', 'en' => 'Private issue description', 'fr' => 'Privé'],
+            'status' => 'draft',
+            'created_by' => $editor->id,
+            'updated_by' => $editor->id,
+        ]);
+        foreach ([
+            ['Consented Public Editor', 'active', now()],
+            ['Private Draft Editor', 'draft', null],
+        ] as [$name, $status, $consentedAt]) {
+            JournalEditorialMember::query()->create([
+                'record_uuid' => (string) Str::uuid(),
+                'journal_id' => $journal->id,
+                'name' => $name,
+                'role' => 'editor_in_chief',
+                'status' => $status,
+                'sort_order' => 1,
+                'consented_at' => $consentedAt,
+                'created_by' => $editor->id,
+                'updated_by' => $editor->id,
+            ]);
+        }
+
+        $issue = app(PublicAiKnowledge::class)->forQuestion(
+            'en',
+            'Explain this issue',
+            '/en/journal/issues/public-ai-issue',
+        );
+        $this->assertSame('Public AI Issue', $issue['sources'][0]['title']);
+        $this->assertStringNotContainsString('Private Draft Issue', $issue['context']);
+
+        $governance = app(PublicAiKnowledge::class)->forQuestion(
+            'en',
+            'Who is on the editorial board?',
+            '/en/journal/editorial-governance',
+        );
+        $this->assertStringContainsString('Consented Public Editor', $governance['context']);
+        $this->assertStringNotContainsString('Private Draft Editor', $governance['context']);
+    }
+
     public function test_scientific_research_cannot_use_direct_professional_publication(): void
     {
         $article = $this->createArticle('peer_reviewed_research', 'draft', 'Research requiring review');

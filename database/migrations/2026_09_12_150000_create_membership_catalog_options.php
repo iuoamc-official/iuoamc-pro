@@ -11,7 +11,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('membership_professional_titles', function (Blueprint $table): void {
+        if (! Schema::hasTable('membership_professional_titles')) {
+            Schema::create('membership_professional_titles', function (Blueprint $table): void {
             $table->id();
             $table->string('code', 100)->unique();
             $table->string('name_ar', 160);
@@ -22,9 +23,11 @@ return new class extends Migration
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->timestamps();
-        });
+            });
+        }
 
-        Schema::create('membership_subscription_plans', function (Blueprint $table): void {
+        if (! Schema::hasTable('membership_subscription_plans')) {
+            Schema::create('membership_subscription_plans', function (Blueprint $table): void {
             $table->id();
             $table->unsignedSmallInteger('years')->unique();
             $table->unsignedInteger('fee_pence');
@@ -34,9 +37,11 @@ return new class extends Migration
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->timestamps();
-        });
+            });
+        }
 
-        Schema::create('membership_payment_methods', function (Blueprint $table): void {
+        if (! Schema::hasTable('membership_payment_methods')) {
+            Schema::create('membership_payment_methods', function (Blueprint $table): void {
             $table->id();
             $table->string('code', 100)->unique();
             $table->string('name_ar', 160);
@@ -48,16 +53,27 @@ return new class extends Migration
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->timestamps();
-        });
+            });
+        }
 
-        Schema::table('membership_applications', function (Blueprint $table): void {
-            $table->string('member_title_code', 100)->nullable()->after('membership_category_code');
-            $table->string('requested_payment_method_code', 100)->nullable()->after('fee_currency');
-            $table->text('fee_waiver_reason')->nullable()->after('requested_payment_method_code');
-        });
+        if (! Schema::hasColumn('membership_applications', 'member_title_code')) {
+            Schema::table('membership_applications', function (Blueprint $table): void {
+                $table->string('member_title_code', 100)->nullable()->after('membership_category_code');
+            });
+        }
+        if (! Schema::hasColumn('membership_applications', 'requested_payment_method_code')) {
+            Schema::table('membership_applications', function (Blueprint $table): void {
+                $table->string('requested_payment_method_code', 100)->nullable()->after('fee_currency');
+            });
+        }
+        if (! Schema::hasColumn('membership_applications', 'fee_waiver_reason')) {
+            Schema::table('membership_applications', function (Blueprint $table): void {
+                $table->text('fee_waiver_reason')->nullable()->after('requested_payment_method_code');
+            });
+        }
 
         $now = now();
-        DB::table('membership_professional_titles')->insert([
+        DB::table('membership_professional_titles')->upsert([
             ['code' => 'master-chef', 'name_ar' => 'ماستر شيف', 'name_en' => 'Master Chef', 'name_fr' => 'Maître Chef', 'sort_order' => 10, 'created_at' => $now, 'updated_at' => $now],
             ['code' => 'executive-chef', 'name_ar' => 'شيف تنفيذي', 'name_en' => 'Executive Chef', 'name_fr' => 'Chef exécutif', 'sort_order' => 20, 'created_at' => $now, 'updated_at' => $now],
             ['code' => 'chef', 'name_ar' => 'شيف', 'name_en' => 'Chef', 'name_fr' => 'Chef', 'sort_order' => 30, 'created_at' => $now, 'updated_at' => $now],
@@ -68,23 +84,23 @@ return new class extends Migration
             ['code' => 'food-safety-specialist', 'name_ar' => 'اختصاصي سلامة غذاء', 'name_en' => 'Food Safety Specialist', 'name_fr' => 'Spécialiste de la sécurité alimentaire', 'sort_order' => 80, 'created_at' => $now, 'updated_at' => $now],
             ['code' => 'hospitality-professional', 'name_ar' => 'متخصص ضيافة', 'name_en' => 'Hospitality Professional', 'name_fr' => 'Professionnel de l’hospitalité', 'sort_order' => 90, 'created_at' => $now, 'updated_at' => $now],
             ['code' => 'gastronomy-specialist', 'name_ar' => 'اختصاصي فنون الذوّاقة', 'name_en' => 'Gastronomy Specialist', 'name_fr' => 'Spécialiste en gastronomie', 'sort_order' => 100, 'created_at' => $now, 'updated_at' => $now],
-        ]);
+        ], ['code'], ['name_ar', 'name_en', 'name_fr', 'sort_order', 'updated_at']);
 
-        DB::table('membership_subscription_plans')->insert([
+        DB::table('membership_subscription_plans')->upsert([
             ['years' => 1, 'fee_pence' => 25000, 'currency' => 'GBP', 'sort_order' => 10, 'created_at' => $now, 'updated_at' => $now],
             ['years' => 2, 'fee_pence' => 45000, 'currency' => 'GBP', 'sort_order' => 20, 'created_at' => $now, 'updated_at' => $now],
             ['years' => 5, 'fee_pence' => 110000, 'currency' => 'GBP', 'sort_order' => 30, 'created_at' => $now, 'updated_at' => $now],
             ['years' => 10, 'fee_pence' => 210000, 'currency' => 'GBP', 'sort_order' => 40, 'created_at' => $now, 'updated_at' => $now],
-        ]);
+        ], ['years'], ['fee_pence', 'currency', 'sort_order', 'updated_at']);
 
-        DB::table('membership_payment_methods')->insert([
-            ['code' => 'stripe', 'name_ar' => 'سترايب (بطاقة)', 'name_en' => 'Stripe (card)', 'name_fr' => 'Stripe (carte)', 'sort_order' => 10, 'created_at' => $now, 'updated_at' => $now],
-            ['code' => 'wise', 'name_ar' => 'وايز', 'name_en' => 'Wise', 'name_fr' => 'Wise', 'sort_order' => 20, 'created_at' => $now, 'updated_at' => $now],
-            ['code' => 'cash', 'name_ar' => 'نقدي', 'name_en' => 'Cash', 'name_fr' => 'Espèces', 'sort_order' => 30, 'created_at' => $now, 'updated_at' => $now],
-            ['code' => 'bank-transfer', 'name_ar' => 'تحويل بنكي', 'name_en' => 'Bank transfer', 'name_fr' => 'Virement bancaire', 'sort_order' => 40, 'created_at' => $now, 'updated_at' => $now],
-            ['code' => 'western-union', 'name_ar' => 'ويسترن يونيون', 'name_en' => 'Western Union', 'name_fr' => 'Western Union', 'sort_order' => 50, 'created_at' => $now, 'updated_at' => $now],
+        DB::table('membership_payment_methods')->upsert([
+            ['code' => 'stripe', 'name_ar' => 'سترايب (بطاقة)', 'name_en' => 'Stripe (card)', 'name_fr' => 'Stripe (carte)', 'requires_waiver_reason' => false, 'sort_order' => 10, 'created_at' => $now, 'updated_at' => $now],
+            ['code' => 'wise', 'name_ar' => 'وايز', 'name_en' => 'Wise', 'name_fr' => 'Wise', 'requires_waiver_reason' => false, 'sort_order' => 20, 'created_at' => $now, 'updated_at' => $now],
+            ['code' => 'cash', 'name_ar' => 'نقدي', 'name_en' => 'Cash', 'name_fr' => 'Espèces', 'requires_waiver_reason' => false, 'sort_order' => 30, 'created_at' => $now, 'updated_at' => $now],
+            ['code' => 'bank-transfer', 'name_ar' => 'تحويل بنكي', 'name_en' => 'Bank transfer', 'name_fr' => 'Virement bancaire', 'requires_waiver_reason' => false, 'sort_order' => 40, 'created_at' => $now, 'updated_at' => $now],
+            ['code' => 'western-union', 'name_ar' => 'ويسترن يونيون', 'name_en' => 'Western Union', 'name_fr' => 'Western Union', 'requires_waiver_reason' => false, 'sort_order' => 50, 'created_at' => $now, 'updated_at' => $now],
             ['code' => 'complimentary-request', 'name_ar' => 'طلب إعفاء من الرسوم (مجاني)', 'name_en' => 'Complimentary fee-waiver request', 'name_fr' => 'Demande d’exonération des frais', 'requires_waiver_reason' => true, 'sort_order' => 60, 'created_at' => $now, 'updated_at' => $now],
-        ]);
+        ], ['code'], ['name_ar', 'name_en', 'name_fr', 'requires_waiver_reason', 'sort_order', 'updated_at']);
     }
 
     public function down(): void

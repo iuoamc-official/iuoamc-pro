@@ -54,6 +54,30 @@ services:
       - shadow-hls
     networks: [shadow]
 
+  failover:
+    environment:
+      SHADOW_MODE: "true"
+      SHADOW_LAB_KEY: ${SHADOW_LAB_KEY}
+    networks: [default, shadow]
+
+  shadow-noc-bridge:
+    build:
+      context: ..
+      dockerfile: broadcast-nexus/services/shadow-noc-bridge/Dockerfile
+    restart: "no"
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      SHADOW_VALIDATOR_URL: http://shadow-validator:8117/v1/validate
+      SHADOW_FAILOVER_URL: http://failover:8113
+      SHADOW_LAB_KEY: ${SHADOW_LAB_KEY}
+      SHADOW_SAMPLE_INTERVAL: "5"
+    depends_on:
+      postgres: {condition: service_healthy}
+      shadow-validator: {condition: service_started}
+      failover: {condition: service_started}
+    networks: [default, shadow]
+
 networks:
   shadow:
     internal: true

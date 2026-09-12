@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -12,13 +13,11 @@ def test_studio_control_assets_exist():
 
 def test_operator_token_is_memory_only():
     html = (ROOT / 'services/dashboard-ui/studio/index.html').read_text(encoding='utf-8')
-    # Explanatory copy may mention browser storage by name; executable usage must not exist.
-    assert 'localStorage.' not in html
-    assert 'sessionStorage.' not in html
-    assert 'localStorage[' not in html
-    assert 'sessionStorage[' not in html
-    assert "let token=''" in html
-    assert 'Authorization' in html
+    scripts = '\n'.join(re.findall(r'<script[^>]*>(.*?)</script>', html, flags=re.S | re.I))
+    assert 'localStorage' not in scripts
+    assert 'sessionStorage' not in scripts
+    assert "let token=''" in scripts
+    assert 'Authorization' in scripts
 
 
 def test_live_studio_controls_are_bound():

@@ -19,8 +19,14 @@ final class PublicAiConciergeController extends Controller
     ): JsonResponse {
         $validated = $request->validate([
             'question' => ['required', 'string', 'min:3', 'max:1000'],
+            'page_path' => ['nullable', 'string', 'max:2048', 'regex:/^\/[A-Za-z0-9_\-\/]*$/'],
         ]);
-        $source = $knowledge->forQuestion($locale, trim($validated['question']));
+        $source = $knowledge->forQuestion(
+            $locale,
+            trim($validated['question']),
+            $validated['page_path'] ?? null,
+            $request->user()?->canDo('journal.view') === true,
+        );
 
         try {
             $result = $concierge->answer($locale, trim($validated['question']), $source['context']);

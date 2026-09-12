@@ -16,6 +16,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Services\JournalWorkflow;
 use App\Services\JournalNotificationService;
+use App\Services\PublicAiKnowledge;
 use App\Mail\JournalWorkflowMail;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\DB;
@@ -123,6 +124,43 @@ final class JournalPublishingTest extends TestCase
             'journal_article_id' => $published->id,
             'kind' => 'version_of_record',
         ]);
+    }
+
+    public function test_public_ai_knowledge_links_only_launched_published_articles(): void
+    {
+        $published = $this->createArticle('professional_article', 'published', 'Circular Restaurant Tasting');
+        $draft = $this->createArticle('professional_article', 'draft', 'Private Draft Tasting');
+
+        $locked = app(PublicAiKnowledge::class)->forQuestion('en', 'Circular Restaurant Tasting');
+        $this->assertFalse(collect($locked['sources'])->contains(
+            fn (array $source): bool => str_contains($source['url'], '/journal/articles/'),
+        ));
+        $this->assertStringNotContainsString('Circular Restaurant Tasting', $locked['context']);
+
+        $this->enablePublicLaunch();
+        $result = app(PublicAiKnowledge::class)->forQuestion('en', 'Circular Restaurant Tasting');
+
+        $this->assertSame('Circular Restaurant Tasting', $result['sources'][0]['title']);
+        $this->assertSame(
+            route('journal.public.articles.show', ['locale' => 'en', 'article' => $published->slug]),
+            $result['sources'][0]['url'],
+        );
+        $this->assertStringContainsString('Controlled scholarly content.', $result['context']);
+        $this->assertStringNotContainsString('Private Draft Tasting', $result['context']);
+    }
+
+    public function test_public_ai_knowledge_understands_the_current_article_page(): void
+    {
+        $this->enablePublicLaunch();
+        $article = $this->createArticle('professional_article', 'published', 'Sensory Memory in Restaurants');
+
+        $result = app(PublicAiKnowledge::class)->forQuestion(
+            'en',
+            'Explain this article',
+            '/en/journal/articles/'.$article->slug,
+        );
+
+        $this->assertSame('Sensory Memory in Restaurants', $result['sources'][0]['title']);
     }
 
     public function test_scientific_research_cannot_use_direct_professional_publication(): void
@@ -472,7 +510,9 @@ final class JournalPublishingTest extends TestCase
 
         $this->get('/en/journal/articles/'.$article->slug.'?page=2')
             ->assertOk()
-            ->assertSee('Page 2 of');
+            ->assertSee('Page 2 of')
+            ->assertSee('data-ai-panel', false)
+            ->assertSee(route('public.ai.ask', ['locale' => 'en']), false);
 
         $this->get('/en/journal/articles/'.$article->slug.'/pdf')
             ->assertOk()

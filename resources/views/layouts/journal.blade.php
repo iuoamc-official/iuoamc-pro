@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#071b2d">
     <meta name="description" content="@yield('description', $journal->localized('description'))">
     <meta property="og:type" content="@yield('og_type', 'website')">
@@ -52,5 +53,6 @@
             <div><a href="{{ route('public.home', ['locale' => app()->getLocale()]) }}">IUOAMC.PRO</a><a href="{{ route('journal.public.policies', ['locale' => app()->getLocale()]) }}">{{ __('journal.editorial_integrity') }}</a><a href="{{ route('journal.public.editorial-governance', ['locale' => app()->getLocale()]) }}">{{ __('journal.editorial_governance') }}</a><a href="{{ route('journal.public.submissions.tracking', ['locale' => app()->getLocale()]) }}">{{ __('journal.track_submission') }}</a></div>
         </div>
     </footer>
+    @include('public._ai_concierge')
 </body>
 </html>

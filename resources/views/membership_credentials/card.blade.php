@@ -26,8 +26,9 @@
         .dates { margin-top: .85mm; color: #536273; font-size: 4.35pt; }
         .qr { position: fixed; top: 15.1mm; left: 69.2mm; width: 13.1mm; color: #536273; text-align: center; font-size: 3.45pt; line-height: 1.15; }
         .verification-rule { position: fixed; top: 37.2mm; left: 24.5mm; width: 57.7mm; border-top: .22mm solid #d7c588; }
-        .trust { position: fixed; top: 38.25mm; left: 24.5mm; width: 57.7mm; color: #657384; font-size: 3.7pt; line-height: 1.25; }
-        .trust-right { color: #8e6918; text-align: right; font-weight: bold; }
+        .nationality { position: fixed; top: 38.25mm; left: 24.5mm; width: 18mm; color: #536273; font-size: 3.8pt; font-weight: bold; }
+        .edition { position: fixed; top: 40.15mm; left: 24.5mm; width: 29mm; color: #657384; font-size: 3.35pt; }
+        .trust-right { position: fixed; top: 38.25mm; left: 45mm; width: 37.2mm; color: #8e6918; text-align: right; font-size: 3.7pt; font-weight: bold; }
         .hash-label { position: fixed; top: 43.55mm; left: 3.2mm; color: #7b8794; font-size: 3pt; }
         .hash { position: fixed; top: 45.05mm; left: 3.2mm; width: 79.2mm; color: #344b61; font-family: dejavusansmono; font-size: 2.65pt; letter-spacing: -.08px; white-space: nowrap; }
         .footer-left { position: fixed; top: 50.25mm; left: 3.2mm; width: 39mm; color: #ffffff; font-size: 3.45pt; font-weight: bold; }
@@ -55,7 +56,9 @@
 </div>
 <div class="qr"><barcode code="{{ $payload['verification_url'] }}" type="QR" error="M" size="0.43" disableborder="0" /><br>SCAN TO VERIFY<br>LIVE STATUS</div>
 <div class="verification-rule"></div>
-<table class="trust" cellpadding="0" cellspacing="0"><tr><td width="49%">VERSION {{ $payload['version'] }} · {{ $payload['template_version'] }}</td><td width="51%" class="trust-right">PAdES/X.509 ELECTRONIC SIGNATURE</td></tr></table>
+<div class="nationality">NATIONALITY · <bdi dir="ltr">{{ $payload['nationality_code'] }}</bdi></div>
+<div class="edition">VERSION {{ $payload['version'] }} · {{ $payload['template_version'] }}</div>
+<div class="trust-right">PAdES/X.509 ELECTRONIC SIGNATURE</div>
 <div class="hash-label">CREDENTIAL DATA SHA-256</div>
 <div class="hash">{{ $payload['credential_data_sha256'] }}</div>
 <div class="footer-left">PVC ID-1 · 85.60 × 54.00 MM</div>

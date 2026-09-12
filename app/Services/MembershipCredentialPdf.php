@@ -71,7 +71,7 @@ final class MembershipCredentialPdf
     private function validate(array $payload, string $photoPath): void
     {
         foreach ([
-            'membership_number', 'full_name', 'membership_type', 'valid_from',
+            'membership_number', 'full_name', 'membership_type', 'nationality_code', 'valid_from',
             'valid_until', 'verification_url', 'issued_at', 'credential_data_sha256',
         ] as $required) {
             if (! is_string($payload[$required] ?? null) || trim($payload[$required]) === '') {
@@ -81,6 +81,7 @@ final class MembershipCredentialPdf
         if (($payload['schema'] ?? null) !== 'iuoamc-membership-credential-v1'
             || ($payload['template_version'] ?? null) !== self::TEMPLATE_VERSION
             || ! preg_match('/\A[a-f0-9]{64}\z/D', (string) $payload['credential_data_sha256'])
+            || ! preg_match('/\A[A-Z]{2}\z/D', (string) $payload['nationality_code'])
             || trim((string) data_get($payload, 'organization.registration_number')) === ''
             || data_get($payload, 'electronic_signature.standard') !== 'PAdES/X.509'
             || ! preg_match('~\Ahttps://iuoamc\.pro/verify/m/[a-f0-9]{64}\z~D', $payload['verification_url'])

@@ -31,6 +31,7 @@ class MembershipCredentialPdfTest extends TestCase
             'membership_type' => 'Professional Membership',
             'professional_title' => 'Executive Chef',
             'country_code' => 'GB',
+            'nationality_code' => 'GB',
             'organization' => [
                 'id' => 1,
                 'code' => 'IUOAMC',
@@ -80,6 +81,8 @@ class MembershipCredentialPdfTest extends TestCase
         $this->assertStringContainsString('#172e57', $template);
         $this->assertStringContainsString('#c6a13c', $template);
         $this->assertStringContainsString('<div class="brand"><img', $template);
+        $this->assertStringContainsString('NATIONALITY', $template);
+        $this->assertStringContainsString("payload['nationality_code']", $template);
         $this->assertStringNotContainsString('gradient', $template);
         $this->assertStringNotContainsString('opacity:', $template);
         $this->assertStringNotContainsString('filter:', $template);

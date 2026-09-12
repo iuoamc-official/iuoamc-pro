@@ -38,6 +38,7 @@ Route::prefix('{locale}')
         Route::get('/articles', [PublicArticleController::class, 'index'])->name('public.articles.index');
         Route::get('/articles/feed.xml', [PublicArticleController::class, 'feed'])->name('public.articles.feed');
         Route::get('/articles/sections/{section:slug}', [PublicArticleController::class, 'index'])->name('public.articles.sections.show');
+        Route::get('/articles/{article:slug}/pdf', [PublicArticleController::class, 'downloadPdf'])->name('public.articles.pdf');
         Route::get('/articles/{article:slug}', [PublicArticleController::class, 'show'])->name('public.articles.show');
 
         Route::middleware('guest')->group(function (): void {

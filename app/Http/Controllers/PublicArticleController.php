@@ -8,9 +8,13 @@ use App\Models\ContentArticle;
 use App\Models\ContentSection;
 use App\Models\PublicPage;
 use App\Services\PublicSiteProfile;
+use App\Services\ArticleBodyFormatter;
+use App\Services\ContentArticlePdf;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 use Illuminate\Http\Response;
+use Illuminate\Support\Str;
+use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 
 final class PublicArticleController extends Controller
 {
@@ -24,12 +28,30 @@ final class PublicArticleController extends Controller
             ->orderByDesc('is_featured')->orderByDesc('published_at')->paginate(12)->withQueryString();
         return view('articles.index', $this->shared($locale, $profile) + ['articles' => $articles, 'sections' => ContentSection::query()->active()->orderBy('sort_order')->get(), 'currentSection' => $section, 'filters' => $filters]);
     }
-    public function show(string $locale, ContentArticle $article, PublicSiteProfile $profile): View
+    public function show(string $locale, ContentArticle $article, PublicSiteProfile $profile, ArticleBodyFormatter $formatter): View
     {
         abort_unless($article->status === 'published' && $article->published_at?->isPast(), 404);
         $article->increment('views_count'); $article->load('section');
         $related = ContentArticle::query()->published()->where('id', '!=', $article->id)->when($article->content_section_id, fn ($q, $id) => $q->where('content_section_id', $id))->latest('published_at')->limit(3)->get();
-        return view('articles.show', $this->shared($locale, $profile) + compact('article', 'related'));
+        $formattedBody = $formatter->toHtml($article->localized('body'));
+
+        return view('articles.show', $this->shared($locale, $profile) + compact('article', 'related', 'formattedBody'));
+    }
+
+    public function downloadPdf(string $locale, ContentArticle $article, PublicSiteProfile $profile, ContentArticlePdf $pdf): Response
+    {
+        abort_unless($article->status === 'published' && $article->published_at?->isPast(), 404);
+        $article->load('section');
+        $bytes = $pdf->render($article, $locale, $profile->get());
+        $article->increment('pdf_downloads_count');
+        $filename = (Str::slug($article->localized('title', $locale)) ?: 'iuoamc-article').'.pdf';
+
+        return response($bytes, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $filename, 'iuoamc-article.pdf'),
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
     public function feed(string $locale): Response
     {

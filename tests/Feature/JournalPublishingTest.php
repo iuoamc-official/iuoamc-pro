@@ -18,6 +18,7 @@ use App\Models\User;
 use App\Services\JournalWorkflow;
 use App\Services\JournalNotificationService;
 use App\Services\PublicAiKnowledge;
+use App\Services\ArticleBodyFormatter;
 use App\Mail\JournalWorkflowMail;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\DB;
@@ -50,6 +51,7 @@ final class JournalPublishingTest extends TestCase
             '2026_09_12_120000_create_editorial_sections_and_public_articles.php',
             '2026_09_12_130000_expand_public_article_sections.php',
             '2026_09_12_140000_add_legacy_provenance_to_content_articles.php',
+            '2026_09_12_160000_add_pdf_downloads_to_content_articles.php',
         ] as $migrationFile) {
             $migration = require database_path('migrations/'.$migrationFile);
             $migration->up();
@@ -106,8 +108,28 @@ final class JournalPublishingTest extends TestCase
         ]);
 
         $this->get('/en/articles')->assertOk()->assertSee('Public culinary story')->assertDontSee('Private editorial draft');
-        $this->get('/en/articles/public-culinary-story')->assertOk()->assertSee('Public editorial body')->assertSee('Ahmad Maadarani');
+        $this->get('/en/articles/public-culinary-story')
+            ->assertOk()
+            ->assertSee('<p>Public editorial body</p>', false)
+            ->assertSee('Download article PDF')
+            ->assertSee('hreflang="x-default"', false)
+            ->assertSee('Ahmad Maadarani');
+        $this->get('/en/articles/public-culinary-story/pdf')
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+        $this->assertSame(1, ContentArticle::query()->where('slug', 'public-culinary-story')->value('pdf_downloads_count'));
         $this->get('/en/articles/private-editorial-draft')->assertNotFound();
+        $this->get('/en/articles/private-editorial-draft/pdf')->assertNotFound();
+    }
+
+    public function test_general_article_formatter_creates_safe_semantic_blocks(): void
+    {
+        $html = app(ArticleBodyFormatter::class)->toHtml("## Culinary heading\n\nEvidence <script>alert(1)</script>\n\n- First\n- Second");
+
+        $this->assertStringContainsString('<h2>Culinary heading</h2>', $html);
+        $this->assertStringContainsString('<p>Evidence &lt;script&gt;alert(1)&lt;/script&gt;</p>', $html);
+        $this->assertStringContainsString('<ul><li>First</li><li>Second</li></ul>', $html);
+        $this->assertStringNotContainsString('<script>', $html);
     }
 
     public function test_public_article_taxonomy_matches_the_iuoamc_editorial_identity(): void
@@ -166,6 +188,14 @@ final class JournalPublishingTest extends TestCase
             ->expectsOutputToContain('SKIPPED_EXISTING=6')
             ->assertSuccessful();
         $this->assertSame(6, ContentArticle::query()->count());
+
+        $this->artisan('content:import-legacy-articles', [
+            '--refresh' => true,
+            '--confirm' => 'REFRESH-6-LEGACY-ARTICLES',
+        ])->expectsOutputToContain('REFRESHED=6')->assertSuccessful();
+        $article->refresh();
+        $this->assertStringContainsString('## Heading', $article->body['en']);
+        $this->assertSame('draft', $article->status);
     }
 
     public function test_unauthenticated_editorial_request_redirects_to_localized_login(): void

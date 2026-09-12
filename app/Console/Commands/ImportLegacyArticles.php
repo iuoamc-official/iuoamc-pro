@@ -24,7 +24,8 @@ final class ImportLegacyArticles extends Command
 {
     protected $signature = 'content:import-legacy-articles
         {--publish : Publish the imported records using their original dates}
-        {--confirm= : Required phrase when --publish is used}';
+        {--refresh : Refresh the six managed records from the legacy multilingual source}
+        {--confirm= : Required phrase when --publish or --refresh is used}';
 
     protected $description = 'Import six curated IUOAMC articles from the legacy publication as reviewable drafts';
 
@@ -41,9 +42,22 @@ final class ImportLegacyArticles extends Command
     public function handle(): int
     {
         $publish = (bool) $this->option('publish');
+        $refresh = (bool) $this->option('refresh');
+
+        if ($publish && $refresh) {
+            $this->error('CHOOSE_PUBLISH_OR_REFRESH');
+
+            return self::INVALID;
+        }
 
         if ($publish && ! hash_equals('PUBLISH-6-LEGACY-ARTICLES', (string) $this->option('confirm'))) {
             $this->error('PUBLISH_CONFIRMATION_REQUIRED');
+
+            return self::INVALID;
+        }
+
+        if ($refresh && ! hash_equals('REFRESH-6-LEGACY-ARTICLES', (string) $this->option('confirm'))) {
+            $this->error('REFRESH_CONFIRMATION_REQUIRED');
 
             return self::INVALID;
         }
@@ -52,15 +66,12 @@ final class ImportLegacyArticles extends Command
             $prepared = collect(self::ARTICLES)->map(fn (array $definition): array => $this->prepare($definition))->all();
             $actorId = DB::table('users')->orderBy('id')->value('id');
             $created = 0;
+            $refreshed = 0;
+            $activated = 0;
             $skipped = 0;
 
-            DB::transaction(function () use ($prepared, $actorId, $publish, &$created, &$skipped): void {
+            DB::transaction(function () use ($prepared, $actorId, $publish, $refresh, &$created, &$refreshed, &$activated, &$skipped): void {
                 foreach ($prepared as $item) {
-                    if (ContentArticle::query()->where('slug', $item['definition']['slug'])->exists()) {
-                        $skipped++;
-                        continue;
-                    }
-
                     $sectionId = ContentSection::query()->where('slug', $item['definition']['section'])->value('id');
                     if ($sectionId === null) {
                         throw new RuntimeException('Missing content section: '.$item['definition']['section']);
@@ -72,6 +83,43 @@ final class ImportLegacyArticles extends Command
                         $item['cover_contents'],
                     );
                     $originalDate = Carbon::parse($item['published_at'])->utc();
+                    $article = ContentArticle::query()->where('slug', $item['definition']['slug'])->first();
+
+                    if ($article !== null) {
+                        if ($refresh) {
+                            $article->update([
+                                'content_section_id' => $sectionId,
+                                'title' => $item['title'],
+                                'excerpt' => $item['excerpt'],
+                                'body' => $item['body'],
+                                'seo_title' => $item['title'],
+                                'seo_description' => $item['excerpt'],
+                                'image_alt' => $item['title'],
+                                'author_biography' => $this->authorBiography(),
+                                'tags' => $this->tags($item['definition']['section']),
+                                'cover_image_path' => $coverPath,
+                                'source_url' => $item['source_url'],
+                                'original_published_at' => $originalDate,
+                                'is_featured' => $item['definition']['featured'],
+                                'reading_minutes' => max(1, (int) ceil(str_word_count($item['body']['en']) / 220)),
+                                'revision' => $article->revision + 1,
+                                'updated_by' => $actorId,
+                            ]);
+                            $refreshed++;
+                        } elseif ($publish && $article->status !== 'published') {
+                            $article->update([
+                                'status' => 'published',
+                                'published_at' => $originalDate,
+                                'revision' => $article->revision + 1,
+                                'updated_by' => $actorId,
+                            ]);
+                            $activated++;
+                        } else {
+                            $skipped++;
+                        }
+
+                        continue;
+                    }
 
                     ContentArticle::query()->create([
                         'record_uuid' => (string) Str::uuid(),
@@ -102,10 +150,16 @@ final class ImportLegacyArticles extends Command
                 }
             }, 5);
 
-            $this->components->info($publish ? 'Legacy articles published' : 'Legacy article drafts prepared');
+            $this->components->info(match (true) {
+                $publish => 'Legacy articles published',
+                $refresh => 'Legacy articles refreshed',
+                default => 'Legacy article drafts prepared',
+            });
             $this->line('CREATED='.$created);
+            $this->line('REFRESHED='.$refreshed);
+            $this->line('ACTIVATED='.$activated);
             $this->line('SKIPPED_EXISTING='.$skipped);
-            $this->line('STATUS='.($publish ? 'PUBLISHED' : 'DRAFT'));
+            $this->line('STATUS='.($publish ? 'PUBLISHED' : ($refresh ? 'REFRESHED' : 'DRAFT')));
 
             return self::SUCCESS;
         } catch (Throwable $exception) {
@@ -219,12 +273,26 @@ final class ImportLegacyArticles extends Command
                 $parts[] = "\n";
                 return;
             }
+            if (in_array($tag, ['h1', 'h2', 'h3', 'h4'], true)) {
+                $prefix = in_array($tag, ['h1', 'h2'], true) ? '## ' : '### ';
+                $parts[] = "\n\n".$prefix.trim((string) $node->textContent)."\n";
+
+                return;
+            }
+            if ($tag === 'blockquote') {
+                $parts[] = "\n\n> ".trim((string) preg_replace('/\s+/u', ' ', $node->textContent))."\n";
+
+                return;
+            }
             if ($tag === 'li') {
-                $parts[] = "\n• ";
+                $parts[] = "\n- ".trim((string) preg_replace('/\s+/u', ' ', $node->textContent))."\n";
+
+                return;
             }
-            if (in_array($tag, ['h1', 'h2', 'h3', 'h4', 'p', 'blockquote'], true)) {
-                $parts[] = "\n\n";
-            }
+            $parts[] = match ($tag) {
+                'p' => "\n\n",
+                default => '',
+            };
             foreach ($node->childNodes as $child) {
                 $walk($child);
             }
@@ -237,6 +305,7 @@ final class ImportLegacyArticles extends Command
         $text = html_entity_decode(implode('', $parts), ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $text = preg_replace('/[ \t]+/u', ' ', $text) ?? $text;
         $text = preg_replace('/ *\n */u', "\n", $text) ?? $text;
+        $text = preg_replace('/^#{2,3}\s*$/mu', '', $text) ?? $text;
 
         return trim(preg_replace('/\n{3,}/u', "\n\n", $text) ?? $text);
     }

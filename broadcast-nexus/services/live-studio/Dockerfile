@@ -7,4 +7,4 @@ COPY broadcast-nexus/services/live-studio/app /app/app
 ENV PYTHONPATH=/app
 USER 65532:65532
 EXPOSE 8104
-CMD ["uvicorn","app.main:app","--host","0.0.0.0","--port","8104"]
+CMD ["uvicorn","app.runtime:app","--host","0.0.0.0","--port","8104"]

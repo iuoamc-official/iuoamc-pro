@@ -5,7 +5,7 @@
     <style>
         @page { margin: 0; }
         body { margin: 0; padding: 0; background: #ffffff; color: #132947; font-family: dejavusans; }
-        .canvas { position: fixed; top: 0; left: 0; width: 85.6mm; height: 54mm; background: #fffdf8; }
+        .canvas { position: fixed; top: 0; left: 0; width: 85.6mm; height: 54mm; background: #fbfaf6; }
         .top { position: fixed; top: 0; left: 0; width: 85.6mm; height: 11.7mm; background: #172e57; }
         .gold-line { position: fixed; top: 11.7mm; left: 0; width: 85.6mm; height: .75mm; background: #c6a13c; }
         .bottom { position: fixed; top: 48.8mm; left: 0; width: 85.6mm; height: 5.2mm; background: #172e57; }
@@ -14,8 +14,8 @@
         .brand img { width: 25.2mm; height: auto; }
         .card-label { position: fixed; top: 2.25mm; left: 30mm; width: 52.3mm; color: #ffffff; text-align: right; font-size: 6pt; font-weight: bold; letter-spacing: .55px; }
         .registration { position: fixed; top: 6.4mm; left: 30mm; width: 52.3mm; color: #e3c768; text-align: right; font-size: 4.25pt; }
-        .photo-frame { position: fixed; top: 15.8mm; left: 4mm; width: 16.6mm; height: 20.6mm; padding: .6mm; border: .32mm solid #c6a13c; border-radius: 50%; background: #ffffff; text-align: center; }
-        .photo { width: 15.4mm; height: 19.4mm; border-radius: 50%; }
+        .photo-frame { position: fixed; top: 15.8mm; left: 4mm; width: 16.6mm; height: 20.6mm; overflow: hidden; padding: 0; border: .32mm solid #c6a13c; border-radius: 50%; background: #fbfaf6; }
+        .photo { display: block; width: 16.6mm; height: 20.6mm; margin: 0; border: 0; border-radius: 50%; background: #fbfaf6; }
         .identity { position: fixed; top: 14.7mm; left: 22.5mm; width: 45.2mm; height: 27.5mm; }
         .name { color: #132947; font-size: 9pt; line-height: 1.12; font-weight: bold; }
         .name.long { font-size: 7.6pt; }
@@ -36,7 +36,7 @@
         .footer-left { position: fixed; top: 50.25mm; left: 3.2mm; width: 27.5mm; color: #ffffff; font-size: 3.45pt; font-weight: bold; }
         .footer-right { position: fixed; top: 50.25mm; left: 55mm; width: 27.4mm; color: #e3c768; text-align: right; font-size: 3.45pt; font-weight: bold; }
         .back-canvas { position: fixed; top: 0; left: 0; width: 85.6mm; height: 54mm; background: #172e57; }
-        .back-panel { position: fixed; top: 3.2mm; left: 3.2mm; width: 79.2mm; height: 47.6mm; background: #fffdf8; border: .35mm solid #c6a13c; }
+        .back-panel { position: fixed; top: 3.2mm; left: 3.2mm; width: 79.2mm; height: 47.6mm; background: #fbfaf6; border: .35mm solid #c6a13c; }
         .back-brand { position: fixed; top: 5mm; left: 6mm; width: 27mm; height: 8.5mm; }
         .back-brand img { width: 27mm; height: auto; }
         .back-heading { position: fixed; top: 6mm; left: 35mm; width: 44mm; color: #132947; text-align: right; font-size: 6.2pt; font-weight: bold; }

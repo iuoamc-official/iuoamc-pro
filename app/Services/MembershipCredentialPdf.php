@@ -19,7 +19,7 @@ final class MembershipCredentialPdf
 
     public function renderCertificate(array $payload, string $photoPath): string
     {
-        return $this->render($payload, $photoPath, 'membership_credentials.certificate', 'A4-L', 8);
+        return $this->render($payload, $photoPath, 'membership_credentials.certificate', 'A4-L', 0);
     }
 
     private function render(array $payload, string $photoPath, string $view, string|array $format, int $margin): string

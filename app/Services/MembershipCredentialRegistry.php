@@ -307,7 +307,13 @@ final class MembershipCredentialRegistry
             'issued_by' => (int) $actor->id,
             'issued_at' => $issuedAt->toIso8601String(),
             'template_version' => MembershipCredentialPdf::TEMPLATE_VERSION,
+            'electronic_signature' => [
+                'name' => 'Master Chef Ahmad Maadarani',
+                'title' => 'President General & Authorised Signatory',
+                'standard' => 'PAdES/X.509',
+            ],
         ];
+        $payload['credential_data_sha256'] = MembershipRegistry::digest($payload);
         $pdf = app(MembershipCredentialPdf::class);
         $photoPath = $this->safePrivatePath($application->photo_path);
         $signer = app(ProCertificatePadesSigner::class);
@@ -391,6 +397,12 @@ final class MembershipCredentialRegistry
     {
         try {
             $current = MembershipCredential::query()->with('integrityAudit')->find($credential->id);
+            $credentialData = $current?->payload ?? [];
+            $credentialDataSha256 = $credentialData['credential_data_sha256'] ?? '';
+            unset($credentialData['credential_data_sha256']);
+            $credentialDataDigestValid = ($credentialData['template_version'] ?? null) !== MembershipCredentialPdf::TEMPLATE_VERSION
+                || (is_string($credentialDataSha256)
+                    && hash_equals($credentialDataSha256, MembershipRegistry::digest($credentialData)));
             if ($current === null
                 || $current->record_hash !== $credential->record_hash
                 || ! hash_equals((string) $current->record_hash, MembershipRegistry::digest($this->credentialSnapshot($current)))
@@ -399,6 +411,7 @@ final class MembershipCredentialRegistry
                 || (string) ($current->payload['membership_number'] ?? '') !== (string) $current->membership_number
                 || (int) ($current->payload['version'] ?? 0) !== (int) $current->version
                 || (string) ($current->payload['period_uuid'] ?? '') !== (string) $current->period?->period_uuid
+                || ! $credentialDataDigestValid
                 || $current->pades_status !== 'valid') {
                 return false;
             }

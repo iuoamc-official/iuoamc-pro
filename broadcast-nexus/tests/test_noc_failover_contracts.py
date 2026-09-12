@@ -31,7 +31,7 @@ def test_no_production_stream_destinations_in_noc_layer():
 
 
 def test_noc_services_bind_local_only():
-    compose = read("compose.yaml")
+    compose = read("compose.noc.yaml")
     for port in (58111, 58112, 58113, 58114):
         assert f'127.0.0.1:{port}:' in compose
 

@@ -5,6 +5,7 @@
     <section class="page-heading">
         <div><span class="eyebrow">IUOAMC / MEMBERSHIPS</span><h1>{{ __('memberships.title') }}</h1><p>{{ __('memberships.lead') }}</p></div>
         @if(auth()->user()->canDo('memberships.manage'))
+            <a class="secondary-action" href="{{ route('memberships.settings', ['locale'=>app()->getLocale()]) }}">⚙ {{ __('memberships.catalog_settings') }}</a>
             <a class="primary-action" href="{{ route('memberships.create', ['locale'=>app()->getLocale()]) }}">＋ {{ __('memberships.new') }}</a>
         @endif
     </section>

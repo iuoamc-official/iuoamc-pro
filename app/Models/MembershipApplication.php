@@ -11,7 +11,7 @@ use LogicException;
 final class MembershipApplication extends Model
 {
     protected $guarded = ['id'];
-    protected $hidden = ['date_of_birth', 'address', 'identification_number', 'qualifications', 'photo_path'];
+    protected $hidden = ['date_of_birth', 'address', 'identification_number', 'qualifications', 'fee_waiver_reason', 'photo_path'];
 
     protected function casts(): array
     {
@@ -20,6 +20,7 @@ final class MembershipApplication extends Model
             'address' => 'encrypted',
             'identification_number' => 'encrypted',
             'qualifications' => 'encrypted',
+            'fee_waiver_reason' => 'encrypted',
             'consent_at' => 'immutable_datetime',
             'membership_term_years' => 'integer',
             'standard_fee_pence' => 'integer',

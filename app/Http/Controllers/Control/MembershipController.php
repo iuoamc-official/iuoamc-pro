@@ -34,6 +34,10 @@ class MembershipController extends Controller
                 fn (string $name, string $code): array => [$name => trans('account.membership_categories.'.$code)]
             ),
             'membershipTermFees' => $this->applicationPolicy()->termFees(),
+            'memberTitles' => $this->applicationPolicy()->professionalTitles(app()->getLocale()),
+            'paymentMethods' => $this->applicationPolicy()->paymentMethods(app()->getLocale()),
+            'waiverPaymentMethods' => collect($this->applicationPolicy()->paymentMethodCodes())
+                ->filter(fn (string $code): bool => $this->applicationPolicy()->paymentMethodRequiresWaiverReason($code))->values(),
         ];
     }
 
@@ -137,7 +141,11 @@ class MembershipController extends Controller
         abort_unless(in_array($membership->status, ['active', 'suspended'], true), 409, trans('memberships.errors.correction_state'));
         abort_unless($this->registry()->verify($membership), 409, trans('memberships.errors.integrity'));
 
-        return view('control.memberships.correct', compact('membership'));
+        return view('control.memberships.correct', [
+            'membership' => $membership,
+            'memberTitles' => $this->applicationPolicy()->professionalTitles(app()->getLocale()),
+            'selectedMemberTitle' => $this->applicationPolicy()->professionalTitleCodeForName($membership->professional_title),
+        ]);
     }
 
     public function storeCorrection(Request $request): RedirectResponse
@@ -147,9 +155,10 @@ class MembershipController extends Controller
             'lock_version' => ['required', 'integer', 'min:1'],
             'full_name' => ['required', 'string', 'max:255'],
             'latin_name' => ['nullable', 'string', 'max:255'],
-            'professional_title' => ['nullable', 'string', 'max:160'],
+            'member_title_code' => ['required', Rule::in($this->applicationPolicy()->professionalTitleCodes())],
             'reason' => ['required', 'string', 'max:1500'],
         ]);
+        $data['professional_title'] = $this->applicationPolicy()->professionalTitleName($data['member_title_code']);
         $this->registry()->correctIdentity($request->user(), (int) $membership->id, (int) $data['lock_version'], $data);
 
         return redirect()->route('memberships.show', ['locale' => app()->getLocale(), 'membership' => $membership->id])
@@ -257,6 +266,16 @@ class MembershipController extends Controller
 
     private function applicationData(Request $request, bool $photoRequired): array
     {
+        if (! $request->filled('member_title_code')) {
+            $routeMembership = $request->route('membership');
+            $membership = $routeMembership instanceof Membership
+                ? $routeMembership
+                : (is_numeric($routeMembership) ? Membership::query()->find((int) $routeMembership) : null);
+            $titleCode = $this->applicationPolicy()->professionalTitleCodeForName($membership?->professional_title);
+            if ($titleCode !== null) {
+                $request->merge(['member_title_code' => $titleCode]);
+            }
+        }
         if ($request->filled('nationality_code')) {
             $request->merge(['nationality_code' => strtoupper(trim((string) $request->input('nationality_code')))]);
         }
@@ -266,6 +285,9 @@ class MembershipController extends Controller
 
         $validated = $request->validate([
             'membership_term_years' => ['required', 'integer', Rule::in($this->applicationPolicy()->termYears())],
+            'member_title_code' => ['required', Rule::in($this->applicationPolicy()->professionalTitleCodes())],
+            'requested_payment_method_code' => ['required', Rule::in($this->applicationPolicy()->paymentMethodCodes())],
+            'fee_waiver_reason' => ['nullable', 'string', 'min:20', 'max:1500'],
             'discount_amount' => ['nullable', 'numeric', 'min:0'],
             'date_of_birth' => ['required', 'date_format:Y-m-d', 'before:today'],
             'nationality_code' => ['required', 'regex:/^[A-Z]{2}$/'],
@@ -314,13 +336,25 @@ class MembershipController extends Controller
         }
         $rules = [
             'full_name' => ['required', 'string', 'max:255'], 'latin_name' => ['nullable', 'string', 'max:255'],
-            'membership_type' => ['required', Rule::in(array_unique($allowedMembershipTypes))], 'professional_title' => ['nullable', 'string', 'max:160'],
+            'membership_type' => ['required', Rule::in(array_unique($allowedMembershipTypes))],
+            'member_title_code' => ['nullable', Rule::in($this->applicationPolicy()->professionalTitleCodes())],
+            'professional_title' => ['nullable', 'string', 'max:160'],
             'country_code' => ['nullable', 'regex:/^[A-Z]{2}$/'], 'preferred_locale' => ['required', Rule::in(['ar', 'en', 'fr'])],
             'email' => ['nullable', 'email:rfc', 'max:254'], 'phone' => ['nullable', 'string', 'max:40'],
             'private_notes' => ['nullable', 'string', 'max:5000'],
         ];
         if ($editing) { $rules['lock_version'] = ['required', 'integer', 'min:1']; }
         else { $rules['organization_id'] = ['required', 'integer', Rule::in($this->organizations($request)->where('status', 'active')->pluck('id')->all())]; }
-        return $request->validate($rules);
+        $data = $request->validate($rules);
+        if (isset($data['member_title_code'])) {
+            $data['professional_title'] = $this->applicationPolicy()->professionalTitleName($data['member_title_code']);
+        } elseif (! $editing || (string) ($data['professional_title'] ?? '') === '') {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'member_title_code' => trans('memberships.professional_title_required'),
+            ]);
+        }
+        unset($data['member_title_code']);
+
+        return $data;
     }
 }

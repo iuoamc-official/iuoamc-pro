@@ -31,6 +31,10 @@ final class MembershipApplicationController extends Controller
                 fn (string $name, string $code): array => [$code => __('account.membership_categories.'.$code)]
             ),
             'membershipTermFees' => $policy->termFees(),
+            'memberTitles' => $policy->professionalTitles(app()->getLocale()),
+            'paymentMethods' => $policy->paymentMethods(app()->getLocale()),
+            'waiverPaymentMethods' => collect($policy->paymentMethodCodes())
+                ->filter(fn (string $code): bool => $policy->paymentMethodRequiresWaiverReason($code))->values(),
         ]);
     }
 
@@ -48,7 +52,9 @@ final class MembershipApplicationController extends Controller
             'membership_term_years' => ['required', 'integer', Rule::in(app(MembershipApplicationPolicy::class)->termYears())],
             'full_name' => ['required', 'string', 'max:255'],
             'latin_name' => ['nullable', 'string', 'max:255'],
-            'professional_title' => ['nullable', 'string', 'max:160'],
+            'member_title_code' => ['required', Rule::in(app(MembershipApplicationPolicy::class)->professionalTitleCodes())],
+            'requested_payment_method_code' => ['required', Rule::in(app(MembershipApplicationPolicy::class)->paymentMethodCodes())],
+            'fee_waiver_reason' => ['nullable', 'required_if:requested_payment_method_code,complimentary-request', 'string', 'min:20', 'max:1500'],
             'country_code' => ['required', 'regex:/^[A-Z]{2}$/'],
             'phone' => ['required', 'string', 'max:40'],
             'date_of_birth' => ['required', 'date_format:Y-m-d', 'before:today'],
@@ -81,12 +87,13 @@ final class MembershipApplicationController extends Controller
         }
 
         DB::transaction(function () use ($user, $data, $request, $membershipType): void {
+            $policy = app(MembershipApplicationPolicy::class);
             $profile = [
                 'organization_id' => (int) $data['organization_id'],
                 'membership_type' => $membershipType,
                 'full_name' => trim($data['full_name']),
                 'latin_name' => trim((string) ($data['latin_name'] ?? '')) ?: null,
-                'professional_title' => trim((string) ($data['professional_title'] ?? '')) ?: null,
+                'professional_title' => $policy->professionalTitleName($data['member_title_code']),
                 'country_code' => $data['country_code'],
                 'preferred_locale' => app()->getLocale(),
                 'email' => AccountRecordAccess::normalizeEmail($user->email),

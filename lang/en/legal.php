@@ -41,6 +41,7 @@ return [
                 ]],
                 ['title' => '4. Payment and start of processing', 'paragraphs' => [
                     'The complete price is shown before payment. No undisclosed mandatory charge is added. An applicant may expressly request immediate review during the cancellation period or choose processing to begin after that period.',
+                    'The payment method selected in the application is a preference and is not proof of payment. A complimentary selection is a reasoned fee-waiver request requiring express administrative approval; it neither reduces the fee nor grants membership automatically.',
                     'Where immediate performance is expressly requested, the applicant agrees to pay a proportionate amount for services actually supplied before cancellation. The 35% allocation is a maximum value for the completed file-opening and initial-review stage, not a penalty or an automatic charge. If only part of that stage has been supplied, only a fair proportion of that allocation may be deducted, to the extent permitted by law.',
                 ]],
                 ['title' => '5. Distance-contract cancellation rights', 'paragraphs' => [

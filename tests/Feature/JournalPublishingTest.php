@@ -124,6 +124,31 @@ final class JournalPublishingTest extends TestCase
         $this->get('/en/articles/private-editorial-draft/pdf')->assertNotFound();
     }
 
+    public function test_general_article_pdf_streams_large_html_in_safe_chunks(): void
+    {
+        $section = \App\Models\ContentSection::query()->where('slug', 'culinary-knowledge')->firstOrFail();
+        $paragraph = str_repeat('Evidence based culinary analysis ', 80);
+        $body = implode("\n\n", array_fill(0, 500, $paragraph));
+        $article = ContentArticle::query()->create([
+            'record_uuid' => (string) Str::uuid(),
+            'content_section_id' => $section->id,
+            'slug' => 'large-public-culinary-article',
+            'title' => ['ar' => 'مقال طهوي طويل', 'en' => 'Large culinary article', 'fr' => 'Article culinaire long'],
+            'excerpt' => ['ar' => 'ملخص', 'en' => 'Summary', 'fr' => 'Résumé'],
+            'body' => ['ar' => $body, 'en' => $body, 'fr' => $body],
+            'seo_title' => ['ar' => 'مقال', 'en' => 'Article', 'fr' => 'Article'],
+            'seo_description' => ['ar' => 'وصف', 'en' => 'Description', 'fr' => 'Description'],
+            'author_name' => 'Ahmad Maadarani',
+            'publisher_name' => 'Ahmad Maadarani',
+            'status' => 'published',
+            'published_at' => now(),
+        ]);
+
+        $this->get('/en/articles/'.$article->slug.'/pdf')
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+    }
+
     public function test_general_article_formatter_creates_safe_semantic_blocks(): void
     {
         $html = app(ArticleBodyFormatter::class)->toHtml("## Culinary heading\n\nEvidence <script>alert(1)</script>\n\n- First\n- Second");

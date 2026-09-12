@@ -67,4 +67,22 @@ class MembershipCredentialPdfTest extends TestCase
             @unlink($photo);
         }
     }
+
+    public function test_pvc_card_uses_print_safe_fixed_layout_without_unsupported_effects(): void
+    {
+        $template = file_get_contents(resource_path('views/membership_credentials/card.blade.php'));
+
+        $this->assertIsString($template);
+        $this->assertStringContainsString('85.6mm', $template);
+        $this->assertStringContainsString('54mm', $template);
+        $this->assertStringContainsString('PVC ID-1', $template);
+        $this->assertStringContainsString('position: fixed', $template);
+        $this->assertStringContainsString('#172e57', $template);
+        $this->assertStringContainsString('#c6a13c', $template);
+        $this->assertStringNotContainsString('gradient', $template);
+        $this->assertStringNotContainsString('opacity:', $template);
+        $this->assertStringNotContainsString('filter:', $template);
+        $this->assertStringNotContainsString('box-shadow', $template);
+        $this->assertStringNotContainsString('object-fit', $template);
+    }
 }

@@ -317,6 +317,74 @@ final class MembershipRegistry
         }, 3);
     }
 
+    public function createCredentialRevision(
+        User $actor,
+        int $id,
+        int $version,
+        string $reason
+    ): Membership {
+        return DB::transaction(function () use ($actor, $id, $version, $reason): Membership {
+            $membership = $this->locked($actor, $id, $version, 'memberships.correct');
+            if (! in_array($membership->status, ['active', 'suspended'], true)) {
+                $this->stop('correction_state');
+            }
+
+            $reason = trim($reason);
+            if ($reason === '') {
+                $this->stop('reason');
+            }
+
+            $last = $membership->periods()->lockForUpdate()->first();
+            if ($last === null || ! $this->verifyPeriod($last)) {
+                $this->stop('integrity');
+            }
+
+            $old = $membership->only(['status', 'lock_version', 'record_hash']);
+            $membership->lock_version++;
+            $membership->updated_by = $actor->id;
+            $membership->last_reason = $reason;
+            $membership->save();
+
+            $period = [
+                'schema' => 'iuoamc-membership-period-v1',
+                'period_uuid' => (string) Str::uuid(),
+                'membership_id' => (int) $membership->id,
+                'record_uuid' => $membership->record_uuid,
+                'membership_number' => $membership->membership_number,
+                'version' => (int) $last->version + 1,
+                'full_name' => $membership->full_name,
+                'latin_name' => $membership->latin_name,
+                'membership_type' => $membership->membership_type,
+                'professional_title' => $membership->professional_title,
+                'organization' => $membership->organization->only([
+                    'id', 'code', 'legal_name', 'display_name', 'jurisdiction', 'registration_number',
+                ]),
+                'valid_from' => $last->valid_from->toDateString(),
+                'valid_until' => $last->valid_until->toDateString(),
+                'approved_by' => (int) $actor->id,
+                'approved_at' => now()->utc()->toIso8601String(),
+                'correction_of_period_uuid' => $last->period_uuid,
+                'change_kind' => 'controlled_credential_reissue',
+            ];
+
+            $audit = $this->append($membership, $actor, 'membership.correct', $old, $period);
+            MembershipPeriod::create([
+                'period_uuid' => $period['period_uuid'],
+                'membership_id' => $membership->id,
+                'version' => $period['version'],
+                'valid_from' => $period['valid_from'],
+                'valid_until' => $period['valid_until'],
+                'payload' => $period,
+                'payload_sha256' => self::digest($period),
+                'audit_log_id' => $audit->id,
+                'approved_by' => $actor->id,
+                'created_at' => $period['approved_at'],
+            ]);
+
+            return $membership->fresh(['periods', 'organization']);
+        }, 3);
+    }
+
     public function transition(User $actor, int $id, int $version, string $action, array $data = []): Membership
     {
         $policy = [

@@ -43,7 +43,13 @@
         <div class="journal-article-grid">
             @forelse($articles as $article)
                 @php($translation = $article->translation())
+                @php($coverImage = $article->article_code === 'MCIJ-2026-DB6E05B6' ? asset('assets/images/journal/mtsa-sensory-absence.webp') : null)
                 <article class="journal-card">
+                    @if($coverImage)
+                        <a class="journal-card-cover" href="{{ route('journal.public.articles.show', ['locale' => app()->getLocale(), 'article' => $article->slug]) }}" aria-label="{{ $translation?->title }}">
+                            <img src="{{ $coverImage }}" alt="" width="1672" height="941" loading="lazy">
+                        </a>
+                    @endif
                     <div class="journal-card-meta">
                         <span class="journal-type journal-type-{{ $article->type }}">{{ __('journal.types.'.$article->type) }}</span>
                         <bdi dir="ltr">{{ $article->article_code }}</bdi>

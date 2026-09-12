@@ -21,7 +21,9 @@ use App\Services\PublicAiKnowledge;
 use App\Mail\JournalWorkflowMail;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
@@ -47,6 +49,7 @@ final class JournalPublishingTest extends TestCase
             '2026_09_11_190000_assign_wicp_test_placeholders.php',
             '2026_09_12_120000_create_editorial_sections_and_public_articles.php',
             '2026_09_12_130000_expand_public_article_sections.php',
+            '2026_09_12_140000_add_legacy_provenance_to_content_articles.php',
         ] as $migrationFile) {
             $migration = require database_path('migrations/'.$migrationFile);
             $migration->up();
@@ -117,6 +120,52 @@ final class JournalPublishingTest extends TestCase
         $this->assertDatabaseHas('content_sections', ['slug' => 'training-career', 'status' => 'active']);
         $this->assertDatabaseHas('content_sections', ['slug' => 'health-nutrition', 'status' => 'active']);
         $this->assertSame(12, \App\Models\ContentSection::query()->active()->count());
+    }
+
+    public function test_six_legacy_articles_are_imported_as_multilingual_private_drafts_with_provenance(): void
+    {
+        Storage::fake('public');
+        Http::fake(function (HttpRequest $request) {
+            if (str_contains($request->url(), '/uploads/posts/')) {
+                return Http::response('webp-image', 200, ['Content-Type' => 'image/webp']);
+            }
+
+            preg_match('~/([a-z]{2})/blog/post/(\d+)~', $request->url(), $matches);
+            $locale = $matches[1] ?? 'en';
+            $id = $matches[2] ?? '0';
+
+            return Http::response(<<<HTML
+                <html><head>
+                <meta name="description" content="Legacy summary {$id} {$locale}">
+                <meta property="og:image" content="https://www.iuoamc.uk/uploads/posts/{$id}.webp">
+                <meta property="article:published_time" content="2024-01-17T00:11:21+00:00">
+                <link rel="canonical" href="https://www.iuoamc.uk/{$locale}/blog/post/{$id}">
+                </head><body><h1>Legacy article {$id} {$locale}</h1>
+                <div class="prose max-w-none"><h2>Heading</h2><p>Professional culinary article body.</p><ul><li>Evidence</li></ul></div>
+                </body></html>
+                HTML);
+        });
+
+        $this->artisan('content:import-legacy-articles')
+            ->expectsOutputToContain('CREATED=6')
+            ->expectsOutputToContain('STATUS=DRAFT')
+            ->assertSuccessful();
+
+        $this->assertSame(6, ContentArticle::query()->where('status', 'draft')->count());
+        $article = ContentArticle::query()->where('slug', 'kitchen-leadership-chef-as-team-builder')->firstOrFail();
+        $this->assertSame('Legacy article 251 ar', $article->title['ar']);
+        $this->assertSame('Legacy article 251 en', $article->title['en']);
+        $this->assertSame('Legacy article 251 fr', $article->title['fr']);
+        $this->assertSame('https://www.iuoamc.uk/ar/blog/post/251', $article->source_url);
+        $this->assertNotNull($article->original_published_at);
+        Storage::disk('public')->assertExists('editorial/articles/legacy/251.webp');
+        $this->get('/ar/articles/kitchen-leadership-chef-as-team-builder')->assertNotFound();
+
+        $this->artisan('content:import-legacy-articles')
+            ->expectsOutputToContain('CREATED=0')
+            ->expectsOutputToContain('SKIPPED_EXISTING=6')
+            ->assertSuccessful();
+        $this->assertSame(6, ContentArticle::query()->count());
     }
 
     public function test_unauthenticated_editorial_request_redirects_to_localized_login(): void

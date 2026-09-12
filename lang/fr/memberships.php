@@ -1,5 +1,7 @@
 <?php
 return [
+    'current_credential' => 'Version actuelle approuvée',
+    'archived_credential' => 'Version précédente archivée',
     'title'=>'Adhésions','lead'=>'Gérez les demandes et les périodes approuvées au sein de leur entité responsable.','new'=>'Nouvelle demande d’adhésion','edit'=>'Modifier la fiche du membre',
     'member'=>'Membre','number'=>'Numéro d’adhésion','organization'=>'Entité responsable','type'=>'Type d’adhésion','status'=>'Statut','integrity'=>'Intégrité du dossier',
     'open'=>'Ouvrir le dossier','search'=>'Rechercher par nom ou numéro','all_organizations'=>'Toutes les entités autorisées','all_statuses'=>'Tous les statuts',

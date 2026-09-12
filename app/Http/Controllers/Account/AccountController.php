@@ -92,10 +92,7 @@ final class AccountController extends Controller
 
     public function downloadMembershipCredential(Request $request, AccountRecordAccess $access): BinaryFileResponse
     {
-        $membershipId = (int) $request->route('membership');
-        abort_unless($access->owns($request->user(), AccountRecordAccess::MEMBERSHIP, $membershipId), 404);
-        $credential = MembershipCredential::query()->where('membership_id', $membershipId)
-            ->findOrFail((int) $request->route('credential'));
+        $credential = $this->currentMembershipCredential($request, $access);
         $kind = (string) $request->route('kind');
         $path = app(MembershipCredentialRegistry::class)->downloadPath($credential, $kind);
         $filename = preg_replace('/[^A-Za-z0-9_-]/', '-', (string) $credential->membership_number)
@@ -106,10 +103,7 @@ final class AccountController extends Controller
 
     public function downloadMembershipCardPrintImages(Request $request, AccountRecordAccess $access): BinaryFileResponse
     {
-        $membershipId = (int) $request->route('membership');
-        abort_unless($access->owns($request->user(), AccountRecordAccess::MEMBERSHIP, $membershipId), 404);
-        $credential = MembershipCredential::query()->where('membership_id', $membershipId)
-            ->findOrFail((int) $request->route('credential'));
+        $credential = $this->currentMembershipCredential($request, $access);
         $path = app(MembershipCredentialPrintArchive::class)->create($credential);
         $filename = preg_replace('/[^A-Za-z0-9_-]/', '-', (string) $credential->membership_number)
             .'-v'.$credential->version.'-card-print-images-300dpi.zip';
@@ -124,10 +118,7 @@ final class AccountController extends Controller
 
     public function downloadMembershipCertificatePrintImage(Request $request, AccountRecordAccess $access): BinaryFileResponse
     {
-        $membershipId = (int) $request->route('membership');
-        abort_unless($access->owns($request->user(), AccountRecordAccess::MEMBERSHIP, $membershipId), 404);
-        $credential = MembershipCredential::query()->where('membership_id', $membershipId)
-            ->findOrFail((int) $request->route('credential'));
+        $credential = $this->currentMembershipCredential($request, $access);
         $path = app(MembershipCredentialPrintArchive::class)->createCertificateImage($credential);
         $filename = preg_replace('/[^A-Za-z0-9_-]/', '-', (string) $credential->membership_number)
             .'-v'.$credential->version.'-membership-certificate-300dpi.png';
@@ -149,6 +140,24 @@ final class AccountController extends Controller
         $filename = preg_replace('/[^A-Za-z0-9_-]/', '-', $document->reference ?: $document->title).'.pdf';
 
         return response()->download($path, $filename, $this->downloadHeaders());
+    }
+
+    private function currentMembershipCredential(
+        Request $request,
+        AccountRecordAccess $access,
+    ): MembershipCredential
+    {
+        $membershipId = (int) $request->route('membership');
+        abort_unless($access->owns($request->user(), AccountRecordAccess::MEMBERSHIP, $membershipId), 404);
+        $credential = MembershipCredential::query()
+            ->where('membership_id', $membershipId)
+            ->findOrFail((int) $request->route('credential'));
+        abort_if(MembershipCredential::query()
+            ->where('membership_id', $membershipId)
+            ->where('version', '>', $credential->version)
+            ->exists(), 410);
+
+        return $credential;
     }
 
     private function downloadHeaders(): array

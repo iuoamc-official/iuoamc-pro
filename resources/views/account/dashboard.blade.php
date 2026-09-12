@@ -30,9 +30,9 @@
             <div><strong><bdi>{{ $membership->membership_type }}</bdi></strong><span><bdi>{{ $membership->organization->display_name }}</bdi> · {{ __('account.status_'.$membership->effectiveStatus()) }}</span>@if($membership->membership_number)<small><bdi dir="ltr">{{ $membership->membership_number }}</bdi></small>@endif</div>
             <div class="record-actions">
                 @if($membershipChecks[$membership->id])
-                    @foreach($membership->credentials as $credential)
+                    @foreach($membership->credentials->sortByDesc('version')->take(1) as $credential)
                         <a href="{{ route('account.memberships.credentials.download',['locale'=>app()->getLocale(),'membership'=>$membership->id,'credential'=>$credential->id,'kind'=>'card']) }}">{{ __('account.download_card') }}</a>
-                        @if(($credential->payload['template_version'] ?? null) === \App\Services\MembershipCredentialPdf::TEMPLATE_VERSION)<a href="{{ route('account.memberships.credentials.print-images',['locale'=>app()->getLocale(),'membership'=>$membership->id,'credential'=>$credential->id]) }}">{{ __('account.download_card_print_images') }}</a>@endif
+                        @if(in_array(($credential->payload['template_version'] ?? null), \App\Services\MembershipCredentialPdf::PRINT_IMAGE_TEMPLATES, true))<a href="{{ route('account.memberships.credentials.print-images',['locale'=>app()->getLocale(),'membership'=>$membership->id,'credential'=>$credential->id]) }}">{{ __('account.download_card_print_images') }}</a>@endif
                         <a href="{{ route('account.memberships.credentials.download',['locale'=>app()->getLocale(),'membership'=>$membership->id,'credential'=>$credential->id,'kind'=>'certificate']) }}">{{ __('account.download_membership_certificate') }}</a>
                         <a href="{{ route('account.memberships.credentials.certificate-print-image',['locale'=>app()->getLocale(),'membership'=>$membership->id,'credential'=>$credential->id]) }}">{{ __('account.download_certificate_print_image') }}</a>
                     @endforeach

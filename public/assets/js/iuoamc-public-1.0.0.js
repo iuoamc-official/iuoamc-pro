@@ -88,7 +88,7 @@
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
                 },
-                body: JSON.stringify({ question }),
+                body: JSON.stringify({ question, page_path: window.location.pathname }),
             });
             const payload = await response.json();
             pending.remove();

@@ -159,6 +159,36 @@ final class JournalPublishingTest extends TestCase
         $this->assertStringNotContainsString('<script>', $html);
     }
 
+    public function test_public_article_section_filters_by_the_explicit_section_relationship(): void
+    {
+        $includedSection = \App\Models\ContentSection::query()->where('slug', 'recipes-techniques')->firstOrFail();
+        $excludedSection = \App\Models\ContentSection::query()->where('slug', 'news')->firstOrFail();
+        foreach ([
+            [$includedSection, 'section-included-article', 'Included recipe article'],
+            [$excludedSection, 'section-excluded-article', 'Excluded news article'],
+        ] as [$section, $slug, $title]) {
+            ContentArticle::query()->create([
+                'record_uuid' => (string) Str::uuid(),
+                'content_section_id' => $section->id,
+                'slug' => $slug,
+                'title' => ['ar' => $title, 'en' => $title, 'fr' => $title],
+                'excerpt' => ['ar' => 'ملخص', 'en' => 'Summary', 'fr' => 'Résumé'],
+                'body' => ['ar' => 'نص', 'en' => 'Body', 'fr' => 'Texte'],
+                'seo_title' => ['ar' => $title, 'en' => $title, 'fr' => $title],
+                'seo_description' => ['ar' => 'وصف', 'en' => 'Description', 'fr' => 'Description'],
+                'author_name' => 'Ahmad Maadarani',
+                'publisher_name' => 'Ahmad Maadarani',
+                'status' => 'published',
+                'published_at' => now(),
+            ]);
+        }
+
+        $this->get('/en/articles/sections/'.$includedSection->slug)
+            ->assertOk()
+            ->assertSee('Included recipe article')
+            ->assertDontSee('Excluded news article');
+    }
+
     public function test_public_article_taxonomy_matches_the_iuoamc_editorial_identity(): void
     {
         $this->assertDatabaseHas('content_sections', ['slug' => 'news', 'sort_order' => 10, 'status' => 'active']);

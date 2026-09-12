@@ -34,6 +34,9 @@ Route::prefix('{locale}/control/memberships')->where(['locale' => 'ar|en|fr'])
             ->middleware('permission:memberships.manage')->name('application');
         Route::put('/{membership}/application', [MembershipController::class, 'updateApplication'])->whereNumber('membership')
             ->middleware(['permission:memberships.manage', 'throttle:20,1'])->name('application.update');
+        Route::get('/{membership}/credentials/preview/{kind}', [MembershipController::class, 'previewCredentials'])
+            ->whereNumber('membership')->where('kind', 'card|certificate')
+            ->middleware(['permission:memberships.issue', 'throttle:20,1'])->name('credentials.preview');
         Route::post('/{membership}/credentials', [MembershipController::class, 'issueCredentials'])->whereNumber('membership')
             ->middleware(['permission:memberships.issue', 'throttle:5,1'])->name('credentials.issue');
         Route::post('/{membership}/credentials/revision', [MembershipController::class, 'createCredentialRevision'])

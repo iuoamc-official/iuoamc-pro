@@ -280,14 +280,11 @@ final class JournalPublishingTest extends TestCase
 
     public function test_editorial_workspace_is_private_and_not_indexable(): void
     {
-        $this->withoutExceptionHandling();
         $user = $this->superAdmin();
 
-        $response = $this->actingAs($user)->get('/en/control/journal');
-
-        $this->assertNull($response->exception, $response->exception?->getMessage() ?? 'Unexpected journal workspace exception.');
-        $this->assertSame(200, $response->getStatusCode());
-        $this->assertSame('noindex, nofollow, noarchive', $response->headers->get('X-Robots-Tag'));
+        $this->actingAs($user)->head('/en/control/journal')
+            ->assertOk()
+            ->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
     }
 
     public function test_editor_can_open_professional_article_details(): void

@@ -8,6 +8,7 @@ use App\Http\Controllers\Control\JournalEditorialMemberController;
 use App\Http\Controllers\Control\JournalOperationsController;
 use App\Http\Controllers\Control\JournalReviewController;
 use App\Http\Controllers\Control\JournalSubmissionController as ControlJournalSubmissionController;
+use App\Http\Controllers\Control\JournalSectionController;
 use App\Http\Controllers\JournalPublicController;
 use App\Http\Controllers\JournalSubmissionController;
 use App\Http\Middleware\EnsureJournalLaunched;
@@ -42,6 +43,11 @@ Route::prefix('{locale}/control/journal')->where(['locale' => 'ar|en|fr'])
         Route::post('/articles/{article}/publication-assets', [JournalArticleController::class, 'publicationAssets'])->whereNumber('article')->middleware(['permission:journal.manage', 'throttle:10,1'])->name('articles.publication-assets');
         Route::post('/articles/{article}/transition', [JournalArticleController::class, 'transition'])->whereNumber('article')->middleware('throttle:30,1')->name('articles.transition');
         Route::post('/articles/{article}/corrections', [JournalArticleController::class, 'correction'])->whereNumber('article')->middleware(['permission:journal.publish', 'throttle:10,1'])->name('articles.corrections.store');
+        Route::get('/sections', [JournalSectionController::class, 'index'])->middleware('permission:journal.manage')->name('sections.index');
+        Route::get('/sections/create', [JournalSectionController::class, 'create'])->middleware('permission:journal.manage')->name('sections.create');
+        Route::post('/sections', [JournalSectionController::class, 'store'])->middleware(['permission:journal.manage', 'throttle:20,1'])->name('sections.store');
+        Route::get('/sections/{section}/edit', [JournalSectionController::class, 'edit'])->whereNumber('section')->middleware('permission:journal.manage')->name('sections.edit');
+        Route::put('/sections/{section}', [JournalSectionController::class, 'update'])->whereNumber('section')->middleware(['permission:journal.manage', 'throttle:20,1'])->name('sections.update');
         Route::post('/articles/{article}/reviews', [JournalReviewController::class, 'store'])->whereNumber('article')->middleware(['permission:journal.review', 'throttle:20,1'])->name('reviews.store');
         Route::put('/reviews/{review}', [JournalReviewController::class, 'update'])->whereNumber('review')->middleware('throttle:20,1')->name('reviews.update');
 

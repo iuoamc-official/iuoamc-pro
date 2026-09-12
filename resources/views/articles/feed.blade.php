@@ -1,0 +1,4 @@
+{!! '<'.'?xml version="1.0" encoding="UTF-8"?'.'>' !!}
+<rss version="2.0"><channel><title>{{ __('public_site.articles.public_title') }} — IUOAMC</title><link>{{ route('public.articles.index',['locale'=>app()->getLocale()]) }}</link><description>{{ __('public_site.articles.meta_description') }}</description><language>{{ app()->getLocale() }}</language>
+@foreach($articles as $article)<item><title>{{ $article->localized('title') }}</title><link>{{ route('public.articles.show',['locale'=>app()->getLocale(),'article'=>$article]) }}</link><guid isPermaLink="true">{{ route('public.articles.show',['locale'=>app()->getLocale(),'article'=>$article]) }}</guid><description>{{ $article->localized('excerpt') }}</description><pubDate>{{ $article->published_at?->toRfc2822String() }}</pubDate></item>@endforeach
+</channel></rss>

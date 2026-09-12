@@ -128,6 +128,11 @@ final class JournalArticle extends Model
             ->orderByPivot('position');
     }
 
+    public function sections(): BelongsToMany
+    {
+        return $this->belongsToMany(JournalSection::class, 'journal_article_section')->withTimestamps()->orderBy('sort_order');
+    }
+
     public function scopePublished(Builder $query): Builder
     {
         return $query->whereIn('status', ['published', 'retracted'])

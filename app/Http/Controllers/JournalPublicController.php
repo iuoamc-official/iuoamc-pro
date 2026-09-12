@@ -8,6 +8,7 @@ use App\Models\Journal;
 use App\Models\JournalArticle;
 use App\Models\JournalIssue;
 use App\Models\JournalEditorialMember;
+use App\Models\JournalSection;
 use App\Models\PublicPage;
 use App\Services\PublicSiteProfile;
 use Illuminate\Http\Request;
@@ -24,12 +25,14 @@ final class JournalPublicController extends Controller
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:160'],
             'type' => ['nullable', Rule::in(JournalArticle::TYPES)],
+            'section' => ['nullable', 'string', 'max:100', 'exists:journal_sections,slug'],
         ]);
 
         $articles = JournalArticle::query()
             ->published()
-            ->with(['translations', 'authors', 'issue'])
+            ->with(['translations', 'authors', 'issue', 'sections'])
             ->when($filters['type'] ?? null, fn ($query, string $type) => $query->where('type', $type))
+            ->when($filters['section'] ?? null, fn ($query, string $section) => $query->whereHas('sections', fn ($sectionQuery) => $sectionQuery->where('slug', $section)->where('status', 'active')))
             ->when($filters['q'] ?? null, fn ($query, string $value) => $query->whereHas('translations', function ($translationQuery) use ($value, $locale): void {
                 $translationQuery->where('locale', $locale)->where(function ($textQuery) use ($value): void {
                     $textQuery->where('title', 'like', '%'.$value.'%')->orWhere('abstract', 'like', '%'.$value.'%');
@@ -40,7 +43,9 @@ final class JournalPublicController extends Controller
             ->paginate(12)
             ->withQueryString();
 
-        return view('journal.index', $this->shared($locale, $profile) + compact('articles', 'filters'));
+        $sections = JournalSection::query()->active()->withCount(['articles' => fn ($query) => $query->published()])->orderBy('sort_order')->get();
+
+        return view('journal.index', $this->shared($locale, $profile) + compact('articles', 'filters', 'sections'));
     }
 
     public function show(Request $request, string $locale, JournalArticle $article, PublicSiteProfile $profile): View
@@ -50,7 +55,7 @@ final class JournalPublicController extends Controller
             'page' => ['nullable', 'integer', 'min:1', 'max:10000'],
             'view' => ['nullable', Rule::in(['pages', 'full'])],
         ]);
-        $article->load(['translations', 'authors', 'issue', 'correctionOf', 'corrections' => fn ($query) => $query->published()]);
+        $article->load(['translations', 'authors', 'issue', 'sections', 'correctionOf', 'corrections' => fn ($query) => $query->published()]);
         $translation = $article->translation();
         $bodyPages = $this->paginateBody((string) ($translation?->body ?? ''));
         $readingFull = ($reading['view'] ?? 'pages') === 'full';

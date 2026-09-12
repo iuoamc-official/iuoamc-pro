@@ -12,6 +12,7 @@ use App\Models\JournalEditorialMember;
 use App\Models\JournalNotificationOutbox;
 use App\Models\JournalReview;
 use App\Models\JournalSubmission;
+use App\Models\ContentArticle;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\JournalWorkflow;
@@ -44,6 +45,7 @@ final class JournalPublishingTest extends TestCase
             '2026_09_11_170000_create_journal_prelaunch_operations.php',
             '2026_09_11_180000_add_publication_assets_to_journal_articles.php',
             '2026_09_11_190000_assign_wicp_test_placeholders.php',
+            '2026_09_12_120000_create_editorial_sections_and_public_articles.php',
         ] as $migrationFile) {
             $migration = require database_path('migrations/'.$migrationFile);
             $migration->up();
@@ -64,6 +66,44 @@ final class JournalPublishingTest extends TestCase
             ->assertSee($research->translation('en')->title)
             ->assertSee($professional->translation('en')->title)
             ->assertDontSee($draft->translation('en')->title);
+    }
+
+    public function test_public_catalog_filters_articles_by_managed_section(): void
+    {
+        $this->enablePublicLaunch();
+        $sensory = \App\Models\JournalSection::query()->where('slug', 'sensory-science')->firstOrFail();
+        $hospitality = \App\Models\JournalSection::query()->where('slug', 'hospitality-management')->firstOrFail();
+        $included = $this->createArticle('professional_article', 'published', 'Sensory section article');
+        $excluded = $this->createArticle('professional_article', 'published', 'Hospitality section article');
+        $included->sections()->attach($sensory);
+        $excluded->sections()->attach($hospitality);
+
+        $this->get('/en/journal?section=sensory-science')
+            ->assertOk()->assertSee('Sensory section article')->assertDontSee('Hospitality section article');
+    }
+
+    public function test_general_articles_publish_directly_and_drafts_never_appear_publicly(): void
+    {
+        $section = \App\Models\ContentSection::query()->where('slug', 'culinary-knowledge')->firstOrFail();
+        ContentArticle::query()->create([
+            'record_uuid' => (string) Str::uuid(), 'content_section_id' => $section->id, 'slug' => 'public-culinary-story',
+            'title' => ['ar' => 'قصة طهوية عامة', 'en' => 'Public culinary story', 'fr' => 'Récit culinaire public'],
+            'excerpt' => ['ar' => 'ملخص عام', 'en' => 'Public summary', 'fr' => 'Résumé public'],
+            'body' => ['ar' => 'نص عام', 'en' => 'Public editorial body', 'fr' => 'Texte éditorial public'],
+            'seo_title' => ['ar' => 'قصة', 'en' => 'Story', 'fr' => 'Récit'], 'seo_description' => ['ar' => 'وصف', 'en' => 'Description', 'fr' => 'Description'],
+            'author_name' => 'Ahmad Maadarani', 'publisher_name' => 'Ahmad Maadarani', 'status' => 'published', 'published_at' => now(),
+        ]);
+        ContentArticle::query()->create([
+            'record_uuid' => (string) Str::uuid(), 'content_section_id' => $section->id, 'slug' => 'private-editorial-draft',
+            'title' => ['ar' => 'مسودة خاصة', 'en' => 'Private editorial draft', 'fr' => 'Brouillon privé'],
+            'excerpt' => ['ar' => 'خاص', 'en' => 'Private', 'fr' => 'Privé'], 'body' => ['ar' => 'خاص', 'en' => 'Private', 'fr' => 'Privé'],
+            'seo_title' => ['ar' => 'خاص', 'en' => 'Private', 'fr' => 'Privé'], 'seo_description' => ['ar' => 'خاص', 'en' => 'Private', 'fr' => 'Privé'],
+            'author_name' => 'Ahmad Maadarani', 'publisher_name' => 'Ahmad Maadarani', 'status' => 'draft',
+        ]);
+
+        $this->get('/en/articles')->assertOk()->assertSee('Public culinary story')->assertDontSee('Private editorial draft');
+        $this->get('/en/articles/public-culinary-story')->assertOk()->assertSee('Public editorial body')->assertSee('Ahmad Maadarani');
+        $this->get('/en/articles/private-editorial-draft')->assertNotFound();
     }
 
     public function test_unauthenticated_editorial_request_redirects_to_localized_login(): void

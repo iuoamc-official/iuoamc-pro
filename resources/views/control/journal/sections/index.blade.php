@@ -1,0 +1,7 @@
+@extends('layouts.control')
+@section('title', __('journal.sections'))
+@push('styles')<link rel="stylesheet" href="{{ asset('assets/css/iuoamc-journal-1.0.0.css') }}">@endpush
+@section('content')<div class="journal-control">@include('control.journal._nav')
+<section class="page-heading"><div><span class="eyebrow">MCIJ / TAXONOMY</span><h1>{{ __('journal.sections') }}</h1><p>{{ __('journal.sections_intro') }}</p></div><a class="primary-action" href="{{ route('journal.control.sections.create',['locale'=>app()->getLocale()]) }}">{{ __('journal.add_section') }}</a></section>
+<section class="data-card"><div class="table-wrap"><table><thead><tr><th>{{ __('journal.section') }}</th><th>{{ __('journal.scope') }}</th><th>{{ __('journal.articles') }}</th><th>{{ __('journal.status') }}</th><th></th></tr></thead><tbody>@foreach($sections as $section)<tr><td><strong>{{ $section->localized('name') }}</strong><small class="table-note">/{{ $section->slug }}</small></td><td>{{ __('journal.section_scopes.'.$section->scope) }}</td><td>{{ $section->articles_count }}</td><td><span class="status-badge status-{{ $section->status }}">{{ __('journal.section_statuses.'.$section->status) }}</span></td><td><a class="table-action" href="{{ route('journal.control.sections.edit',['locale'=>app()->getLocale(),'section'=>$section]) }}">{{ __('journal.edit') }}</a></td></tr>@endforeach</tbody></table></div></section>
+</div>@endsection

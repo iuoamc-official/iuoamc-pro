@@ -9,8 +9,9 @@ use App\Models\Membership;
 use App\Models\MembershipCredential;
 use App\Models\Organization;
 use App\Services\InstitutionalAccess;
-use App\Services\MembershipCredentialRegistry;
 use App\Services\MembershipApplicationPolicy;
+use App\Services\MembershipCredentialPrintArchive;
+use App\Services\MembershipCredentialRegistry;
 use App\Services\MembershipRegistry;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -281,6 +282,23 @@ class MembershipController extends Controller
             'Cache-Control' => 'private, no-store, max-age=0',
             'X-Content-Type-Options' => 'nosniff',
         ]);
+    }
+
+    public function downloadCredentialPrintImages(Request $request): BinaryFileResponse
+    {
+        $membership = $this->record($request);
+        $credential = MembershipCredential::query()
+            ->where('membership_id', $membership->id)
+            ->findOrFail((int) $request->route('credential'));
+        $path = app(MembershipCredentialPrintArchive::class)->create($credential);
+        $filename = preg_replace('/[^A-Za-z0-9_-]/', '-', (string) $credential->membership_number)
+            .'-v'.$credential->version.'-card-print-images-300dpi.zip';
+
+        return response()->download($path, $filename, [
+            'Content-Type' => 'application/zip',
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'X-Content-Type-Options' => 'nosniff',
+        ])->deleteFileAfterSend(true);
     }
 
     public function transition(Request $request): RedirectResponse

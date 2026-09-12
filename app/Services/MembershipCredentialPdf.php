@@ -10,19 +10,26 @@ use RuntimeException;
 
 final class MembershipCredentialPdf
 {
-    public const TEMPLATE_VERSION = 'IUOAMC-MEMBERSHIP-2.1.0';
+    public const TEMPLATE_VERSION = 'IUOAMC-MEMBERSHIP-2.2.0';
 
     public function renderCard(array $payload, string $photoPath): string
     {
-        return $this->render($payload, $photoPath, 'membership_credentials.card', [85.6, 54], 0);
+        return $this->render($payload, $photoPath, 'membership_credentials.card', [85.6, 54], 0, 2);
     }
 
     public function renderCertificate(array $payload, string $photoPath): string
     {
-        return $this->render($payload, $photoPath, 'membership_credentials.certificate', 'A4-L', 0);
+        return $this->render($payload, $photoPath, 'membership_credentials.certificate', 'A4-L', 0, 1);
     }
 
-    private function render(array $payload, string $photoPath, string $view, string|array $format, int $margin): string
+    private function render(
+        array $payload,
+        string $photoPath,
+        string $view,
+        string|array $format,
+        int $margin,
+        int $expectedPages,
+    ): string
     {
         $this->validate($payload, $photoPath);
         $logo = public_path('assets/brand/iuoamc-pro-logo.png');
@@ -58,7 +65,7 @@ final class MembershipCredentialPdf
         $mpdf->SetSubject((string) $payload['membership_number']);
         $mpdf->WriteHTML(view($view, compact('payload', 'photoPath', 'logo', 'nfc'))->render());
 
-        if ($mpdf->page !== 1) {
+        if ($mpdf->page !== $expectedPages) {
             throw new RuntimeException('MEMBERSHIP_CREDENTIAL_PAGE_OVERFLOW');
         }
         $bytes = $mpdf->Output('', Destination::STRING_RETURN);

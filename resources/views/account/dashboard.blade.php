@@ -32,6 +32,7 @@
                 @if($membershipChecks[$membership->id])
                     @foreach($membership->credentials as $credential)
                         <a href="{{ route('account.memberships.credentials.download',['locale'=>app()->getLocale(),'membership'=>$membership->id,'credential'=>$credential->id,'kind'=>'card']) }}">{{ __('account.download_card') }}</a>
+                        @if(($credential->payload['template_version'] ?? null) === \App\Services\MembershipCredentialPdf::TEMPLATE_VERSION)<a href="{{ route('account.memberships.credentials.print-images',['locale'=>app()->getLocale(),'membership'=>$membership->id,'credential'=>$credential->id]) }}">{{ __('account.download_card_print_images') }}</a>@endif
                         <a href="{{ route('account.memberships.credentials.download',['locale'=>app()->getLocale(),'membership'=>$membership->id,'credential'=>$credential->id,'kind'=>'certificate']) }}">{{ __('account.download_membership_certificate') }}</a>
                     @endforeach
                 @else<span class="blocked">{{ __('account.integrity_blocked') }}</span>@endif

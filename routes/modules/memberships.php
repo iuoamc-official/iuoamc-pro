@@ -39,6 +39,9 @@ Route::prefix('{locale}/control/memberships')->where(['locale' => 'ar|en|fr'])
         Route::post('/{membership}/credentials/revision', [MembershipController::class, 'createCredentialRevision'])
             ->whereNumber('membership')->middleware(['permission:memberships.correct', 'throttle:5,1'])
             ->name('credentials.revision');
+        Route::get('/{membership}/credentials/{credential}/print-images', [MembershipController::class, 'downloadCredentialPrintImages'])
+            ->whereNumber('membership')->whereNumber('credential')
+            ->middleware('throttle:10,1')->name('credentials.print-images');
         Route::get('/{membership}/credentials/{credential}/{kind}', [MembershipController::class, 'downloadCredential'])
             ->whereNumber('membership')->whereNumber('credential')->where('kind', 'card|certificate')
             ->middleware('throttle:20,1')->name('credentials.download');

@@ -12,6 +12,7 @@ use App\Models\ProCertificate;
 use App\Services\AccountDocumentRegistry;
 use App\Services\AccountRecordAccess;
 use App\Services\AuditTrail;
+use App\Services\MembershipCredentialPrintArchive;
 use App\Services\MembershipCredentialRegistry;
 use App\Services\MembershipRegistry;
 use App\Services\ProCertificateRegistry;
@@ -101,6 +102,24 @@ final class AccountController extends Controller
             .'-v'.$credential->version.'-'.$kind.'.pdf';
 
         return response()->download($path, $filename, $this->downloadHeaders());
+    }
+
+    public function downloadMembershipCardPrintImages(Request $request, AccountRecordAccess $access): BinaryFileResponse
+    {
+        $membershipId = (int) $request->route('membership');
+        abort_unless($access->owns($request->user(), AccountRecordAccess::MEMBERSHIP, $membershipId), 404);
+        $credential = MembershipCredential::query()->where('membership_id', $membershipId)
+            ->findOrFail((int) $request->route('credential'));
+        $path = app(MembershipCredentialPrintArchive::class)->create($credential);
+        $filename = preg_replace('/[^A-Za-z0-9_-]/', '-', (string) $credential->membership_number)
+            .'-v'.$credential->version.'-card-print-images-300dpi.zip';
+
+        return response()->download($path, $filename, [
+            'Content-Type' => 'application/zip',
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'Pragma' => 'no-cache',
+            'X-Content-Type-Options' => 'nosniff',
+        ])->deleteFileAfterSend(true);
     }
 
     public function downloadDocument(Request $request, AccountRecordAccess $access): BinaryFileResponse

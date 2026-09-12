@@ -10,7 +10,7 @@ use Tests\TestCase;
 
 class MembershipCredentialPdfTest extends TestCase
 {
-    public function test_premium_membership_card_and_certificate_render_as_single_valid_pdf_pages(): void
+    public function test_premium_membership_card_renders_front_and_back_and_certificate_renders_as_valid_pdf(): void
     {
         $photo = tempnam(sys_get_temp_dir(), 'iuoamc-member-photo-');
         $this->assertIsString($photo);
@@ -85,6 +85,11 @@ class MembershipCredentialPdfTest extends TestCase
         $this->assertStringContainsString('VALID FROM', $template);
         $this->assertStringContainsString('VALID UNTIL', $template);
         $this->assertStringContainsString('NFC ENABLED', $template);
+        $this->assertStringContainsString('<pagebreak />', $template);
+        $this->assertStringContainsString('OFFICIAL MEMBERSHIP CREDENTIAL', $template);
+        $this->assertStringContainsString('This card remains the property of', $template);
+        $this->assertStringContainsString('TAP WITH A COMPATIBLE DEVICE', $template);
+        $this->assertStringContainsString('info@iuoamc.uk', $template);
         $this->assertFileExists(public_path('assets/brand/nfc-contactless-gold.svg'));
         $this->assertStringContainsString("payload['nationality_code']", $template);
         $this->assertStringNotContainsString('gradient', $template);

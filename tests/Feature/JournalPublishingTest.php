@@ -94,6 +94,17 @@ final class JournalPublishingTest extends TestCase
             ->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
     }
 
+    public function test_editor_can_open_professional_article_details(): void
+    {
+        $article = $this->createArticle('professional_article', 'draft', 'Professional detail view');
+        $user = $this->superAdmin();
+
+        $this->actingAs($user)->get('/ar/control/journal/articles/'.$article->id)
+            ->assertOk()
+            ->assertSee($article->article_code)
+            ->assertSee('WICP-TEST-PENDING-', false);
+    }
+
     public function test_peer_reviewed_research_cannot_be_accepted_before_peer_review(): void
     {
         $article = $this->createArticle('peer_reviewed_research', 'initial_screening', 'Research awaiting review');

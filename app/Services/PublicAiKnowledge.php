@@ -2,44 +2,163 @@
 
 namespace App\Services;
 
+use App\Models\Journal;
+use App\Models\JournalArticle;
 use App\Models\PublicPage;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 
 final class PublicAiKnowledge
 {
     public function __construct(private readonly PublicSiteProfile $profile) {}
 
     /** @return array{context: string, sources: list<array{title: string, url: string}>} */
-    public function forQuestion(string $locale, string $question): array
+    public function forQuestion(
+        string $locale,
+        string $question,
+        ?string $currentPath = null,
+        bool $canPreviewJournal = false,
+    ): array
     {
         $terms = $this->terms($question);
-        $pages = PublicPage::query()->published()->get()->map(function (PublicPage $page) use ($locale, $terms): array {
+        $pages = $this->pageCandidates($locale, $terms);
+        $articles = $this->articleCandidates($locale, $terms, $currentPath, $canPreviewJournal);
+        $candidates = $pages->concat($articles);
+
+        $selected = $candidates->sortByDesc('score')->filter(
+            static fn (array $candidate): bool => $candidate['score'] > 0,
+        )->take(5);
+
+        if ($selected->isEmpty()) {
+            $selected = $pages->filter(
+                static fn (array $candidate): bool => in_array($candidate['record']->slug, ['home', 'about', 'entities', 'programmes'], true),
+            )->take(4);
+        }
+
+        return [
+            'context' => $this->context($selected),
+            'sources' => $selected->values()->map(static fn (array $candidate): array => [
+                'title' => $candidate['title'],
+                'url' => $candidate['url'],
+            ])->all(),
+        ];
+    }
+
+    /** @param list<string> $terms */
+    private function pageCandidates(string $locale, array $terms): Collection
+    {
+        if (! Schema::hasTable('public_pages')) {
+            return collect();
+        }
+
+        return PublicPage::query()->published()->get()->map(function (PublicPage $page) use ($locale, $terms): array {
             $text = implode("\n", [
                 $page->localized('title', $locale),
                 $page->localized('summary', $locale),
                 $page->localized('body', $locale),
             ]);
 
-            return ['page' => $page, 'text' => $text, 'score' => $this->score($text, $terms)];
+            return [
+                'kind' => 'page',
+                'record' => $page,
+                'title' => $page->localized('title', $locale),
+                'url' => $this->pageUrl($page, $locale),
+                'text' => $text,
+                'score' => $this->score($text, $terms),
+            ];
         });
+    }
 
-        $selected = $pages->sortByDesc('score')->filter(
-            static fn (array $candidate): bool => $candidate['score'] > 0,
-        )->take(5);
-
-        if ($selected->isEmpty()) {
-            $selected = $pages->filter(
-                static fn (array $candidate): bool => in_array($candidate['page']->slug, ['home', 'about', 'entities', 'programmes'], true),
-            )->take(4);
+    /** @param list<string> $terms */
+    private function articleCandidates(
+        string $locale,
+        array $terms,
+        ?string $currentPath,
+        bool $canPreviewJournal,
+    ): Collection {
+        if (! Schema::hasTable('journals') || ! Schema::hasTable('journal_articles') || ! Schema::hasTable('journal_article_translations')) {
+            return collect();
         }
 
-        return [
-            'context' => $this->context($selected, $locale),
-            'sources' => $selected->values()->map(fn (array $candidate): array => [
-                'title' => $candidate['page']->localized('title', $locale),
-                'url' => $this->url($candidate['page'], $locale),
-            ])->all(),
-        ];
+        $journal = Journal::query()->where('status', 'active')->first();
+        if (! $journal || (! $journal->isPubliclyLaunched() && ! $canPreviewJournal)) {
+            return collect();
+        }
+
+        $currentSlug = null;
+        if (is_string($currentPath) && preg_match('~^/(?:ar|en|fr)/journal/articles/([^/]+)$~', $currentPath, $matches) === 1) {
+            $currentSlug = $matches[1];
+        }
+
+        $query = JournalArticle::query()
+            ->where('journal_id', $journal->id)
+            ->published()
+            ->where('status', 'published')
+            ->with(['translations', 'authors']);
+
+        if ($currentSlug === null && $terms !== []) {
+            $query->whereHas('translations', function ($translationQuery) use ($terms): void {
+                $translationQuery->where(function ($matchQuery) use ($terms): void {
+                    foreach ($terms as $term) {
+                        $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term);
+                        foreach (['title', 'subtitle', 'abstract', 'body', 'keywords'] as $column) {
+                            $matchQuery->orWhere($column, 'like', '%'.$escaped.'%');
+                        }
+                    }
+                });
+            });
+        } elseif ($currentSlug !== null) {
+            $query->where(function ($articleQuery) use ($currentSlug, $terms): void {
+                $articleQuery->where('slug', $currentSlug);
+                if ($terms !== []) {
+                    $articleQuery->orWhereHas('translations', function ($translationQuery) use ($terms): void {
+                        $translationQuery->where(function ($matchQuery) use ($terms): void {
+                            foreach ($terms as $term) {
+                                $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term);
+                                foreach (['title', 'subtitle', 'abstract', 'body', 'keywords'] as $column) {
+                                    $matchQuery->orWhere($column, 'like', '%'.$escaped.'%');
+                                }
+                            }
+                        });
+                    });
+                }
+            });
+        }
+
+        return $query->latest('published_at')->limit(40)->get()->map(function (JournalArticle $article) use ($locale, $terms, $currentSlug): array {
+            $translation = $article->translation($locale);
+            $authors = $article->authors->pluck('name')->filter()->implode(', ');
+            $keywords = implode(', ', $translation?->keywords ?? []);
+            $body = $this->relevantExcerpt((string) $translation?->body, $terms, 3500);
+            $text = implode("\n", array_filter([
+                'Publication type: '.$article->type,
+                'Article code: '.$article->article_code,
+                $article->doi ? 'DOI: '.$article->doi : null,
+                $authors !== '' ? 'Authors: '.$authors : null,
+                'Title: '.(string) $translation?->title,
+                $translation?->subtitle ? 'Subtitle: '.$translation->subtitle : null,
+                'Abstract: '.(string) $translation?->abstract,
+                $keywords !== '' ? 'Keywords: '.$keywords : null,
+                'Article text: '.$body,
+            ]));
+            $score = $this->score((string) $translation?->title, $terms) * 8
+                + $this->score((string) $translation?->abstract, $terms) * 3
+                + $this->score($keywords, $terms) * 5
+                + $this->score((string) $translation?->body, $terms);
+
+            if ($article->slug === $currentSlug) {
+                $score += 1000000;
+            }
+
+            return [
+                'kind' => 'article',
+                'record' => $article,
+                'title' => (string) ($translation?->title ?: $article->article_code),
+                'url' => route('journal.public.articles.show', ['locale' => $locale, 'article' => $article->slug]),
+                'text' => $text,
+                'score' => $score,
+            ];
+        });
     }
 
     /** @return list<string> */
@@ -64,13 +183,31 @@ final class PublicAiKnowledge
         ));
     }
 
-    /** @param Collection<int, array{page: PublicPage, text: string, score: int}> $selected */
-    private function context(Collection $selected, string $locale): string
+    private function relevantExcerpt(string $text, array $terms, int $limit): string
     {
-        $sections = $selected->values()->map(function (array $candidate, int $index) use ($locale): string {
+        if (mb_strlen($text) <= $limit) {
+            return $text;
+        }
+
+        foreach ($terms as $term) {
+            $position = mb_stripos($text, $term);
+            if ($position !== false) {
+                $start = max(0, $position - 700);
+
+                return mb_substr($text, $start, $limit);
+            }
+        }
+
+        return mb_substr($text, 0, $limit);
+    }
+
+    /** @param Collection<int, array{title: string, url: string, text: string, score: int}> $selected */
+    private function context(Collection $selected): string
+    {
+        $sections = $selected->values()->map(function (array $candidate, int $index): string {
             $number = $index + 1;
 
-            return "[SOURCE {$number}]\nURL: {$this->url($candidate['page'], $locale)}\n".
+            return "[SOURCE {$number}]\nTITLE: {$candidate['title']}\nURL: {$candidate['url']}\n".
                 mb_substr($candidate['text'], 0, 3500);
         })->all();
 
@@ -85,7 +222,7 @@ final class PublicAiKnowledge
         return implode("\n\n", $sections)."\n\n[OFFICIAL PUBLIC REGISTRY]\n{$registry}";
     }
 
-    private function url(PublicPage $page, string $locale): string
+    private function pageUrl(PublicPage $page, string $locale): string
     {
         if ($page->slug === 'home') {
             return route('public.home', ['locale' => $locale]);

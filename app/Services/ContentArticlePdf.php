@@ -83,8 +83,25 @@ final class ContentArticlePdf
             return null;
         }
 
-        $mime = $disk->mimeType($article->cover_image_path) ?: 'image/webp';
+        $source = $disk->get($article->cover_image_path);
+        if ($source === '' || strlen($source) > 12 * 1024 * 1024 || ! function_exists('imagecreatefromstring')) {
+            return null;
+        }
 
-        return 'data:'.$mime.';base64,'.base64_encode($disk->get($article->cover_image_path));
+        $image = @imagecreatefromstring($source);
+        if ($image === false) {
+            return null;
+        }
+
+        ob_start();
+        $rendered = imagepng($image, null, 7);
+        $png = ob_get_clean();
+        imagedestroy($image);
+
+        if (! $rendered || ! is_string($png) || $png === '') {
+            return null;
+        }
+
+        return 'data:image/png;base64,'.base64_encode($png);
     }
 }

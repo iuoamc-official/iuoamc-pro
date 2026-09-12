@@ -943,7 +943,7 @@ final class JournalPublishingTest extends TestCase
                 'article_code' => 'HARVEST-'.$number,
                 'slug' => 'harvest-record-'.$number,
                 'type' => 'peer_reviewed_research',
-                'status' => 'published',
+                'status' => 'draft',
                 'primary_locale' => 'en',
                 'license' => 'all-rights-reserved',
                 'published_at' => now(),
@@ -958,6 +958,7 @@ final class JournalPublishingTest extends TestCase
                 'keywords' => ['harvest'],
                 'references' => [],
             ]);
+            $article->update(['status' => 'published', 'published_at' => now()]);
         }
 
         $firstPage = $this->get('/journal/oai?verb=ListIdentifiers&metadataPrefix=oai_dc')->assertOk();
@@ -971,6 +972,8 @@ final class JournalPublishingTest extends TestCase
     {
         $this->installIntegrityKeys();
         $this->enablePublicLaunch();
+        $journal = Journal::query()->firstOrFail();
+        $journal->update(['settings' => array_merge($journal->settings ?? [], ['contact_email' => 'info@iuoamc.uk'])]);
         Storage::fake('local');
         $this->post('/en/journal/submit', $this->validSubmissionPayload())->assertRedirect();
         $receipt = session('journal_submission_receipt');

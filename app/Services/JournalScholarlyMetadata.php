@@ -197,7 +197,7 @@ final class JournalScholarlyMetadata
             ->with(['translations', 'authors', 'sections'])
             ->when($from, fn (Builder $query, DateTimeImmutable $date): Builder => $query->where('published_at', '>=', $date->format('Y-m-d H:i:s')))
             ->when($until, fn (Builder $query, DateTimeImmutable $date): Builder => $query->where('published_at', '<=', $date->format('Y-m-d H:i:s')))
-            ->when($state['set'], fn (Builder $query, string $set): Builder => $query->whereHas('sections', fn (Builder $section): Builder => $section->where('slug', $set)->where('is_active', true)))
+            ->when($state['set'], fn (Builder $query, string $set): Builder => $query->whereHas('sections', fn (Builder $section): Builder => $section->where('slug', $set)->where('status', 'active')))
             ->where('journal_articles.id', '>', (int) $state['after'])
             ->orderBy('journal_articles.id');
         $articles = $query->limit(self::OAI_PAGE_SIZE + 1)->get();

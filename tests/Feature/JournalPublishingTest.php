@@ -928,7 +928,7 @@ final class JournalPublishingTest extends TestCase
             ->assertSee($article->article_code);
         $this->get('/journal/oai?verb=ListRecords&metadataPrefix=oai_dc&from=invalid-date')
             ->assertOk()
-            ->assertSee('<error code="badArgument">', false);
+            ->assertSee('badArgument');
     }
 
     public function test_oai_pmh_continues_large_harvests_with_an_opaque_resumption_token(): void

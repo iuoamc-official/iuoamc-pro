@@ -219,11 +219,43 @@ final class MembershipRegistry
             $membership = $this->locked($actor, $id, $version, 'memberships.correct');
             if (! in_array($membership->status, ['active', 'suspended'], true)) { $this->stop('correction_state'); }
 
-            $values = array_intersect_key($data, array_flip(['full_name', 'latin_name', 'professional_title']));
+            $values = array_intersect_key($data, array_flip([
+                'full_name', 'latin_name', 'membership_type', 'professional_title',
+            ]));
             foreach ($values as $field => $value) {
                 $values[$field] = is_string($value) ? trim($value) : $value;
             }
             if (($values['full_name'] ?? '') === '') { $this->stop('name_required'); }
+            if (! in_array($values['membership_type'] ?? null, app(MembershipApplicationPolicy::class)->categoryNames(), true)) {
+                throw ValidationException::withMessages([
+                    'membership_type' => trans('memberships.membership_category_error'),
+                ]);
+            }
+            if (! in_array($values['professional_title'] ?? null,
+                app(MembershipApplicationPolicy::class)->professionalTitles('en'), true)) {
+                throw ValidationException::withMessages([
+                    'professional_title' => trans('memberships.professional_title_required'),
+                ]);
+            }
+
+            $replacementNumber = trim((string) ($data['replacement_membership_number'] ?? ''));
+            $replacementNumber = $replacementNumber === '' ? null : Str::upper($replacementNumber);
+            if ($replacementNumber !== null
+                && ! preg_match('/\A[A-Z0-9][A-Z0-9.\/_-]{4,79}\z/D', $replacementNumber)) {
+                throw ValidationException::withMessages([
+                    'replacement_membership_number' => trans('memberships.membership_number_invalid'),
+                ]);
+            }
+            if ($replacementNumber !== null && Membership::query()->where('membership_number', $replacementNumber)
+                ->whereKeyNot($membership->id)->exists()) {
+                throw ValidationException::withMessages([
+                    'replacement_membership_number' => trans('memberships.membership_number_taken'),
+                ]);
+            }
+            $previousMembershipNumber = (string) $membership->membership_number;
+            if ($replacementNumber !== null) {
+                $values['membership_number'] = $replacementNumber;
+            }
 
             $last = $membership->periods()->lockForUpdate()->first();
             if ($last === null || ! $this->verifyPeriod($last)) { $this->stop('integrity'); }
@@ -234,7 +266,10 @@ final class MembershipRegistry
             $reason = trim((string) ($data['reason'] ?? ''));
             if ($reason === '') { $this->stop('reason'); }
 
-            $old = $membership->only(['status', 'lock_version', 'record_hash']);
+            $old = $membership->only([
+                'membership_number', 'full_name', 'latin_name', 'membership_type',
+                'professional_title', 'status', 'lock_version', 'record_hash',
+            ]);
             $membership->lock_version++;
             $membership->updated_by = $actor->id;
             $membership->last_reason = $reason;
@@ -258,7 +293,11 @@ final class MembershipRegistry
                 'approved_by' => (int) $actor->id,
                 'approved_at' => now()->utc()->toIso8601String(),
                 'correction_of_period_uuid' => $last->period_uuid,
+                'change_kind' => 'controlled_upgrade_or_reissue',
             ];
+            if ($previousMembershipNumber !== (string) $membership->membership_number) {
+                $period['previous_membership_number'] = $previousMembershipNumber;
+            }
 
             $audit = $this->append($membership, $actor, 'membership.correct', $old, $period);
             MembershipPeriod::create([

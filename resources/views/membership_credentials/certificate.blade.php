@@ -1,40 +1,66 @@
 <!doctype html>
-<html><head><meta charset="utf-8"><style>
-@page { margin:0; }
-body { margin:0; color:#0b2942; font-family:dejavusans; }
-.frame { height:187mm; border:1.2mm solid #b89024; padding:7mm 10mm; text-align:center; }
-.inner { height:171mm; border:.25mm solid #d9c48b; padding:5mm 9mm; }
-.logo { width:48mm; height:auto; }
-.eyebrow { margin-top:2mm; font-size:9pt; color:#9a7216; letter-spacing:1.5px; }
-h1 { margin:3mm 0 2mm; font-size:24pt; color:#071f35; }
-.lead { color:#64748b; font-size:10pt; }
-.name { margin:4mm 0 2mm; font-size:22pt; font-weight:bold; color:#071f35; }
-.type { font-size:14pt; color:#9a7216; font-weight:bold; }
-.statement { width:78%; margin:5mm auto; font-size:10pt; line-height:1.7; }
-.meta { margin:5mm auto 3mm; border-top:.3mm solid #d9c48b; border-bottom:.3mm solid #d9c48b; padding:3mm; font-size:9pt; }
-.photo { width:20mm; height:25mm; object-fit:cover; border:.5mm solid #b89024; }
-.qr { font-size:7pt; color:#64748b; }
-.number { font-size:9pt; direction:ltr; }
-.footer { margin-top:3mm; font-size:7pt; color:#64748b; }
-</style></head><body>
-<div class="frame"><div class="inner">
-<img class="logo" src="{{ $logo }}">
-<div class="eyebrow">OFFICIAL CERTIFICATE OF MEMBERSHIP · شهادة عضوية رسمية</div>
-<h1>Certificate of Membership</h1>
-<div class="lead">This institutional certificate confirms that</div>
-<div class="name"><bdi>{{ $payload['latin_name'] ?: $payload['full_name'] }}</bdi></div>
-<div class="type"><bdi>{{ $payload['membership_type'] }}</bdi></div>
-<div class="statement">is recorded as an approved member of <bdi>{{ $payload['organization']['display_name'] }}</bdi> for the validity period shown below. The current status is verified through the secure QR record.</div>
-<table class="meta" width="88%"><tr>
-<td>Valid from<br><bdi dir="ltr">{{ $payload['valid_from'] }}</bdi></td>
-<td>Valid until<br><bdi dir="ltr">{{ $payload['valid_until'] }}</bdi></td>
-<td>Membership number<br><bdi dir="ltr">{{ $payload['membership_number'] }}</bdi></td>
-</tr></table>
-<table width="88%" align="center"><tr>
-<td width="25%"><img class="photo" src="{{ $photoPath }}"></td>
-<td width="50%" class="number">Issued: {{ substr($payload['issued_at'],0,10) }}<br>{{ $payload['template_version'] }}<br>PAdES / X.509 digitally signed</td>
-<td width="25%" class="qr"><barcode code="{{ $payload['verification_url'] }}" type="QR" error="M" size="0.7" disableborder="0" /><br>Scan to verify</td>
-</tr></table>
-<div class="footer">The verification page is authoritative for the current membership status. Private application data is not published.</div>
-</div></div>
-</body></html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        @page { margin: 0; }
+        body { margin: 0; padding: 0; color: #10283d; font-family: dejavusans; }
+        .sheet { position: fixed; top: 3mm; left: 3mm; width: 291mm; height: 204mm; background: #fbfaf6; }
+        .outer { position: fixed; top: 3mm; left: 3mm; width: 291mm; height: 204mm; border: 1mm solid #b99536; }
+        .inner { position: fixed; top: 7mm; left: 22mm; width: 268mm; height: 196mm; border: .25mm solid #d9c68f; }
+        .navy { position: fixed; top: 3mm; left: 3mm; width: 15mm; height: 204mm; background: #10283d; }
+        .gold { position: fixed; top: 3mm; left: 18mm; width: 1.2mm; height: 204mm; background: #c7a343; }
+        .masthead { position: fixed; top: 11mm; left: 30mm; width: 250mm; height: 23mm; border-bottom: .25mm solid #d9c68f; }
+        .masthead table { width: 100%; border-collapse: collapse; }
+        .logo { width: 47mm; height: auto; }
+        .company { color: #586a7c; text-align: right; font-size: 7pt; line-height: 1.45; }
+        .eyebrow { position: fixed; top: 39mm; left: 50mm; width: 210mm; color: #9b751f; text-align: center; font-size: 8pt; font-weight: bold; letter-spacing: 2px; }
+        .heading { position: fixed; top: 47mm; left: 43mm; width: 224mm; color: #10283d; text-align: center; font-size: 25pt; font-weight: bold; }
+        .rule { position: fixed; top: 60mm; left: 133mm; width: 31mm; border-top: .5mm solid #c7a343; }
+        .lead { position: fixed; top: 65mm; left: 68mm; width: 160mm; color: #607284; text-align: center; font-size: 9pt; }
+        .name { position: fixed; top: 72mm; left: 38mm; width: 232mm; color: #10283d; text-align: center; font-size: 22pt; font-weight: bold; line-height: 1.1; }
+        .name.long { font-size: 18pt; }
+        .title { position: fixed; top: 86mm; left: 55mm; width: 198mm; color: #9b751f; text-align: center; font-size: 11pt; font-weight: bold; }
+        .statement { position: fixed; top: 95mm; left: 48mm; width: 212mm; height: 15mm; overflow: hidden; color: #30485d; text-align: center; font-size: 8.5pt; line-height: 1.45; }
+        .meta { position: fixed; top: 115mm; left: 38mm; width: 232mm; height: 20mm; padding-top: 3mm; border-top: .25mm solid #d9c68f; border-bottom: .25mm solid #d9c68f; }
+        .meta table { width: 100%; border-collapse: collapse; }
+        .meta td { text-align: center; }
+        .meta-label { color: #758291; font-size: 6.2pt; text-transform: uppercase; }
+        .meta-value { margin-top: .7mm; color: #10283d; font-size: 7.5pt; font-weight: bold; }
+        .photo-frame { position: fixed; top: 143mm; left: 45mm; width: 22mm; height: 27mm; padding: .65mm; border: .35mm solid #b99536; background: #fff; }
+        .photo { width: 20.7mm; height: 25.7mm; object-fit: cover; }
+        .signature { position: fixed; top: 148mm; left: 94mm; width: 117mm; padding-top: 2mm; border-top: .25mm solid #b99536; color: #10283d; text-align: center; font-size: 7.5pt; line-height: 1.5; }
+        .signature-name { font-size: 10pt; font-weight: bold; }
+        .signature-title { color: #687888; font-size: 6pt; }
+        .signature-standard { color: #9b751f; font-size: 6pt; font-weight: bold; letter-spacing: .4px; }
+        .qr { position: fixed; top: 140mm; left: 231mm; width: 28mm; color: #607284; text-align: center; font-size: 5.5pt; line-height: 1.25; }
+        .evidence { position: fixed; top: 177mm; left: 36mm; width: 236mm; height: 16mm; padding: 2mm 3mm; background: #f2eee2; border-left: .65mm solid #b99536; color: #536476; font-size: 5.2pt; line-height: 1.35; }
+        .hash { margin-top: .8mm; color: #10283d; font-family: dejavusansmono; font-size: 4.25pt; }
+        .footer { position: fixed; top: 198mm; left: 48mm; width: 212mm; color: #74818d; text-align: center; font-size: 5.2pt; }
+    </style>
+</head>
+<body>
+@php($displayName = $payload['latin_name'] ?: $payload['full_name'])
+<div class="sheet"></div><div class="outer"></div><div class="inner"></div><div class="navy"></div><div class="gold"></div>
+<div class="masthead"><table><tr><td width="50%"><img class="logo" src="{{ $logo }}"></td><td width="50%" class="company"><bdi>{{ $payload['organization']['legal_name'] }}</bdi><br>UK Company Registration No. <bdi dir="ltr">{{ $payload['organization']['registration_number'] }}</bdi></td></tr></table></div>
+<div class="eyebrow">OFFICIAL MEMBERSHIP CREDENTIAL</div>
+<div class="heading">Certificate of Membership</div>
+<div class="rule"></div>
+<div class="lead">This institutional record certifies that</div>
+<div class="name {{ mb_strlen($displayName) > 34 ? 'long' : '' }}"><bdi>{{ $displayName }}</bdi></div>
+@if($payload['professional_title'])<div class="title"><bdi>{{ $payload['professional_title'] }}</bdi></div>@endif
+<div class="statement">is entered in the official IUOAMC membership register for the approved validity period. The professional title displayed is the title recorded for this membership and does not, by itself, confer a regulated qualification.</div>
+<div class="meta"><table><tr>
+    <td width="28%"><div class="meta-label">Membership class</div><div class="meta-value"><bdi>{{ $payload['membership_type'] }}</bdi></div></td>
+    <td width="25%"><div class="meta-label">Membership number</div><div class="meta-value"><bdi dir="ltr">{{ $payload['membership_number'] }}</bdi></div></td>
+    <td width="17%"><div class="meta-label">Valid from</div><div class="meta-value"><bdi dir="ltr">{{ $payload['valid_from'] }}</bdi></div></td>
+    <td width="17%"><div class="meta-label">Valid until</div><div class="meta-value"><bdi dir="ltr">{{ $payload['valid_until'] }}</bdi></div></td>
+    <td width="13%"><div class="meta-label">Version</div><div class="meta-value">{{ $payload['version'] }}</div></td>
+</tr></table></div>
+<div class="photo-frame"><img class="photo" src="{{ $photoPath }}"></div>
+<div class="signature">Electronically authorised by<br><span class="signature-name">{{ $payload['electronic_signature']['name'] }}</span><br><span class="signature-title">{{ $payload['electronic_signature']['title'] }}</span><br><span class="signature-standard">CRYPTOGRAPHICALLY SIGNED · {{ $payload['electronic_signature']['standard'] }}</span></div>
+<div class="qr"><barcode code="{{ $payload['verification_url'] }}" type="QR" error="M" size="0.72" disableborder="0" /><br>SCAN TO VERIFY<br>LIVE REGISTRY STATUS</div>
+<div class="evidence"><b>Digital evidence</b> · Issued <bdi dir="ltr">{{ $payload['issued_at'] }}</bdi> · {{ $payload['template_version'] }}<br>CREDENTIAL DATA SHA-256<div class="hash">{{ $payload['credential_data_sha256'] }}</div></div>
+<div class="footer">The QR verification record is authoritative for current status. This PDF is protected by a PAdES signature backed by an X.509 certificate.</div>
+</body>
+</html>

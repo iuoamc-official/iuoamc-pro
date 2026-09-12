@@ -39,6 +39,7 @@
         .evidence { position: fixed; top: 177mm; left: 36mm; width: 236mm; height: 16mm; padding: 2mm 3mm; background: #f2eee2; border-left: .65mm solid #b99536; color: #536476; font-size: 5.2pt; line-height: 1.35; }
         .hash { margin-top: .8mm; color: #10283d; font-family: dejavusansmono; font-size: 4.25pt; }
         .footer { position: fixed; top: 198mm; left: 48mm; width: 212mm; color: #74818d; text-align: center; font-size: 5.2pt; }
+        .preview-mark { position: fixed; top: 35mm; left: 93mm; width: 112mm; padding: 1mm 0; border: .25mm solid #9b3a2e; color: #9b3a2e; text-align: center; font-size: 6pt; font-weight: bold; letter-spacing: 1px; }
     </style>
 </head>
 <body>
@@ -46,6 +47,7 @@
 @php($validFrom = \Carbon\CarbonImmutable::parse($payload['valid_from'])->format('d-m-Y'))
 @php($validUntil = \Carbon\CarbonImmutable::parse($payload['valid_until'])->format('d-m-Y'))
 <div class="sheet"></div><div class="outer"></div><div class="inner"></div><div class="navy"></div><div class="gold"></div>
+@if($preview)<div class="preview-mark">DRAFT PREVIEW · NOT VALID FOR USE</div>@endif
 <div class="masthead"><table><tr><td width="50%"><img class="logo" src="{{ $logo }}"></td><td width="50%" class="company"><bdi>{{ $payload['organization']['legal_name'] }}</bdi><br>UK Company Registration No. <bdi dir="ltr">{{ $payload['organization']['registration_number'] }}</bdi></td></tr></table></div>
 <div class="eyebrow">OFFICIAL MEMBERSHIP CREDENTIAL</div>
 <div class="heading">Certificate of Membership</div>

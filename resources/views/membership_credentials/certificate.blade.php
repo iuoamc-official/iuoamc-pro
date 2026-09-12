@@ -27,8 +27,8 @@
         .meta td { text-align: center; }
         .meta-label { color: #758291; font-size: 6.2pt; text-transform: uppercase; }
         .meta-value { margin-top: .7mm; color: #10283d; font-size: 7.5pt; font-weight: bold; }
-        .photo-frame { position: fixed; top: 143mm; left: 45mm; width: 22mm; height: 27mm; padding: .65mm; border: .35mm solid #b99536; background: #fff; }
-        .photo { width: 20.7mm; height: 25.7mm; object-fit: cover; }
+        .photo-frame { position: fixed; top: 139mm; left: 39mm; width: 30mm; height: 36mm; padding: .65mm; border: .35mm solid #b99536; background: #fff; }
+        .photo { width: 28.7mm; height: 34.7mm; }
         .signature { position: fixed; top: 148mm; left: 94mm; width: 117mm; padding-top: 2mm; border-top: .25mm solid #b99536; color: #10283d; text-align: center; font-size: 7.5pt; line-height: 1.5; }
         .signature-name { font-size: 10pt; font-weight: bold; }
         .signature-title { color: #687888; font-size: 6pt; }

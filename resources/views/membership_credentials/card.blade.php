@@ -14,9 +14,9 @@
         .brand img { width: 25.2mm; height: auto; }
         .card-label { position: fixed; top: 2.25mm; left: 30mm; width: 52.3mm; color: #ffffff; text-align: right; font-size: 6pt; font-weight: bold; letter-spacing: .55px; }
         .registration { position: fixed; top: 6.4mm; left: 30mm; width: 52.3mm; color: #e3c768; text-align: right; font-size: 4.25pt; }
-        .photo-frame { position: fixed; top: 15.1mm; left: 3.2mm; width: 18.7mm; height: 24.9mm; padding: .6mm; border: .35mm solid #c6a13c; background: #ffffff; }
-        .photo { width: 17.5mm; height: 23.7mm; }
-        .identity { position: fixed; top: 14.7mm; left: 24.5mm; width: 43.2mm; height: 27.5mm; }
+        .photo-frame { position: fixed; top: 14.4mm; left: 3.2mm; width: 19.8mm; height: 26.4mm; padding: .6mm; border: .35mm solid #c6a13c; background: #ffffff; }
+        .photo { width: 18.6mm; height: 25.2mm; }
+        .identity { position: fixed; top: 14.7mm; left: 25.2mm; width: 42.5mm; height: 27.5mm; }
         .name { color: #132947; font-size: 9pt; line-height: 1.12; font-weight: bold; }
         .name.long { font-size: 7.6pt; }
         .title { margin-top: 1.15mm; color: #9a731e; font-size: 5.7pt; line-height: 1.23; font-weight: bold; }

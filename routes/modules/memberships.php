@@ -42,6 +42,9 @@ Route::prefix('{locale}/control/memberships')->where(['locale' => 'ar|en|fr'])
         Route::get('/{membership}/credentials/{credential}/print-images', [MembershipController::class, 'downloadCredentialPrintImages'])
             ->whereNumber('membership')->whereNumber('credential')
             ->middleware('throttle:10,1')->name('credentials.print-images');
+        Route::get('/{membership}/credentials/{credential}/certificate-print-image', [MembershipController::class, 'downloadCredentialCertificatePrintImage'])
+            ->whereNumber('membership')->whereNumber('credential')
+            ->middleware('throttle:10,1')->name('credentials.certificate-print-image');
         Route::get('/{membership}/credentials/{credential}/{kind}', [MembershipController::class, 'downloadCredential'])
             ->whereNumber('membership')->whereNumber('credential')->where('kind', 'card|certificate')
             ->middleware('throttle:20,1')->name('credentials.download');

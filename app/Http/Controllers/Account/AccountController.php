@@ -119,7 +119,25 @@ final class AccountController extends Controller
             'Cache-Control' => 'private, no-store, max-age=0',
             'Pragma' => 'no-cache',
             'X-Content-Type-Options' => 'nosniff',
-        ])->deleteFileAfterSend(true);
+        ]);
+    }
+
+    public function downloadMembershipCertificatePrintImage(Request $request, AccountRecordAccess $access): BinaryFileResponse
+    {
+        $membershipId = (int) $request->route('membership');
+        abort_unless($access->owns($request->user(), AccountRecordAccess::MEMBERSHIP, $membershipId), 404);
+        $credential = MembershipCredential::query()->where('membership_id', $membershipId)
+            ->findOrFail((int) $request->route('credential'));
+        $path = app(MembershipCredentialPrintArchive::class)->createCertificateImage($credential);
+        $filename = preg_replace('/[^A-Za-z0-9_-]/', '-', (string) $credential->membership_number)
+            .'-v'.$credential->version.'-membership-certificate-300dpi.png';
+
+        return response()->download($path, $filename, [
+            'Content-Type' => 'image/png',
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'Pragma' => 'no-cache',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     public function downloadDocument(Request $request, AccountRecordAccess $access): BinaryFileResponse

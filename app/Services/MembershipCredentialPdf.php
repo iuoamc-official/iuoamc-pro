@@ -10,7 +10,7 @@ use RuntimeException;
 
 final class MembershipCredentialPdf
 {
-    public const TEMPLATE_VERSION = 'IUOAMC-MEMBERSHIP-2.0.0';
+    public const TEMPLATE_VERSION = 'IUOAMC-MEMBERSHIP-2.1.0';
 
     public function renderCard(array $payload, string $photoPath): string
     {

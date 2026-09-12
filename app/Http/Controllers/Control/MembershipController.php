@@ -244,6 +244,27 @@ class MembershipController extends Controller
             ->with('success', trans('memberships.credentials_issued'));
     }
 
+    public function createCredentialRevision(Request $request): RedirectResponse
+    {
+        $membership = $this->record($request);
+        $data = $request->validate([
+            'lock_version' => ['required', 'integer', 'min:1'],
+            'reason' => ['required', 'string', 'min:10', 'max:1500'],
+            'confirm_reissue' => ['accepted'],
+        ]);
+        $this->registry()->createCredentialRevision(
+            $request->user(),
+            (int) $membership->id,
+            (int) $data['lock_version'],
+            (string) $data['reason'],
+        );
+
+        return redirect()->route('memberships.show', [
+            'locale' => app()->getLocale(),
+            'membership' => $membership->id,
+        ])->with('success', trans('memberships.reissue_revision_created'));
+    }
+
     public function downloadCredential(Request $request): BinaryFileResponse
     {
         $membership = $this->record($request);

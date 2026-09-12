@@ -35,6 +35,15 @@
                 @if($membership->status==='active' && auth()->user()->canDo('memberships.renew'))@include('control.memberships._action',['action'=>'renew'])@endif
                 @if(in_array($membership->status,['active','suspended'],true) && auth()->user()->canDo('memberships.status'))@include('control.memberships._action',['action'=>$membership->status==='active'?'suspend':'reinstate'])@include('control.memberships._action',['action'=>'revoke'])@endif
                 @if($canIssueCredentials && auth()->user()->canDo('memberships.issue'))<form method="post" action="{{ route('memberships.credentials.issue',['locale'=>app()->getLocale(),'membership'=>$membership->id]) }}">@csrf<label><input type="checkbox" required> {{ __('memberships.confirm_issue_credentials') }}</label><button class="primary-action" type="submit">{{ __('memberships.issue_credentials') }}</button></form>@endif
+                @if($credentials->isNotEmpty() && $integrity && in_array($membership->status,['active','suspended'],true) && auth()->user()->canDo('memberships.correct'))
+                    <form method="post" action="{{ route('memberships.credentials.revision',['locale'=>app()->getLocale(),'membership'=>$membership->id]) }}">
+                        @csrf
+                        <input type="hidden" name="lock_version" value="{{ $membership->lock_version }}">
+                        <label>{{ __('memberships.reissue_reason') }}<textarea required minlength="10" maxlength="1500" name="reason"></textarea></label>
+                        <label><input type="checkbox" name="confirm_reissue" value="1" required> {{ __('memberships.confirm_reissue_revision') }}</label>
+                        <button class="secondary-action" type="submit">{{ __('memberships.create_reissue_revision') }}</button>
+                    </form>
+                @endif
                 @if(!$applicationReady)<p class="membership-notes">{{ __('memberships.application_required_for_issue') }}</p>@endif
                 @if($membership->status==='revoked')<p>{{ __('memberships.revoked_notice') }}</p>@endif
             @endif

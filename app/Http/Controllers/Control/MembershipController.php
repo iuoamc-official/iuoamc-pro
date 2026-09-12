@@ -15,6 +15,7 @@ use App\Services\MembershipCredentialRegistry;
 use App\Services\MembershipRegistry;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -234,6 +235,22 @@ class MembershipController extends Controller
 
         return redirect()->route('memberships.show', ['locale' => app()->getLocale(), 'membership' => $membership->id])
             ->with('success', trans('memberships.application_saved'));
+    }
+
+    public function previewCredentials(Request $request): Response
+    {
+        $membership = $this->record($request);
+        $kind = (string) $request->route('kind');
+        $bytes = $this->credentials()->preview($request->user(), $membership, $kind);
+        $filename = preg_replace('/[^A-Za-z0-9_-]/', '-', (string) $membership->membership_number)
+            .'-'.$kind.'-preview.pdf';
+
+        return response($bytes, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$filename.'"',
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     public function issueCredentials(Request $request): RedirectResponse

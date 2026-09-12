@@ -51,6 +51,13 @@
         </section>
     </div>
     <section class="form-card"><header><div><h2>{{ __('memberships.credentials') }}</h2><p>{{ __('memberships.credentials_notice') }}</p></div></header>
+        @if($integrity && $applicationReady && auth()->user()->canDo('memberships.issue'))
+            <div class="membership-preview-actions">
+                <a class="secondary-action" target="_blank" rel="noopener noreferrer" href="{{ route('memberships.credentials.preview',['locale'=>app()->getLocale(),'membership'=>$membership->id,'kind'=>'card']) }}">{{ __('memberships.preview_card') }}</a>
+                <a class="secondary-action" target="_blank" rel="noopener noreferrer" href="{{ route('memberships.credentials.preview',['locale'=>app()->getLocale(),'membership'=>$membership->id,'kind'=>'certificate']) }}">{{ __('memberships.preview_certificate') }}</a>
+                <small>{{ __('memberships.preview_notice') }}</small>
+            </div>
+        @endif
         @forelse($credentials as $credential)
             <article class="membership-period">
                 <div><strong>{{ __('memberships.version') }} {{ $credential->version }}</strong><span class="membership-integrity {{ $loop->first?'is-valid':'' }}">{{ __($loop->first?'memberships.current_credential':'memberships.archived_credential') }}</span><span class="membership-integrity {{ $credentialChecks[$credential->id]?'is-valid':'is-invalid' }}">{{ __($credentialChecks[$credential->id]?'memberships.verified':'memberships.integrity_failed') }}</span></div>

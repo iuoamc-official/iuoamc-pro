@@ -18,14 +18,14 @@ final class MembershipCredentialPdf
         self::TEMPLATE_VERSION,
     ];
 
-    public function renderCard(array $payload, string $photoPath): string
+    public function renderCard(array $payload, string $photoPath, bool $preview = false): string
     {
-        return $this->render($payload, $photoPath, 'membership_credentials.card', [85.6, 54], 0, 2);
+        return $this->render($payload, $photoPath, 'membership_credentials.card', [85.6, 54], 0, 2, $preview);
     }
 
-    public function renderCertificate(array $payload, string $photoPath): string
+    public function renderCertificate(array $payload, string $photoPath, bool $preview = false): string
     {
-        return $this->render($payload, $photoPath, 'membership_credentials.certificate', 'A4-L', 0, 1);
+        return $this->render($payload, $photoPath, 'membership_credentials.certificate', 'A4-L', 0, 1, $preview);
     }
 
     private function render(
@@ -35,6 +35,7 @@ final class MembershipCredentialPdf
         string|array $format,
         int $margin,
         int $expectedPages,
+        bool $preview,
     ): string
     {
         $this->validate($payload, $photoPath);
@@ -69,7 +70,7 @@ final class MembershipCredentialPdf
         $mpdf->SetAuthor((string) data_get($payload, 'organization.legal_name', 'IUOAMC'));
         $mpdf->SetCreator('IUOAMC Pro - '.self::TEMPLATE_VERSION);
         $mpdf->SetSubject((string) $payload['membership_number']);
-        $mpdf->WriteHTML(view($view, compact('payload', 'photoPath', 'logo', 'nfc'))->render());
+        $mpdf->WriteHTML(view($view, compact('payload', 'photoPath', 'logo', 'nfc', 'preview'))->render());
 
         if ($mpdf->page !== $expectedPages) {
             throw new RuntimeException('MEMBERSHIP_CREDENTIAL_PAGE_OVERFLOW');

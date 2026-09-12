@@ -148,4 +148,20 @@ class MembershipCredentialPdfTest extends TestCase
         $this->assertStringContainsString("setImageBackgroundColor('#fbfaf6')", $registry);
         $this->assertStringContainsString('imagecolorallocate($target, 251, 250, 246)', $registry);
     }
+    public function test_unsigned_preview_flow_does_not_issue_a_credential(): void
+    {
+        $routes = file_get_contents(base_path('routes/modules/memberships.php'));
+        $controller = file_get_contents(app_path('Http/Controllers/Control/MembershipController.php'));
+        $registry = file_get_contents(app_path('Services/MembershipCredentialRegistry.php'));
+        $card = file_get_contents(resource_path('views/membership_credentials/card.blade.php'));
+        $certificate = file_get_contents(resource_path('views/membership_credentials/certificate.blade.php'));
+
+        $this->assertStringContainsString("name('credentials.preview')", $routes);
+        $this->assertStringContainsString('public function previewCredentials', $controller);
+        $this->assertStringContainsString('public function preview(', $registry);
+        $this->assertStringContainsString("renderCard($payload, $photoPath, true)", $registry);
+        $this->assertStringContainsString('DRAFT PREVIEW · NOT VALID FOR USE', $card);
+        $this->assertStringContainsString('DRAFT PREVIEW · NOT VALID FOR USE', $certificate);
+    }
+
 }

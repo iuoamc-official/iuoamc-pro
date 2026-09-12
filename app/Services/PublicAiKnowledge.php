@@ -4,9 +4,14 @@ namespace App\Services;
 
 use App\Models\Journal;
 use App\Models\JournalArticle;
+use App\Models\JournalEditorialMember;
+use App\Models\JournalIssue;
+use App\Models\JournalSection;
 use App\Models\PublicPage;
 use App\Models\ContentArticle;
+use App\Models\ContentSection;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\Schema;
 
 final class PublicAiKnowledge
@@ -22,10 +27,17 @@ final class PublicAiKnowledge
     ): array
     {
         $terms = $this->terms($question);
+        $journal = $this->publicJournal($canPreviewJournal);
         $pages = $this->pageCandidates($locale, $terms);
-        $articles = $this->articleCandidates($locale, $terms, $currentPath, $canPreviewJournal);
-        $publicArticles = $this->publicArticleCandidates($locale, $terms, $currentPath);
-        $candidates = $pages->concat($articles)->concat($publicArticles);
+        $candidates = $pages
+            ->concat($this->contentSectionCandidates($locale, $terms, $currentPath))
+            ->concat($this->publicArticleCandidates($locale, $terms, $currentPath))
+            ->concat($this->journalOverviewCandidates($journal, $locale, $terms, $currentPath))
+            ->concat($this->journalSectionCandidates($journal, $locale, $terms))
+            ->concat($this->journalIssueCandidates($journal, $locale, $terms, $currentPath))
+            ->concat($this->journalEditorialCandidates($journal, $locale, $terms, $currentPath))
+            ->concat($this->journalStaticPageCandidates($journal, $locale, $terms, $currentPath))
+            ->concat($this->articleCandidates($journal, $locale, $terms, $currentPath));
 
         $selected = $candidates->sortByDesc('score')->filter(
             static fn (array $candidate): bool => $candidate['score'] > 0,
@@ -71,19 +83,277 @@ final class PublicAiKnowledge
         });
     }
 
-    /** @param list<string> $terms */
-    private function articleCandidates(
-        string $locale,
-        array $terms,
-        ?string $currentPath,
-        bool $canPreviewJournal,
-    ): Collection {
-        if (! Schema::hasTable('journals') || ! Schema::hasTable('journal_articles') || ! Schema::hasTable('journal_article_translations')) {
-            return collect();
+    private function publicJournal(bool $canPreviewJournal): ?Journal
+    {
+        if (! Schema::hasTable('journals')) {
+            return null;
         }
 
         $journal = Journal::query()->where('status', 'active')->first();
-        if (! $journal || (! $journal->isPubliclyLaunched() && ! $canPreviewJournal)) {
+
+        return $journal && ($journal->isPubliclyLaunched() || $canPreviewJournal) ? $journal : null;
+    }
+
+    /** @param list<string> $terms */
+    private function contentSectionCandidates(string $locale, array $terms, ?string $currentPath): Collection
+    {
+        if (! Schema::hasTable('content_sections')) {
+            return collect();
+        }
+
+        $currentSlug = null;
+        if (is_string($currentPath) && preg_match('~^/(?:ar|en|fr)/articles/sections/([^/]+)$~', $currentPath, $matches) === 1) {
+            $currentSlug = $matches[1];
+        }
+
+        return ContentSection::query()->active()->orderBy('sort_order')->get()->map(
+            function (ContentSection $section) use ($locale, $terms, $currentSlug): array {
+                $title = $section->localized('name', $locale);
+                $description = $section->localized('description', $locale);
+                $text = "Editorial section: {$title}\nDescription: {$description}";
+                $score = $this->score($title, $terms) * 6 + $this->score($description, $terms) * 2;
+                if ($section->slug === $currentSlug) {
+                    $score += 1000000;
+                }
+
+                return [
+                    'kind' => 'content_section',
+                    'record' => $section,
+                    'title' => $title,
+                    'url' => route('public.articles.sections.show', ['locale' => $locale, 'section' => $section]),
+                    'text' => $text,
+                    'score' => $score,
+                ];
+            },
+        );
+    }
+
+    /** @param list<string> $terms */
+    private function journalOverviewCandidates(?Journal $journal, string $locale, array $terms, ?string $currentPath): Collection
+    {
+        if (! $journal) {
+            return collect();
+        }
+
+        $frequency = (string) $journal->setting('publication_frequency', 'unconfigured');
+        $feePolicy = (string) $journal->setting('fee_policy', 'unconfigured');
+        $title = $journal->localized('name', $locale);
+        $text = implode("\n", array_filter([
+            'Journal code: '.$journal->code,
+            'Journal: '.$title,
+            'Description: '.$journal->localized('description', $locale),
+            'Publisher: '.$journal->publisher_name,
+            $journal->issn ? 'ISSN: '.$journal->issn : null,
+            $journal->eissn ? 'eISSN: '.$journal->eissn : null,
+            'Publication frequency: '.Lang::get('journal.frequencies.'.$frequency, [], $locale),
+            'Fees and APC: '.Lang::get('journal.fee_policies.'.$feePolicy, [], $locale),
+            'Editorial contact: '.(string) $journal->setting('contact_email', 'info@iuoamc.uk'),
+        ]));
+        $score = $this->score($text, $terms);
+        if ($currentPath === '/'.$locale.'/journal') {
+            $score += 1000000;
+        }
+
+        return collect([[
+            'kind' => 'journal_overview',
+            'record' => $journal,
+            'title' => $title,
+            'url' => route('journal.public.index', ['locale' => $locale]),
+            'text' => $text,
+            'score' => $score,
+        ]]);
+    }
+
+    /** @param list<string> $terms */
+    private function journalSectionCandidates(?Journal $journal, string $locale, array $terms): Collection
+    {
+        if (! $journal || ! Schema::hasTable('journal_sections')) {
+            return collect();
+        }
+
+        return JournalSection::query()->where('journal_id', $journal->id)->active()->orderBy('sort_order')->get()->map(
+            function (JournalSection $section) use ($locale, $terms): array {
+                $title = $section->localized('name', $locale);
+                $description = $section->localized('description', $locale);
+                $scope = Lang::get('journal.section_scopes.'.$section->scope, [], $locale);
+                $text = "Journal section: {$title}\nScope: {$scope}\nDescription: {$description}";
+
+                return [
+                    'kind' => 'journal_section',
+                    'record' => $section,
+                    'title' => $title,
+                    'url' => route('journal.public.index', ['locale' => $locale]).'?section='.rawurlencode($section->slug),
+                    'text' => $text,
+                    'score' => $this->score($title, $terms) * 6 + $this->score($text, $terms),
+                ];
+            },
+        );
+    }
+
+    /** @param list<string> $terms */
+    private function journalIssueCandidates(?Journal $journal, string $locale, array $terms, ?string $currentPath): Collection
+    {
+        if (! $journal || ! Schema::hasTable('journal_issues')) {
+            return collect();
+        }
+
+        $currentSlug = null;
+        if (is_string($currentPath) && preg_match('~^/(?:ar|en|fr)/journal/issues/([^/]+)$~', $currentPath, $matches) === 1) {
+            $currentSlug = $matches[1];
+        }
+
+        return JournalIssue::query()
+            ->where('journal_id', $journal->id)
+            ->where('status', 'published')
+            ->withCount(['articles' => fn ($query) => $query->published()])
+            ->latest('published_at')
+            ->limit(40)
+            ->get()
+            ->map(function (JournalIssue $issue) use ($locale, $terms, $currentSlug): array {
+                $title = $issue->localized('title', $locale);
+                $text = implode("\n", [
+                    'Journal issue: '.$title,
+                    'Volume: '.$issue->volume,
+                    'Issue: '.$issue->number,
+                    'Description: '.$issue->localized('description', $locale),
+                    'Published: '.(string) $issue->published_at?->format('Y-m-d'),
+                    'Published articles: '.$issue->articles_count,
+                ]);
+                $score = $this->score($title, $terms) * 6 + $this->score($text, $terms);
+                if ($issue->slug === $currentSlug) {
+                    $score += 1000000;
+                }
+
+                return [
+                    'kind' => 'journal_issue',
+                    'record' => $issue,
+                    'title' => $title,
+                    'url' => route('journal.public.issues.show', ['locale' => $locale, 'issue' => $issue]),
+                    'text' => $text,
+                    'score' => $score,
+                ];
+            });
+    }
+
+    /** @param list<string> $terms */
+    private function journalEditorialCandidates(?Journal $journal, string $locale, array $terms, ?string $currentPath): Collection
+    {
+        if (! $journal || ! Schema::hasTable('journal_editorial_members')) {
+            return collect();
+        }
+
+        $members = JournalEditorialMember::query()
+            ->where('journal_id', $journal->id)
+            ->where('status', 'active')
+            ->whereNotNull('consented_at')
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+        $memberText = $members->map(function (JournalEditorialMember $member) use ($locale): string {
+            return implode(' — ', array_filter([
+                $member->name,
+                (string) Lang::get('journal.board_roles.'.$member->role, [], $locale),
+                $member->localized('title', $locale),
+                $member->localized('affiliation', $locale),
+                $member->localized('biography', $locale),
+                $member->orcid ? 'ORCID '.$member->orcid : null,
+            ]));
+        })->implode("\n");
+        $title = (string) Lang::get('journal.editorial_governance', [], $locale);
+        $text = implode("\n", array_filter([
+            $title,
+            (string) Lang::get('journal.editorial_governance_intro', [], $locale),
+            (string) Lang::get('journal.governance_independence', [], $locale),
+            (string) Lang::get('journal.governance_independence_text', [], $locale),
+            $this->textValues(Lang::get('journal.editorial_roles', [], $locale)),
+            $memberText,
+        ]));
+        $score = $this->score($text, $terms);
+        if ($currentPath === '/'.$locale.'/journal/editorial-governance') {
+            $score += 1000000;
+        }
+
+        return collect([[
+            'kind' => 'journal_editorial_governance',
+            'record' => $journal,
+            'title' => $title,
+            'url' => route('journal.public.editorial-governance', ['locale' => $locale]),
+            'text' => $text,
+            'score' => $score,
+        ]]);
+    }
+
+    /** @param list<string> $terms */
+    private function journalStaticPageCandidates(?Journal $journal, string $locale, array $terms, ?string $currentPath): Collection
+    {
+        if (! $journal) {
+            return collect();
+        }
+
+        $frequency = (string) $journal->setting('publication_frequency', 'unconfigured');
+        $feePolicy = (string) $journal->setting('fee_policy', 'unconfigured');
+        $definitions = [
+            [
+                'kind' => 'journal_policies',
+                'title' => Lang::get('journal.policies', [], $locale),
+                'url' => route('journal.public.policies', ['locale' => $locale]),
+                'path' => '/'.$locale.'/journal/policies',
+                'text' => implode("\n", [
+                    (string) Lang::get('journal.policies_intro', [], $locale),
+                    $this->textValues(Lang::get('journal.policy', [], $locale)),
+                    (string) Lang::get('journal.publication_information_text', [
+                        'frequency' => Lang::get('journal.frequencies.'.$frequency, [], $locale),
+                        'fees' => Lang::get('journal.fee_policies.'.$feePolicy, [], $locale),
+                        'email' => $journal->setting('contact_email', 'info@iuoamc.uk'),
+                    ], $locale),
+                ]),
+            ],
+            [
+                'kind' => 'journal_author_guidelines',
+                'title' => Lang::get('journal.author_guidelines', [], $locale),
+                'url' => route('journal.public.author-guidelines', ['locale' => $locale]),
+                'path' => '/'.$locale.'/journal/author-guidelines',
+                'text' => implode("\n", [
+                    (string) Lang::get('journal.author_guidelines_intro', [], $locale),
+                    (string) Lang::get('journal.before_submission_text', [], $locale),
+                    $this->textValues(Lang::get('journal.guidelines', [], $locale)),
+                ]),
+            ],
+            [
+                'kind' => 'journal_submission',
+                'title' => Lang::get('journal.submit_manuscript', [], $locale),
+                'url' => route('journal.public.submissions.create', ['locale' => $locale]),
+                'path' => '/'.$locale.'/journal/submit',
+                'text' => implode("\n", [
+                    (string) Lang::get('journal.submission_intro', [], $locale),
+                    (string) Lang::get('journal.submission_security_text', [], $locale),
+                    (string) Lang::get('journal.submission_check_file', [], $locale),
+                    (string) Lang::get('journal.submission_check_metadata', [], $locale),
+                    (string) Lang::get('journal.submission_check_declarations', [], $locale),
+                    (string) Lang::get('journal.tracking_intro', [], $locale),
+                ]),
+            ],
+        ];
+
+        return collect($definitions)->map(function (array $definition) use ($terms, $currentPath, $journal): array {
+            $score = $this->score((string) $definition['title'], $terms) * 6
+                + $this->score($definition['text'], $terms);
+            if ($currentPath === $definition['path']) {
+                $score += 1000000;
+            }
+
+            return $definition + ['record' => $journal, 'score' => $score];
+        });
+    }
+
+    /** @param list<string> $terms */
+    private function articleCandidates(
+        ?Journal $journal,
+        string $locale,
+        array $terms,
+        ?string $currentPath,
+    ): Collection {
+        if (! $journal || ! Schema::hasTable('journal_articles') || ! Schema::hasTable('journal_article_translations')) {
             return collect();
         }
 
@@ -192,6 +462,18 @@ final class PublicAiKnowledge
             if ($article->slug === $currentSlug) $score += 1000000;
             return ['kind' => 'public_article', 'record' => $article, 'title' => $article->localized('title', $locale), 'url' => route('public.articles.show', ['locale' => $locale, 'article' => $article]), 'text' => $text, 'score' => $score];
         });
+    }
+
+    private function textValues(mixed $value): string
+    {
+        if (is_array($value)) {
+            return implode("\n", array_filter(array_map(
+                fn (mixed $item): string => $this->textValues($item),
+                $value,
+            )));
+        }
+
+        return is_scalar($value) ? trim((string) $value) : '';
     }
 
     /** @param list<string> $terms */

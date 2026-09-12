@@ -35,6 +35,7 @@
         .hash { position: fixed; top: 45.05mm; left: 3.2mm; width: 79.2mm; color: #344b61; font-family: dejavusansmono; font-size: 2.65pt; letter-spacing: -.08px; white-space: nowrap; }
         .footer-left { position: fixed; top: 50.25mm; left: 3.2mm; width: 27.5mm; color: #ffffff; font-size: 3.45pt; font-weight: bold; }
         .footer-right { position: fixed; top: 50.25mm; left: 55mm; width: 27.4mm; color: #e3c768; text-align: right; font-size: 3.45pt; font-weight: bold; }
+        .preview-mark { position: fixed; top: 12.65mm; left: 2mm; width: 81.6mm; color: #9b3a2e; text-align: center; font-size: 3.5pt; font-weight: bold; letter-spacing: .5px; }
         .back-canvas { position: fixed; top: 0; left: 0; width: 85.6mm; height: 54mm; background: #172e57; }
         .back-panel { position: fixed; top: 3.2mm; left: 3.2mm; width: 79.2mm; height: 47.6mm; background: #fbfaf6; border: .35mm solid #c6a13c; }
         .back-brand { position: fixed; top: 5mm; left: 6mm; width: 27mm; height: 8.5mm; }
@@ -60,6 +61,7 @@
 <div class="canvas"></div>
 <div class="top"></div>
 <div class="gold-line"></div>
+@if($preview)<div class="preview-mark">DRAFT PREVIEW · NOT VALID FOR USE</div>@endif
 <div class="bottom-gold"></div>
 <div class="bottom"></div>
 <div class="brand"><img src="{{ $logo }}"></div>

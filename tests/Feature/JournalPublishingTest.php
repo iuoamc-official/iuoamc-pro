@@ -282,7 +282,7 @@ final class JournalPublishingTest extends TestCase
     {
         $user = $this->superAdmin();
 
-        $this->actingAs($user)->head('/en/control/journal')
+        $this->actingAs($user)->get('/en/control/journal')
             ->assertOk()
             ->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
     }

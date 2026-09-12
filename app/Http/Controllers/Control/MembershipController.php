@@ -252,7 +252,16 @@ class MembershipController extends Controller
             'lock_version' => ['required', 'integer', 'min:1'],
             'reason' => ['required', 'string', 'min:10', 'max:1500'],
             'confirm_reissue' => ['accepted'],
+            'photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
         ]);
+        if ($request->hasFile('photo')) {
+            $this->credentials()->replacePhotoForRevision(
+                $request->user(),
+                $membership,
+                $request->file('photo'),
+                (string) $data['reason'],
+            );
+        }
         $this->registry()->createCredentialRevision(
             $request->user(),
             (int) $membership->id,
@@ -298,7 +307,24 @@ class MembershipController extends Controller
             'Content-Type' => 'application/zip',
             'Cache-Control' => 'private, no-store, max-age=0',
             'X-Content-Type-Options' => 'nosniff',
-        ])->deleteFileAfterSend(true);
+        ]);
+    }
+
+    public function downloadCredentialCertificatePrintImage(Request $request): BinaryFileResponse
+    {
+        $membership = $this->record($request);
+        $credential = MembershipCredential::query()
+            ->where('membership_id', $membership->id)
+            ->findOrFail((int) $request->route('credential'));
+        $path = app(MembershipCredentialPrintArchive::class)->createCertificateImage($credential);
+        $filename = preg_replace('/[^A-Za-z0-9_-]/', '-', (string) $credential->membership_number)
+            .'-v'.$credential->version.'-membership-certificate-300dpi.png';
+
+        return response()->download($path, $filename, [
+            'Content-Type' => 'image/png',
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     public function transition(Request $request): RedirectResponse

@@ -10,6 +10,7 @@ use App\Models\MembershipCredential;
 use App\Models\MembershipPeriod;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -181,6 +182,57 @@ final class MembershipCredentialRegistry
 
             return $application->fresh(['integrityAudit']);
         }, 3);
+    }
+
+    public function replacePhotoForRevision(
+        User $actor,
+        Membership $membership,
+        UploadedFile $photo,
+        string $reason,
+    ): MembershipApplication {
+        $registry = app(MembershipRegistry::class);
+        $registry->requirePermission($actor, 'memberships.correct');
+        abort_unless($registry->scoped($actor)->whereKey($membership->id)->exists(), 404);
+        abort_unless($registry->verify($membership), 409, trans('memberships.errors.integrity'));
+
+        $reason = trim($reason);
+        if (mb_strlen($reason) < 10) {
+            $this->stop('reason');
+        }
+
+        $existing = $this->applicationFor($membership);
+        abort_unless($existing !== null && $this->verifyApplication($existing), 409,
+            trans('memberships.errors.application_integrity'));
+        $photoData = $this->storePhoto($membership, $photo);
+
+        try {
+            return DB::transaction(function () use ($actor, $membership, $photoData, $reason): MembershipApplication {
+                $application = MembershipApplication::query()
+                    ->where('membership_id', $membership->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+                if (! $this->verifyApplication($application)) {
+                    $this->stop('application_integrity');
+                }
+
+                $old = $this->applicationAuditValues($application);
+                $application->fill([
+                    ...$photoData,
+                    'updated_by' => (int) $actor->id,
+                    'lock_version' => (int) $application->lock_version + 1,
+                ]);
+                $application->save();
+                $this->sealApplication($application, $actor, $old, [
+                    'change' => 'portrait-replacement',
+                    'reason_encrypted' => Crypt::encryptString($reason),
+                ]);
+
+                return $application->fresh(['integrityAudit']);
+            }, 3);
+        } catch (Throwable $error) {
+            $this->removeNewFile($photoData['photo_path']);
+            throw $error;
+        }
     }
 
     public function ready(Membership $membership): bool
@@ -451,7 +503,12 @@ final class MembershipCredentialRegistry
         );
     }
 
-    private function sealApplication(MembershipApplication $application, User $actor, array $old): void
+    private function sealApplication(
+        MembershipApplication $application,
+        User $actor,
+        array $old,
+        array $metadata = [],
+    ): void
     {
         $application->record_hash = MembershipRegistry::digest($this->applicationSnapshot($application));
         $values = $this->applicationAuditValues($application);
@@ -460,7 +517,7 @@ final class MembershipCredentialRegistry
             $application,
             $old,
             $values,
-            ['module' => 'memberships', 'membership_id' => (int) $application->membership_id],
+            ['module' => 'memberships', 'membership_id' => (int) $application->membership_id, ...$metadata],
             (int) $actor->id
         );
         $application->integrity_audit_id = (int) $audit->id;
@@ -683,14 +740,18 @@ final class MembershipCredentialRegistry
             $image = new \Imagick();
             $image->readImageBlob($bytes);
             $image->setIteratorIndex(0);
-            $image->stripImage();
-            $image->setImageFormat('jpeg');
-            $image->setImageCompressionQuality(90);
-            if ($image->getImageWidth() > 1600 || $image->getImageHeight() > 1600) {
-                $image->thumbnailImage(1600, 1600, true, true);
-            }
-            $result = $image->getImageBlob();
+            $image->setImageBackgroundColor('white');
+            $flattened = $image->mergeImageLayers(\Imagick::LAYERMETHOD_FLATTEN);
+            $flattened->stripImage();
+            $flattened->setImageFormat('jpeg');
+            $flattened->setImageColorspace(\Imagick::COLORSPACE_SRGB);
+            $flattened->setImageCompressionQuality(90);
+            $flattened->cropThumbnailImage(900, 1200);
+            $result = $flattened->getImageBlob();
+            $flattened->clear();
+            $flattened->destroy();
             $image->clear();
+            $image->destroy();
             if (is_string($result) && strlen($result) > 1024) {
                 return $result;
             }
@@ -701,9 +762,34 @@ final class MembershipCredentialRegistry
             if ($source !== false) {
                 $width = imagesx($source);
                 $height = imagesy($source);
-                $scale = min(1, 1600 / max($width, $height));
-                $target = imagecreatetruecolor(max(1, (int) round($width * $scale)), max(1, (int) round($height * $scale)));
-                imagecopyresampled($target, $source, 0, 0, 0, 0, imagesx($target), imagesy($target), $width, $height);
+                $sourceRatio = $width / $height;
+                $targetRatio = 900 / 1200;
+                $sourceX = 0;
+                $sourceY = 0;
+                $sourceWidth = $width;
+                $sourceHeight = $height;
+                if ($sourceRatio > $targetRatio) {
+                    $sourceWidth = max(1, (int) round($height * $targetRatio));
+                    $sourceX = max(0, (int) floor(($width - $sourceWidth) / 2));
+                } else {
+                    $sourceHeight = max(1, (int) round($width / $targetRatio));
+                    $sourceY = max(0, (int) floor(($height - $sourceHeight) / 2));
+                }
+                $target = imagecreatetruecolor(900, 1200);
+                $white = imagecolorallocate($target, 255, 255, 255);
+                imagefill($target, 0, 0, $white);
+                imagecopyresampled(
+                    $target,
+                    $source,
+                    0,
+                    0,
+                    $sourceX,
+                    $sourceY,
+                    900,
+                    1200,
+                    $sourceWidth,
+                    $sourceHeight,
+                );
                 ob_start();
                 imagejpeg($target, null, 90);
                 $result = ob_get_clean();

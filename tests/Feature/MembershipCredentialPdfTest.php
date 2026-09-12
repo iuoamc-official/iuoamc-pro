@@ -98,4 +98,23 @@ class MembershipCredentialPdfTest extends TestCase
         $this->assertStringNotContainsString('box-shadow', $template);
         $this->assertStringNotContainsString('object-fit', $template);
     }
+
+    public function test_print_archive_supports_web_safe_imagick_without_proc_open(): void
+    {
+        $service = file_get_contents(app_path('Services/MembershipCredentialPrintArchive.php'));
+
+        $this->assertIsString($service);
+        $this->assertStringContainsString('class_exists(\\Imagick::class)', $service);
+        $this->assertStringContainsString("function_exists('proc_open')", $service);
+        $this->assertStringContainsString('getNumberImages() !== count($outputPaths)', $service);
+        $this->assertStringContainsString('setResolution(300, 300)', $service);
+        $this->assertStringContainsString('createCertificateImage', $service);
+        $this->assertStringContainsString('MEMBERSHIP_CERTIFICATE_IMAGE_DIMENSIONS_INVALID', $service);
+        $this->assertStringContainsString('LAYERMETHOD_FLATTEN', file_get_contents(
+            app_path('Services/MembershipCredentialRegistry.php')
+        ));
+        $this->assertStringContainsString('cropThumbnailImage(900, 1200)', file_get_contents(
+            app_path('Services/MembershipCredentialRegistry.php')
+        ));
+    }
 }

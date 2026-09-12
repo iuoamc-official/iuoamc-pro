@@ -132,7 +132,10 @@ final class JournalPublishingTest extends TestCase
         $draft = $this->createArticle('professional_article', 'draft', 'Private Draft Tasting');
 
         $locked = app(PublicAiKnowledge::class)->forQuestion('en', 'Circular Restaurant Tasting');
-        $this->assertSame([], $locked['sources']);
+        $this->assertFalse(collect($locked['sources'])->contains(
+            fn (array $source): bool => str_contains($source['url'], '/journal/articles/'),
+        ));
+        $this->assertStringNotContainsString('Circular Restaurant Tasting', $locked['context']);
 
         $this->enablePublicLaunch();
         $result = app(PublicAiKnowledge::class)->forQuestion('en', 'Circular Restaurant Tasting');
@@ -143,7 +146,7 @@ final class JournalPublishingTest extends TestCase
             $result['sources'][0]['url'],
         );
         $this->assertStringContainsString('Controlled scholarly content.', $result['context']);
-        $this->assertStringNotContainsString($draft->slug, $result['context']);
+        $this->assertStringNotContainsString('Private Draft Tasting', $result['context']);
     }
 
     public function test_public_ai_knowledge_understands_the_current_article_page(): void

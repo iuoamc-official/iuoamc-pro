@@ -46,6 +46,7 @@ final class JournalPublishingTest extends TestCase
             '2026_09_11_180000_add_publication_assets_to_journal_articles.php',
             '2026_09_11_190000_assign_wicp_test_placeholders.php',
             '2026_09_12_120000_create_editorial_sections_and_public_articles.php',
+            '2026_09_12_130000_expand_public_article_sections.php',
         ] as $migrationFile) {
             $migration = require database_path('migrations/'.$migrationFile);
             $migration->up();
@@ -104,6 +105,18 @@ final class JournalPublishingTest extends TestCase
         $this->get('/en/articles')->assertOk()->assertSee('Public culinary story')->assertDontSee('Private editorial draft');
         $this->get('/en/articles/public-culinary-story')->assertOk()->assertSee('Public editorial body')->assertSee('Ahmad Maadarani');
         $this->get('/en/articles/private-editorial-draft')->assertNotFound();
+    }
+
+    public function test_public_article_taxonomy_matches_the_iuoamc_editorial_identity(): void
+    {
+        $this->assertDatabaseHas('content_sections', ['slug' => 'news', 'sort_order' => 10, 'status' => 'active']);
+        $this->assertDatabaseHas('content_sections', ['slug' => 'recipes-techniques', 'sort_order' => 20, 'status' => 'active']);
+        $this->assertDatabaseHas('content_sections', ['slug' => 'chef-success-stories', 'sort_order' => 30, 'status' => 'active']);
+        $this->assertDatabaseHas('content_sections', ['slug' => 'competitions-achievements', 'sort_order' => 40, 'status' => 'active']);
+        $this->assertDatabaseHas('content_sections', ['slug' => 'culinary-heritage', 'status' => 'active']);
+        $this->assertDatabaseHas('content_sections', ['slug' => 'training-career', 'status' => 'active']);
+        $this->assertDatabaseHas('content_sections', ['slug' => 'health-nutrition', 'status' => 'active']);
+        $this->assertSame(12, \App\Models\ContentSection::query()->active()->count());
     }
 
     public function test_unauthenticated_editorial_request_redirects_to_localized_login(): void

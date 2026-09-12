@@ -54,6 +54,24 @@ services:
       - shadow-hls
     networks: [shadow]
 
+  shadow-program-switcher:
+    build:
+      context: ..
+      dockerfile: broadcast-nexus/services/shadow-program-switcher/Dockerfile
+    restart: "no"
+    environment:
+      SHADOW_MODE: "true"
+      SHADOW_VALIDATOR_URL: http://shadow-validator:8117/v1/validate
+      SHADOW_SOURCE_A: http://shadow-hls/a
+      SHADOW_SOURCE_B: http://shadow-hls/b
+      SHADOW_SWITCH_CHECK_INTERVAL: "2"
+      SHADOW_FAILBACK_GOOD_CHECKS: "5"
+    ports:
+      - "127.0.0.1:58119:8119"
+    depends_on:
+      shadow-validator: {condition: service_started}
+    networks: [shadow]
+
   failover:
     environment:
       SHADOW_MODE: "true"

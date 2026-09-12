@@ -1,6 +1,14 @@
 @extends('layouts.journal')
 @php($translation = $article->translation())
 <?php
+    $coverImage = $article->article_code === 'MCIJ-2026-DB6E05B6'
+        ? asset('assets/images/journal/mtsa-sensory-absence.webp')
+        : null;
+    $coverAlt = match (app()->getLocale()) {
+        'en' => 'Conceptual culinary presentation illustrating sensory absence in the Maadarani theory.',
+        'fr' => 'Présentation culinaire conceptuelle illustrant l’absence sensorielle dans la théorie Maadarani.',
+        default => 'تكوين طهوي مفاهيمي يجسّد الغياب الحسي في نظرية المعدراني.',
+    };
     $articleSchema = [
         '@context' => 'https://schema.org',
         '@type' => $article->type === 'peer_reviewed_research' ? 'ScholarlyArticle' : 'Article',
@@ -14,6 +22,9 @@
         ])->all(),
         'publisher' => ['@type' => 'Organization', 'name' => $journal->publisher_name],
     ];
+    if ($coverImage) {
+        $articleSchema['image'] = $coverImage;
+    }
 ?>
 
 @section('title', $translation?->title)
@@ -27,6 +38,7 @@
     <meta name="citation_journal_title" content="{{ $journal->localized('name') }}">
     @if($article->doi)<meta name="citation_doi" content="{{ $article->doi }}">@endif
     @if($journal->issn)<meta name="citation_issn" content="{{ $journal->issn }}">@endif
+    @if($coverImage)<meta property="og:image" content="{{ $coverImage }}"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="{{ $coverImage }}">@endif
     <?php if ($article->pdf_path) : ?><meta name="citation_pdf_url" content="{{ route('journal.public.articles.pdf', ['locale' => app()->getLocale(), 'article' => $article->slug]) }}"><?php endif; ?>
     <script type="application/ld+json" nonce="{{ request()->attributes->get('csp_nonce') }}">{!! json_encode($articleSchema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
 @endpush
@@ -60,6 +72,12 @@
                 @endforeach
             </div>
         </header>
+
+        @if($coverImage)
+            <figure class="journal-article-cover">
+                <img src="{{ $coverImage }}" alt="{{ $coverAlt }}" width="1672" height="941" fetchpriority="high">
+            </figure>
+        @endif
 
         <div class="journal-record-grid">
             <dl>

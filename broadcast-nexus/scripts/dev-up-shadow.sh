@@ -18,8 +18,10 @@ echo "No production output destinations are configured."
 docker compose -f compose.yaml -f compose.noc.yaml -f compose.shadow.yaml up -d --build
 
 echo
-echo "Shadow HLS A: http://127.0.0.1:58118/a/index.m3u8"
-echo "Shadow HLS B: http://127.0.0.1:58118/b/index.m3u8"
-echo "Validator:    http://127.0.0.1:58117/v1/validate"
-echo "Failover API: http://127.0.0.1:58113/health"
-echo "NOC UI:       http://127.0.0.1:58116/"
+echo "Shadow HLS A:  http://127.0.0.1:58118/a/index.m3u8"
+echo "Shadow HLS B:  http://127.0.0.1:58118/b/index.m3u8"
+echo "Program Output:http://127.0.0.1:58119/program/index.m3u8"
+echo "Switcher State:http://127.0.0.1:58119/v1/state"
+echo "Validator:     http://127.0.0.1:58117/v1/validate"
+echo "Failover API:  http://127.0.0.1:58113/health"
+echo "NOC UI:        http://127.0.0.1:58116/"

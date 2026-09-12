@@ -17,6 +17,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Services\JournalWorkflow;
 use App\Services\JournalNotificationService;
+use App\Services\JournalCrossrefClient;
 use App\Services\PublicAiKnowledge;
 use App\Services\ArticleBodyFormatter;
 use App\Mail\JournalWorkflowMail;
@@ -52,6 +53,7 @@ final class JournalPublishingTest extends TestCase
             '2026_09_12_130000_expand_public_article_sections.php',
             '2026_09_12_140000_add_legacy_provenance_to_content_articles.php',
             '2026_09_12_160000_add_pdf_downloads_to_content_articles.php',
+            '2026_09_12_170000_add_scholarly_interoperability_to_journal_articles.php',
         ] as $migrationFile) {
             $migration = require database_path('migrations/'.$migrationFile);
             $migration->up();
@@ -794,6 +796,7 @@ final class JournalPublishingTest extends TestCase
 
         $this->actingAs($editor)->post('/en/control/journal/articles/'.$article->id.'/publication-assets', [
             'publication_pdf' => $pdf,
+            'doi' => '10.5555/mcij.verified.7788',
             'wicp_registration_number' => 'WICP-EXTERNAL-2026-7788',
             'wicp_registered_at' => '2026-09-11',
             'wicp_verification_url' => 'https://example.com/wicp/WICP-EXTERNAL-2026-7788',
@@ -801,6 +804,7 @@ final class JournalPublishingTest extends TestCase
         ])->assertRedirect();
 
         $article->refresh();
+        $this->assertSame('10.5555/mcij.verified.7788', $article->doi);
         $this->assertSame('WICP-EXTERNAL-2026-7788', $article->wicp_registration_number);
         $this->assertSame(64, strlen((string) $article->pdf_sha256));
         $this->assertNotNull($article->wicp_verified_at);
@@ -865,6 +869,109 @@ final class JournalPublishingTest extends TestCase
         $this->assertStringStartsWith(JournalArticle::WICP_TEST_PREFIX, $article->wicp_registration_number);
         $this->assertNull($article->wicp_verified_at);
         $this->assertFalse($article->hasVerifiedWicpRegistration());
+    }
+
+    public function test_published_article_exposes_machine_readable_citations_and_jats(): void
+    {
+        $this->enablePublicLaunch();
+        $article = $this->createArticle('peer_reviewed_research', 'published', 'Interoperable Culinary Research');
+
+        $this->get('/en/journal/articles/'.$article->slug.'/citation/bibtex')
+            ->assertOk()
+            ->assertHeader('content-type', 'application/x-bibtex; charset=UTF-8')
+            ->assertSee('@article')
+            ->assertSee('Interoperable Culinary Research');
+        $this->get('/en/journal/articles/'.$article->slug.'/citation/ris')
+            ->assertOk()
+            ->assertSee('TY  - JOUR')
+            ->assertSee('ER  -');
+        $this->get('/en/journal/articles/'.$article->slug.'/jats.xml')
+            ->assertOk()
+            ->assertHeader('content-type', 'application/xml; charset=UTF-8')
+            ->assertSee('<article', false)
+            ->assertSee('<article-title>Interoperable Culinary Research</article-title>', false);
+
+        $article->refresh();
+        $this->assertSame(2, $article->citation_downloads_count);
+        $this->assertSame(1, $article->jats_downloads_count);
+    }
+
+    public function test_oai_pmh_identifies_repository_and_lists_only_published_records(): void
+    {
+        $this->enablePublicLaunch();
+        $published = $this->createArticle('peer_reviewed_research', 'published', 'Discoverable Culinary Research');
+        $draft = $this->createArticle('peer_reviewed_research', 'draft', 'Private Manuscript');
+
+        $this->get('/journal/oai?verb=Identify')
+            ->assertOk()
+            ->assertSee('<protocolVersion>2.0</protocolVersion>', false)
+            ->assertSee('Master Chefs International Journal');
+        $this->get('/journal/oai?verb=ListRecords&metadataPrefix=oai_dc')
+            ->assertOk()
+            ->assertSee($published->article_code)
+            ->assertSee('Discoverable Culinary Research')
+            ->assertDontSee($draft->article_code)
+            ->assertDontSee('Private Manuscript');
+    }
+
+    public function test_public_article_view_metric_counts_once_per_session_and_day(): void
+    {
+        $this->enablePublicLaunch();
+        $article = $this->createArticle('professional_article', 'published', 'Measured Professional Article');
+
+        $this->get('/en/journal/articles/'.$article->slug)->assertOk();
+        $this->get('/en/journal/articles/'.$article->slug)->assertOk();
+
+        $this->assertSame(1, $article->fresh()->html_views_count);
+    }
+
+    public function test_invited_reviewer_must_accept_before_submitting_review(): void
+    {
+        $article = $this->createArticle('peer_reviewed_research', 'under_review', 'Controlled Reviewer Response');
+        $reviewer = User::factory()->create(['status' => 'active', 'must_change_password' => false]);
+        $reviewer->roles()->attach(Role::query()->where('slug', 'journal-reviewer')->firstOrFail());
+        $review = JournalReview::query()->create([
+            'journal_article_id' => $article->id,
+            'reviewer_id' => $reviewer->id,
+            'round' => 1,
+            'status' => 'invited',
+            'due_at' => now()->addDays(14),
+            'assigned_by' => $this->superAdmin()->id,
+        ]);
+
+        $this->actingAs($reviewer)->put('/en/control/journal/reviews/'.$review->id, [
+            'recommendation' => 'accept',
+            'author_comments' => 'A complete review.',
+        ])->assertConflict();
+        $this->actingAs($reviewer)->post('/en/control/journal/reviews/'.$review->id.'/response', [
+            'response' => 'accept',
+        ])->assertRedirect();
+
+        $this->assertSame('in_progress', $review->fresh()->status);
+        $this->assertNotNull($review->fresh()->responded_at);
+    }
+
+    public function test_crossref_deposit_uses_configured_credentials_and_seals_production_state(): void
+    {
+        $this->enablePublicLaunch();
+        $article = $this->createArticle('peer_reviewed_research', 'published', 'Crossref Culinary Record');
+        DB::table('journal_articles')->where('id', $article->id)->update(['doi' => '10.5555/mcij.test.1']);
+        $article->refresh();
+        config([
+            'services.crossref.username' => 'member-user',
+            'services.crossref.password' => 'member-secret',
+            'services.crossref.depositor_name' => 'MCIJ Editorial Office',
+            'services.crossref.depositor_email' => 'info@iuoamc.uk',
+            'services.crossref.endpoint' => 'https://doi.crossref.test/servlet/deposit',
+        ]);
+        Http::preventStrayRequests();
+        Http::fake(['doi.crossref.test/*' => Http::response('SUCCESS', 200)]);
+
+        $result = app(JournalCrossrefClient::class)->deposit($article);
+
+        $this->assertSame('MCIJ-'.$article->article_code.'-V1', $result['deposit_id']);
+        $this->assertNotNull($article->fresh()->crossref_deposited_at);
+        Http::assertSent(fn (HttpRequest $request): bool => $request->url() === 'https://doi.crossref.test/servlet/deposit');
     }
 
     public function test_wicp_test_placeholder_can_never_authorise_publication(): void

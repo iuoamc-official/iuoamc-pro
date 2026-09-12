@@ -10,6 +10,7 @@ use App\Http\Controllers\Control\JournalReviewController;
 use App\Http\Controllers\Control\JournalSubmissionController as ControlJournalSubmissionController;
 use App\Http\Controllers\Control\JournalSectionController;
 use App\Http\Controllers\JournalPublicController;
+use App\Http\Controllers\JournalMetadataController;
 use App\Http\Controllers\JournalSubmissionController;
 use App\Http\Middleware\EnsureJournalLaunched;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +21,8 @@ Route::prefix('{locale}/journal')->where(['locale' => 'ar|en|fr'])->middleware([
     Route::get('/issues/{issue:slug}', [JournalPublicController::class, 'issue'])->name('issues.show');
     Route::get('/articles/{article:slug}', [JournalPublicController::class, 'show'])->name('articles.show');
     Route::get('/articles/{article:slug}/pdf', [JournalPublicController::class, 'downloadPdf'])->middleware('throttle:60,1')->name('articles.pdf');
+    Route::get('/articles/{article:slug}/citation/{format}', [JournalMetadataController::class, 'citation'])->where('format', 'bibtex|ris')->middleware('throttle:60,1')->name('articles.citation');
+    Route::get('/articles/{article:slug}/jats.xml', [JournalMetadataController::class, 'jats'])->middleware('throttle:60,1')->name('articles.jats');
     Route::get('/registry/wicp/{registration}', [JournalPublicController::class, 'registry'])->name('registry.show');
     Route::get('/policies', [JournalPublicController::class, 'policies'])->name('policies');
     Route::get('/author-guidelines', [JournalPublicController::class, 'authorGuidelines'])->name('author-guidelines');
@@ -30,6 +33,10 @@ Route::prefix('{locale}/journal')->where(['locale' => 'ar|en|fr'])->middleware([
     Route::get('/track-submission', [JournalSubmissionController::class, 'tracking'])->name('submissions.tracking');
     Route::post('/track-submission', [JournalSubmissionController::class, 'track'])->middleware('throttle:20,1')->name('submissions.track');
 });
+
+Route::get('/journal/oai', [JournalMetadataController::class, 'oai'])
+    ->middleware(['throttle:120,1', EnsureJournalLaunched::class])
+    ->name('journal.oai');
 
 Route::prefix('{locale}/control/journal')->where(['locale' => 'ar|en|fr'])
     ->middleware(['locale', 'auth', 'active', 'password.changed', 'control.access', 'permission:journal.view', \App\Http\Middleware\JournalControlHeaders::class])
@@ -49,6 +56,7 @@ Route::prefix('{locale}/control/journal')->where(['locale' => 'ar|en|fr'])
         Route::get('/sections/{section}/edit', [JournalSectionController::class, 'edit'])->whereNumber('section')->middleware('permission:journal.manage')->name('sections.edit');
         Route::put('/sections/{section}', [JournalSectionController::class, 'update'])->whereNumber('section')->middleware(['permission:journal.manage', 'throttle:20,1'])->name('sections.update');
         Route::post('/articles/{article}/reviews', [JournalReviewController::class, 'store'])->whereNumber('article')->middleware(['permission:journal.review', 'throttle:20,1'])->name('reviews.store');
+        Route::post('/reviews/{review}/response', [JournalReviewController::class, 'respond'])->whereNumber('review')->middleware(['permission:journal.review', 'throttle:20,1'])->name('reviews.respond');
         Route::put('/reviews/{review}', [JournalReviewController::class, 'update'])->whereNumber('review')->middleware('throttle:20,1')->name('reviews.update');
 
         Route::get('/submissions', [ControlJournalSubmissionController::class, 'index'])->middleware('permission:journal.submissions')->name('submissions.index');

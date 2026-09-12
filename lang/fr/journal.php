@@ -3,6 +3,19 @@
 $en = require __DIR__.'/../en/journal.php';
 
 return array_replace_recursive($en, [
+    'citation_tools' => 'Outils de citation scientifique',
+    'cite_article' => 'Citer et exporter',
+    'machine_access' => 'Accès lisible par machine',
+    'publication_metrics' => 'Indicateurs de publication et de rédaction',
+    'publication_metrics_help' => 'Activité agrégée respectueuse de la vie privée pour les dossiers publics et le flux actif.',
+    'public_metrics' => ':views lectures de l’article · :downloads téléchargements PDF',
+    'metrics' => ['published_articles' => 'Dossiers publiés', 'html_views' => 'Lectures des articles', 'pdf_downloads' => 'Téléchargements PDF', 'citation_downloads' => 'Exports de citation', 'jats_downloads' => 'Exports JATS XML', 'active_submissions' => 'Soumissions actives', 'under_review' => 'En évaluation'],
+    'review_due' => 'Date limite de l’évaluation',
+    'accept_review' => 'Accepter l’évaluation',
+    'decline_review' => 'Refuser l’évaluation',
+    'decline_reason' => 'Motif du refus',
+    'review_response_recorded' => 'La réponse à l’invitation a été enregistrée et auditée.',
+    'doi_verified_only' => 'Saisissez uniquement un DOI attribué sous le préfixe Crossref vérifié de la revue ; laissez vide avant attribution.',
     'sections'=>'Rubriques de la revue','section'=>'Rubrique','all_sections'=>'Toutes les rubriques','sections_intro'=>'Une taxonomie scientifique et professionnelle multilingue pour organiser et découvrir les contenus.','add_section'=>'Ajouter une rubrique','edit_section'=>'Modifier la rubrique','section_form_intro'=>'Définissez le nom, le périmètre et la description publique dans les trois langues.','save_section'=>'Enregistrer la rubrique','section_saved'=>'La rubrique a été enregistrée et auditée.','section_scopes'=>['all'=>'Tous les types de publication','peer_reviewed_research'=>'Recherche évaluée uniquement','professional_article'=>'Articles professionnels uniquement'],'section_statuses'=>['active'=>'Active','inactive'=>'Inactive'],'publisher_person'=>'Nom de l’éditeur responsable','publisher_profile'=>'Profil de l’éditeur','responsible_publisher'=>'Éditeur responsable',
     'wicp_test_number'=>'Numéro de test modifiable — publication bloquée',
     'download_pdf'=>'Télécharger le PDF',

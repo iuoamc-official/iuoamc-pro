@@ -1,6 +1,19 @@
 <?php
 
 return [
+    'citation_tools' => 'Scholarly citation tools',
+    'cite_article' => 'Cite and export',
+    'machine_access' => 'Machine-readable access',
+    'publication_metrics' => 'Publication and editorial metrics',
+    'publication_metrics_help' => 'Privacy-preserving aggregate activity across public records and the active workflow.',
+    'public_metrics' => ':views article views · :downloads PDF downloads',
+    'metrics' => ['published_articles' => 'Published records', 'html_views' => 'Article views', 'pdf_downloads' => 'PDF downloads', 'citation_downloads' => 'Citation exports', 'jats_downloads' => 'JATS XML exports', 'active_submissions' => 'Active submissions', 'under_review' => 'Under peer review'],
+    'review_due' => 'Review due date',
+    'accept_review' => 'Accept review assignment',
+    'decline_review' => 'Decline assignment',
+    'decline_reason' => 'Reason for declining',
+    'review_response_recorded' => 'The review assignment response was recorded and audited.',
+    'doi_verified_only' => 'Enter only a DOI assigned under the journal’s verified Crossref prefix; leave blank until assignment.',
     'sections'=>'Journal sections','section'=>'Section','all_sections'=>'All sections','sections_intro'=>'A multilingual scholarly and professional taxonomy that improves organisation and discovery.','add_section'=>'Add section','edit_section'=>'Edit section','section_form_intro'=>'Define the section name, scope and public description in all three languages.','save_section'=>'Save section','section_saved'=>'The journal section was saved and audited.','section_scopes'=>['all'=>'All publication types','peer_reviewed_research'=>'Peer-reviewed research only','professional_article'=>'Professional articles only'],'section_statuses'=>['active'=>'Active','inactive'=>'Inactive'],'publisher_person'=>'Responsible publisher name','publisher_profile'=>'Publisher profile','responsible_publisher'=>'Responsible publisher',
     'wicp_test_number' => 'Editable test number — publication blocked',
     'download_pdf' => 'Download article PDF',

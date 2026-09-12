@@ -52,6 +52,7 @@
             <div><span>{{ __('journal.publisher') }}</span><b>{{ $journal->publisher_name }}</b>@if($journal->setting('contact_email'))<a href="mailto:{{ $journal->setting('contact_email') }}">{{ $journal->setting('contact_email') }}</a>@endif @if($journal->setting('publication_frequency'))<small>{{ __('journal.frequencies.'.$journal->setting('publication_frequency')) }}</small>@endif</div>
             <div class="journal-publisher-profile"><span>{{ __('journal.responsible_publisher') }}</span><strong>{{ $journal->setting('publisher_person_name','Ahmad Maadarani') }}</strong><small>{{ $journal->localizedSetting('publisher_title') }}</small><p>{{ $journal->localizedSetting('publisher_biography') }}</p></div>
             <div><a href="{{ route('public.home', ['locale' => app()->getLocale()]) }}">IUOAMC.PRO</a><a href="{{ route('journal.public.policies', ['locale' => app()->getLocale()]) }}">{{ __('journal.editorial_integrity') }}</a><a href="{{ route('journal.public.editorial-governance', ['locale' => app()->getLocale()]) }}">{{ __('journal.editorial_governance') }}</a><a href="{{ route('journal.public.submissions.tracking', ['locale' => app()->getLocale()]) }}">{{ __('journal.track_submission') }}</a></div>
+            @if($journal->setting('oai_pmh_enabled', false) === true)<div><span>{{ __('journal.machine_access') }}</span><a href="{{ route('journal.oai', ['verb' => 'Identify']) }}">OAI-PMH 2.0</a></div>@endif
         </div>
     </footer>
     @include('public._ai_concierge')

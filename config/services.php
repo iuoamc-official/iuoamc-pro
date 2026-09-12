@@ -41,4 +41,13 @@ return [
         'timeout' => (int) env('OPENAI_TIMEOUT', 30),
     ],
 
+    'crossref' => [
+        'username' => env('CROSSREF_USERNAME'),
+        'password' => env('CROSSREF_PASSWORD'),
+        'depositor_name' => env('CROSSREF_DEPOSITOR_NAME'),
+        'depositor_email' => env('CROSSREF_DEPOSITOR_EMAIL'),
+        'endpoint' => env('CROSSREF_ENDPOINT', 'https://doi.crossref.org/servlet/deposit'),
+        'test_endpoint' => env('CROSSREF_TEST_ENDPOINT', 'https://test.crossref.org/servlet/deposit'),
+    ],
+
 ];

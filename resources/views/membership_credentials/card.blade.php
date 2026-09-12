@@ -10,7 +10,8 @@
         .gold-line { position: fixed; top: 11.7mm; left: 0; width: 85.6mm; height: .75mm; background: #c6a13c; }
         .bottom { position: fixed; top: 48.8mm; left: 0; width: 85.6mm; height: 5.2mm; background: #172e57; }
         .bottom-gold { position: fixed; top: 48.05mm; left: 0; width: 85.6mm; height: .75mm; background: #c6a13c; }
-        .logo { position: fixed; top: 1.7mm; left: 3.2mm; width: 25.2mm; height: auto; }
+        .brand { position: fixed; top: 1.7mm; left: 3.2mm; width: 25.2mm; height: 8.2mm; }
+        .brand img { width: 25.2mm; height: auto; }
         .card-label { position: fixed; top: 2.25mm; left: 30mm; width: 52.3mm; color: #ffffff; text-align: right; font-size: 6pt; font-weight: bold; letter-spacing: .55px; }
         .registration { position: fixed; top: 6.4mm; left: 30mm; width: 52.3mm; color: #e3c768; text-align: right; font-size: 4.25pt; }
         .photo-frame { position: fixed; top: 15.1mm; left: 3.2mm; width: 18.7mm; height: 24.9mm; padding: .6mm; border: .35mm solid #c6a13c; background: #ffffff; }
@@ -25,8 +26,11 @@
         .dates { margin-top: .85mm; color: #536273; font-size: 4.35pt; }
         .qr { position: fixed; top: 15.1mm; left: 69.2mm; width: 13.1mm; color: #536273; text-align: center; font-size: 3.45pt; line-height: 1.15; }
         .verification-rule { position: fixed; top: 37.2mm; left: 24.5mm; width: 57.7mm; border-top: .22mm solid #d7c588; }
-        .trust { position: fixed; top: 38.25mm; left: 24.5mm; width: 57.7mm; color: #657384; font-size: 3.7pt; line-height: 1.25; }
-        .trust-right { color: #8e6918; text-align: right; font-weight: bold; }
+        .nationality { position: fixed; top: 38.25mm; left: 24.5mm; width: 18mm; color: #536273; font-size: 3.8pt; font-weight: bold; }
+        .edition { position: fixed; top: 40.15mm; left: 24.5mm; width: 29mm; color: #657384; font-size: 3.35pt; }
+        .trust-right { position: fixed; top: 38.25mm; left: 45mm; width: 37.2mm; color: #8e6918; text-align: right; font-size: 3.7pt; font-weight: bold; }
+        .nfc { position: fixed; top: 40.2mm; left: 3.2mm; width: 17mm; height: 3.2mm; color: #8e6918; font-size: 4pt; font-weight: bold; line-height: 3.2mm; }
+        .nfc img { width: 5.1mm; height: 3.4mm; vertical-align: middle; }
         .hash-label { position: fixed; top: 43.55mm; left: 3.2mm; color: #7b8794; font-size: 3pt; }
         .hash { position: fixed; top: 45.05mm; left: 3.2mm; width: 79.2mm; color: #344b61; font-family: dejavusansmono; font-size: 2.65pt; letter-spacing: -.08px; white-space: nowrap; }
         .footer-left { position: fixed; top: 50.25mm; left: 3.2mm; width: 39mm; color: #ffffff; font-size: 3.45pt; font-weight: bold; }
@@ -40,7 +44,7 @@
 <div class="gold-line"></div>
 <div class="bottom-gold"></div>
 <div class="bottom"></div>
-<img class="logo" src="{{ $logo }}">
+<div class="brand"><img src="{{ $logo }}"></div>
 <div class="card-label">OFFICIAL MEMBERSHIP CARD</div>
 <div class="registration">INTERNATIONAL UNION OF ARAB MASTER CHEFS LTD · UK REG. {{ $payload['organization']['registration_number'] }}</div>
 <div class="photo-frame"><img class="photo" src="{{ $photoPath }}"></div>
@@ -50,11 +54,14 @@
     <div class="class-label">MEMBERSHIP CLASS</div>
     <div class="class-value"><bdi>{{ $payload['membership_type'] }}</bdi></div>
     <div class="number"><bdi dir="ltr">{{ $payload['membership_number'] }}</bdi></div>
-    <div class="dates">VALID&nbsp; <bdi dir="ltr">{{ $payload['valid_from'] }}</bdi>&nbsp; — &nbsp;<bdi dir="ltr">{{ $payload['valid_until'] }}</bdi></div>
+    <div class="dates">VALID FROM&nbsp; <bdi dir="ltr">{{ $payload['valid_from'] }}</bdi>&nbsp; - &nbsp;VALID UNTIL&nbsp; <bdi dir="ltr">{{ $payload['valid_until'] }}</bdi></div>
 </div>
 <div class="qr"><barcode code="{{ $payload['verification_url'] }}" type="QR" error="M" size="0.43" disableborder="0" /><br>SCAN TO VERIFY<br>LIVE STATUS</div>
 <div class="verification-rule"></div>
-<table class="trust" cellpadding="0" cellspacing="0"><tr><td width="49%">VERSION {{ $payload['version'] }} · {{ $payload['template_version'] }}</td><td width="51%" class="trust-right">PAdES/X.509 ELECTRONIC SIGNATURE</td></tr></table>
+<div class="nationality">NATIONALITY · <bdi dir="ltr">{{ $payload['nationality_code'] }}</bdi></div>
+<div class="edition">VERSION {{ $payload['version'] }} · {{ $payload['template_version'] }}</div>
+<div class="trust-right">PAdES/X.509 ELECTRONIC SIGNATURE</div>
+<div class="nfc"><img src="{{ $nfc }}">&nbsp; NFC ENABLED</div>
 <div class="hash-label">CREDENTIAL DATA SHA-256</div>
 <div class="hash">{{ $payload['credential_data_sha256'] }}</div>
 <div class="footer-left">PVC ID-1 · 85.60 × 54.00 MM</div>

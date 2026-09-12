@@ -297,6 +297,7 @@ final class MembershipCredentialRegistry
             'membership_type' => $membership->membership_type,
             'professional_title' => $membership->professional_title,
             'country_code' => $membership->country_code,
+            'nationality_code' => $application->nationality_code,
             'organization' => $membership->organization->only([
                 'id', 'code', 'legal_name', 'display_name', 'jurisdiction', 'registration_number',
             ]),

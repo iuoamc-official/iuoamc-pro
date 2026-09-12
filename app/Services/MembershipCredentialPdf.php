@@ -26,7 +26,8 @@ final class MembershipCredentialPdf
     {
         $this->validate($payload, $photoPath);
         $logo = public_path('assets/brand/iuoamc-pro-logo.png');
-        if (! is_file($logo) || is_link($logo)) {
+        $nfc = public_path('assets/brand/nfc-contactless-gold.svg');
+        if (! is_file($logo) || is_link($logo) || ! is_file($nfc) || is_link($nfc)) {
             throw new RuntimeException('MEMBERSHIP_BRAND_ASSET_MISSING');
         }
 
@@ -55,7 +56,7 @@ final class MembershipCredentialPdf
         $mpdf->SetAuthor((string) data_get($payload, 'organization.legal_name', 'IUOAMC'));
         $mpdf->SetCreator('IUOAMC Pro - '.self::TEMPLATE_VERSION);
         $mpdf->SetSubject((string) $payload['membership_number']);
-        $mpdf->WriteHTML(view($view, compact('payload', 'photoPath', 'logo'))->render());
+        $mpdf->WriteHTML(view($view, compact('payload', 'photoPath', 'logo', 'nfc'))->render());
 
         if ($mpdf->page !== 1) {
             throw new RuntimeException('MEMBERSHIP_CREDENTIAL_PAGE_OVERFLOW');
@@ -71,7 +72,7 @@ final class MembershipCredentialPdf
     private function validate(array $payload, string $photoPath): void
     {
         foreach ([
-            'membership_number', 'full_name', 'membership_type', 'valid_from',
+            'membership_number', 'full_name', 'membership_type', 'nationality_code', 'valid_from',
             'valid_until', 'verification_url', 'issued_at', 'credential_data_sha256',
         ] as $required) {
             if (! is_string($payload[$required] ?? null) || trim($payload[$required]) === '') {
@@ -81,6 +82,7 @@ final class MembershipCredentialPdf
         if (($payload['schema'] ?? null) !== 'iuoamc-membership-credential-v1'
             || ($payload['template_version'] ?? null) !== self::TEMPLATE_VERSION
             || ! preg_match('/\A[a-f0-9]{64}\z/D', (string) $payload['credential_data_sha256'])
+            || ! preg_match('/\A[A-Z]{2}\z/D', (string) $payload['nationality_code'])
             || trim((string) data_get($payload, 'organization.registration_number')) === ''
             || data_get($payload, 'electronic_signature.standard') !== 'PAdES/X.509'
             || ! preg_match('~\Ahttps://iuoamc\.pro/verify/m/[a-f0-9]{64}\z~D', $payload['verification_url'])

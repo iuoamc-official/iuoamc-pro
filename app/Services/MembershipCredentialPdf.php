@@ -26,7 +26,8 @@ final class MembershipCredentialPdf
     {
         $this->validate($payload, $photoPath);
         $logo = public_path('assets/brand/iuoamc-pro-logo.png');
-        if (! is_file($logo) || is_link($logo)) {
+        $nfc = public_path('assets/brand/nfc-contactless-gold.svg');
+        if (! is_file($logo) || is_link($logo) || ! is_file($nfc) || is_link($nfc)) {
             throw new RuntimeException('MEMBERSHIP_BRAND_ASSET_MISSING');
         }
 
@@ -55,7 +56,7 @@ final class MembershipCredentialPdf
         $mpdf->SetAuthor((string) data_get($payload, 'organization.legal_name', 'IUOAMC'));
         $mpdf->SetCreator('IUOAMC Pro - '.self::TEMPLATE_VERSION);
         $mpdf->SetSubject((string) $payload['membership_number']);
-        $mpdf->WriteHTML(view($view, compact('payload', 'photoPath', 'logo'))->render());
+        $mpdf->WriteHTML(view($view, compact('payload', 'photoPath', 'logo', 'nfc'))->render());
 
         if ($mpdf->page !== 1) {
             throw new RuntimeException('MEMBERSHIP_CREDENTIAL_PAGE_OVERFLOW');

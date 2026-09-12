@@ -29,6 +29,8 @@
         .nationality { position: fixed; top: 38.25mm; left: 24.5mm; width: 18mm; color: #536273; font-size: 3.8pt; font-weight: bold; }
         .edition { position: fixed; top: 40.15mm; left: 24.5mm; width: 29mm; color: #657384; font-size: 3.35pt; }
         .trust-right { position: fixed; top: 38.25mm; left: 45mm; width: 37.2mm; color: #8e6918; text-align: right; font-size: 3.7pt; font-weight: bold; }
+        .nfc { position: fixed; top: 40.2mm; left: 3.2mm; width: 17mm; height: 3.2mm; color: #8e6918; font-size: 4pt; font-weight: bold; line-height: 3.2mm; }
+        .nfc img { width: 5.1mm; height: 3.4mm; vertical-align: middle; }
         .hash-label { position: fixed; top: 43.55mm; left: 3.2mm; color: #7b8794; font-size: 3pt; }
         .hash { position: fixed; top: 45.05mm; left: 3.2mm; width: 79.2mm; color: #344b61; font-family: dejavusansmono; font-size: 2.65pt; letter-spacing: -.08px; white-space: nowrap; }
         .footer-left { position: fixed; top: 50.25mm; left: 3.2mm; width: 39mm; color: #ffffff; font-size: 3.45pt; font-weight: bold; }
@@ -59,6 +61,7 @@
 <div class="nationality">NATIONALITY · <bdi dir="ltr">{{ $payload['nationality_code'] }}</bdi></div>
 <div class="edition">VERSION {{ $payload['version'] }} · {{ $payload['template_version'] }}</div>
 <div class="trust-right">PAdES/X.509 ELECTRONIC SIGNATURE</div>
+<div class="nfc"><img src="{{ $nfc }}">&nbsp; NFC ENABLED</div>
 <div class="hash-label">CREDENTIAL DATA SHA-256</div>
 <div class="hash">{{ $payload['credential_data_sha256'] }}</div>
 <div class="footer-left">PVC ID-1 · 85.60 × 54.00 MM</div>

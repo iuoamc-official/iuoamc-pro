@@ -17,19 +17,19 @@
         .eyebrow { position: fixed; top: 39mm; left: 50mm; width: 210mm; color: #9b751f; text-align: center; font-size: 8pt; font-weight: bold; letter-spacing: 2px; }
         .heading { position: fixed; top: 47mm; left: 43mm; width: 224mm; color: #10283d; text-align: center; font-size: 25pt; font-weight: bold; }
         .rule { position: fixed; top: 60mm; left: 133mm; width: 31mm; border-top: .5mm solid #c7a343; }
-        .lead { position: fixed; top: 65mm; left: 68mm; width: 160mm; color: #607284; text-align: center; font-size: 9pt; }
-        .name { position: fixed; top: 72mm; left: 38mm; width: 232mm; color: #10283d; text-align: center; font-size: 22pt; font-weight: bold; line-height: 1.1; }
+        .identity-photo-frame { position: fixed; top: 65mm; left: 47mm; width: 22mm; height: 27mm; overflow: hidden; border: .32mm solid #b99536; border-radius: 50%; background: #fbfaf6; }
+        .identity-photo { display: block; width: 22mm; height: 27mm; margin: 0; border: 0; border-radius: 50%; background: #fbfaf6; }
+        .lead { position: fixed; top: 65mm; left: 76mm; width: 184mm; color: #607284; text-align: center; font-size: 9pt; }
+        .name { position: fixed; top: 72mm; left: 76mm; width: 184mm; color: #10283d; text-align: center; font-size: 22pt; font-weight: bold; line-height: 1.1; }
         .name.long { font-size: 18pt; }
-        .title { position: fixed; top: 86mm; left: 55mm; width: 198mm; color: #9b751f; text-align: center; font-size: 11pt; font-weight: bold; }
+        .title { position: fixed; top: 86mm; left: 76mm; width: 184mm; color: #9b751f; text-align: center; font-size: 11pt; font-weight: bold; }
         .statement { position: fixed; top: 95mm; left: 48mm; width: 212mm; height: 15mm; overflow: hidden; color: #30485d; text-align: center; font-size: 8.5pt; line-height: 1.45; }
         .meta { position: fixed; top: 115mm; left: 38mm; width: 232mm; height: 20mm; padding-top: 3mm; border-top: .25mm solid #d9c68f; border-bottom: .25mm solid #d9c68f; }
         .meta table { width: 100%; border-collapse: collapse; }
         .meta td { text-align: center; }
         .meta-label { color: #758291; font-size: 6.2pt; text-transform: uppercase; }
         .meta-value { margin-top: .7mm; color: #10283d; font-size: 7.5pt; font-weight: bold; }
-        .photo-frame { position: fixed; top: 143mm; left: 45mm; width: 22mm; height: 27mm; padding: .6mm; border: .32mm solid #b99536; border-radius: 50%; background: #fff; text-align: center; }
-        .photo { width: 20.8mm; height: 25.8mm; border-radius: 50%; }
-        .nfc-seal { position: fixed; top: 147mm; left: 72mm; width: 17mm; height: 17mm; padding-top: 2.1mm; border: .4mm solid #b99536; border-radius: 50%; color: #9b751f; text-align: center; font-size: 4.5pt; font-weight: bold; line-height: 1.15; }
+        .nfc-seal { position: fixed; top: 147mm; left: 61mm; width: 17mm; height: 17mm; padding-top: 2.1mm; border: .4mm solid #b99536; border-radius: 50%; color: #9b751f; text-align: center; font-size: 4.5pt; font-weight: bold; line-height: 1.15; }
         .nfc-seal img { width: 8mm; height: 5.2mm; }
         .signature { position: fixed; top: 148mm; left: 94mm; width: 117mm; padding-top: 2mm; border-top: .25mm solid #b99536; color: #10283d; text-align: center; font-size: 7.5pt; line-height: 1.5; }
         .signature-name { font-size: 10pt; font-weight: bold; }
@@ -50,6 +50,7 @@
 <div class="eyebrow">OFFICIAL MEMBERSHIP CREDENTIAL</div>
 <div class="heading">Certificate of Membership</div>
 <div class="rule"></div>
+<div class="identity-photo-frame"><img class="identity-photo" src="{{ $photoPath }}"></div>
 <div class="lead">This institutional record certifies that</div>
 <div class="name {{ mb_strlen($displayName) > 34 ? 'long' : '' }}"><bdi>{{ $displayName }}</bdi></div>
 @if($payload['professional_title'])<div class="title"><bdi>{{ $payload['professional_title'] }}</bdi></div>@endif
@@ -61,7 +62,6 @@
     <td width="17%"><div class="meta-label">Valid until</div><div class="meta-value"><bdi dir="ltr">{{ $validUntil }}</bdi></div></td>
     <td width="13%"><div class="meta-label">Version</div><div class="meta-value">{{ $payload['version'] }}</div></td>
 </tr></table></div>
-<div class="photo-frame"><img class="photo" src="{{ $photoPath }}"></div>
 <div class="nfc-seal"><img src="{{ $nfc }}"><br>NFC<br>ENABLED</div>
 <div class="signature">Electronically authorised by<br><span class="signature-name">{{ $payload['electronic_signature']['name'] }}</span><br><span class="signature-title">{{ $payload['electronic_signature']['title'] }}</span><br><span class="signature-standard">CRYPTOGRAPHICALLY SIGNED · {{ $payload['electronic_signature']['standard'] }}</span></div>
 <div class="qr"><barcode code="{{ $payload['verification_url'] }}" type="QR" error="M" size="0.72" disableborder="0" /><br>SCAN TO VERIFY<br>LIVE REGISTRY STATUS</div>

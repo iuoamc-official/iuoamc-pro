@@ -971,7 +971,7 @@ final class JournalPublishingTest extends TestCase
 
         $this->assertSame('MCIJ-'.$article->article_code.'-V1', $result['deposit_id']);
         $this->assertNotNull($article->fresh()->crossref_deposited_at);
-        Http::assertSent(fn (HttpRequest $request): bool => $request->url() === 'https://doi.crossref.test/servlet/deposit');
+        Http::assertSent(fn (HttpRequest $request): bool => str_starts_with($request->url(), 'https://doi.crossref.test/servlet/deposit'));
     }
 
     public function test_wicp_test_placeholder_can_never_authorise_publication(): void

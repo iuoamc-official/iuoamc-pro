@@ -6,10 +6,10 @@
         @page { margin: 0; }
         * { box-sizing: border-box; }
         body { margin: 0; color: #10283d; font-family: dejavusans; background: #fff; }
-        .sheet { position: relative; height: 188mm; overflow: hidden; border: 1mm solid #b99536; background: #fbfaf6; }
-        .navy { position: absolute; top: 0; left: 0; width: 16mm; height: 188mm; background: #10283d; }
-        .gold { position: absolute; top: 0; left: 16mm; width: 1.2mm; height: 188mm; background: #c7a343; }
-        .inner { margin: 4mm 6mm 4mm 22mm; height: 176mm; border: .25mm solid #d9c68f; padding: 5mm 9mm; text-align: center; }
+        .sheet { position: relative; height: 204mm; overflow: hidden; border: 1mm solid #b99536; background: #fbfaf6; }
+        .navy { position: absolute; top: 0; left: 0; width: 16mm; height: 204mm; background: #10283d; }
+        .gold { position: absolute; top: 0; left: 16mm; width: 1.2mm; height: 204mm; background: #c7a343; }
+        .inner { margin: 4mm 6mm 4mm 22mm; height: 194mm; border: .25mm solid #d9c68f; padding: 5mm 9mm; text-align: center; }
         .logo { width: 47mm; height: auto; }
         .company { color: #586a7c; text-align: right; font-size: 7pt; line-height: 1.45; }
         .eyebrow { margin-top: 5mm; color: #9b751f; font-size: 8pt; font-weight: bold; letter-spacing: 2px; }

@@ -1,12 +1,12 @@
 from __future__ import annotations
-import os, uuid
+import os, uuid, hmac
 from datetime import datetime, timezone, timedelta
 import psycopg
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Header
 from packages.auth.security import require_permission
 from packages.events.nats_client import publish
 
-app = FastAPI(title="IUOAMC Failover Decision Engine", version="0.1.0")
+app = FastAPI(title="IUOAMC Failover Decision Engine", version="0.2.0")
 
 
 def db():
@@ -17,7 +17,13 @@ def db():
 
 @app.get("/health")
 def health():
-    return {"service":"failover","status":"ok","mode":"decision-only","production_switching":False}
+    return {
+        "service":"failover",
+        "status":"ok",
+        "mode":"decision-only",
+        "production_switching":False,
+        "shadow_mode":os.getenv("SHADOW_MODE", "false").lower() == "true",
+    }
 
 
 def recent_states(conn, target_id: uuid.UUID, limit: int) -> list[str]:
@@ -37,12 +43,7 @@ def bad_enough(states: list[str], required: int) -> bool:
     return len(states) >= required and all(s in bad for s in states[:required])
 
 
-@app.post("/v1/groups/{group_id}/evaluate")
-async def evaluate_group(
-    group_id: uuid.UUID,
-    _: dict = Depends(require_permission("noc.operate")),
-    conn=Depends(db),
-):
+async def evaluate_group_core(group_id: uuid.UUID, conn):
     group = conn.execute(
         "SELECT name,mode,enabled FROM redundancy_groups WHERE id=%s",
         (group_id,),
@@ -110,6 +111,33 @@ async def evaluate_group(
         return {"decision_id":str(row[0]),"decision":decision,"reason":reason,"evidence":evidence}
 
     return {"group_id":str(group_id),"decision":"hold","reason":"failover conditions not met"}
+
+
+@app.post("/v1/groups/{group_id}/evaluate")
+async def evaluate_group(
+    group_id: uuid.UUID,
+    _: dict = Depends(require_permission("noc.operate")),
+    conn=Depends(db),
+):
+    return await evaluate_group_core(group_id, conn)
+
+
+@app.post("/internal/shadow/groups/{group_id}/evaluate")
+async def shadow_evaluate_group(
+    group_id: uuid.UUID,
+    x_shadow_lab_key: str | None = Header(default=None, alias="X-Shadow-Lab-Key"),
+):
+    if os.getenv("SHADOW_MODE", "false").lower() != "true":
+        raise HTTPException(404, "Shadow mode disabled")
+    expected = os.getenv("SHADOW_LAB_KEY", "")
+    if not expected or not x_shadow_lab_key or not hmac.compare_digest(expected, x_shadow_lab_key):
+        raise HTTPException(403, "Invalid shadow lab key")
+    dsn = os.environ["DATABASE_URL"].replace("postgresql+psycopg://", "postgresql://")
+    with psycopg.connect(dsn) as conn:
+        result = await evaluate_group_core(group_id, conn)
+    result["shadow_only"] = True
+    result["production_switching"] = False
+    return result
 
 
 @app.post("/v1/decisions/{decision_id}/authorize")

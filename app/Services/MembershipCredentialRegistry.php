@@ -319,7 +319,12 @@ final class MembershipCredentialRegistry
         $signer = app(ProCertificatePadesSigner::class);
         abort_unless($signer->readiness()['ready'], 409, trans('memberships.errors.pades'));
 
-        $card = $signer->sign($pdf->renderCard($payload, $photoPath));
+        // The shared visible signature rectangle is sized for A4 certificates and
+        // sits outside the ISO/IEC 7810 ID-1 card page. Keep the card's PAdES/X.509
+        // signature cryptographic and invisible; the card design already carries
+        // the electronic-signature statement. The A4 certificate retains the
+        // configured visible signature appearance.
+        $card = $signer->sign($pdf->renderCard($payload, $photoPath), false);
         $certificate = $signer->sign($pdf->renderCertificate($payload, $photoPath));
         $base = 'memberships/credentials/'.preg_replace('/[^A-Za-z0-9_-]/', '-', (string) $membership->membership_number)
             .'/v'.(int) $period->version.'-'.substr($token, 0, 16);

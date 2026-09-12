@@ -39,6 +39,7 @@
     @endforeach
 
     <footer>
+        <button class="secondary-action" type="button" onclick="window.print()">{{ __('legal.save_or_print') }}</button>
         <a class="secondary-action" href="{{ route('account.membership.create', ['locale' => app()->getLocale()]) }}">{{ __('legal.back_to_application') }}</a>
         <a class="secondary-action" href="mailto:info@iuoamc.uk">info@iuoamc.uk</a>
     </footer>

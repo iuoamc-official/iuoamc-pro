@@ -8,7 +8,7 @@ use InvalidArgumentException;
 
 final class MembershipApplicationPolicy
 {
-    public const TERMS_VERSION = 'IUOAMC-MEMBERSHIP-TERMS-2026-09-12-v1';
+    public const TERMS_VERSION = 'IUOAMC-MEMBERSHIP-TERMS-2026-09-12-v2';
 
     public const PRIVACY_VERSION = 'IUOAMC-MEMBERSHIP-PRIVACY-2026-09-12-v1';
 

@@ -8,7 +8,7 @@ return [
     'total_fee' => 'Total fee',
     'years' => '{1} One year|[2,*] :count years',
     'allocation_title' => 'Fee allocation by service stage',
-    'allocation_intro' => 'The percentages show the portion allocated to each stage. A refund deduction is made only for stages actually performed and documented external costs permitted by law. If a discount was granted, each stage is calculated from the published standard fee before discount and then deducted from the amount actually paid.',
+    'allocation_intro' => 'The percentages are maximum allocations for completed stages, not automatic cancellation charges. A cancellation-period deduction is proportionate to services actually supplied. If a discount was granted, a completed stage is valued from the published standard fee before discount and deducted from the amount actually paid, subject always to mandatory law.',
     'stage' => 'Service stage',
     'percentage' => 'Percentage of fee',
     'allocations' => [
@@ -20,14 +20,16 @@ return [
         'account_support' => 'Account service and communications after activation',
     ],
     'back_to_application' => 'Back to membership application',
+    'save_or_print' => 'Save or print this copy',
     'documents' => [
         'membership_terms' => [
             'title' => 'Membership Terms, Fees and Refund Policy',
             'intro' => 'Terms governing an IUOAMC membership application, review, approval and credentials.',
             'sections' => [
                 ['title' => '1. Contracting entity and scope', 'paragraphs' => [
-                    'INTERNATIONAL UNION OF ARAB MASTER CHEFS LTD, UK company number 16649793 (IUOAMC), administers membership applications covered by these terms. These terms apply to online applications unless a specific written offer states otherwise.',
+                    'INTERNATIONAL UNION OF ARAB MASTER CHEFS LTD, UK company number 16649793 (IUOAMC), administers membership applications covered by these terms. Registered office: 60 Tottenham Court Road, Suite 6842a, London, England, W1T 2EW. Email: info@iuoamc.uk. These terms apply to online applications unless a specific written offer states otherwise.',
                     'These terms supplement and do not exclude or restrict an applicant’s mandatory statutory rights.',
+                    'IUOAMC will perform its services with reasonable care and skill and within the agreed time or, where no time is agreed, within a reasonable time.',
                 ]],
                 ['title' => '2. Membership categories and eligibility', 'paragraphs' => [
                     'An applicant may request General, Professional, Elite or International Expert Membership. The selection is a requested category, not an acquired status, and identity, evidence and experience remain subject to review.',
@@ -39,17 +41,18 @@ return [
                 ]],
                 ['title' => '4. Payment and start of processing', 'paragraphs' => [
                     'The complete price is shown before payment. No undisclosed mandatory charge is added. An applicant may expressly request immediate review during the cancellation period or choose processing to begin after that period.',
-                    'Where immediate performance is requested, the applicant agrees to pay a proportionate amount for services actually supplied before cancellation. The 35% allocation is not a penalty: it becomes non-refundable consideration for file opening and initial review only after that stage starts and is performed, and only to the extent permitted by law.',
+                    'Where immediate performance is expressly requested, the applicant agrees to pay a proportionate amount for services actually supplied before cancellation. The 35% allocation is a maximum value for the completed file-opening and initial-review stage, not a penalty or an automatic charge. If only part of that stage has been supplied, only a fair proportion of that allocation may be deducted, to the extent permitted by law.',
                 ]],
                 ['title' => '5. Distance-contract cancellation rights', 'paragraphs' => [
                     'Where the applicant is a consumer and distance-contract rules apply, the applicant will normally have 14 days from conclusion of the service contract to cancel without giving a reason. Any mandatory rights in the applicant’s country of residence continue to apply.',
                     'If the applicant expressly requests performance during that period and then cancels, IUOAMC may retain a proportionate amount for work actually performed. If the service is fully performed following an express request and acknowledgement that cancellation rights will be lost on completion, the right may end where the law permits.',
+                    'No cancellation-period service deduction is made if the required pre-contract information was not supplied or the applicant did not expressly request an early start. A statutory cancellation reimbursement is made without undue delay and no later than 14 days after IUOAMC is informed of the cancellation, using the original payment method unless the applicant expressly agrees otherwise, without a reimbursement fee.',
                 ]],
                 ['title' => '6. Refused applications and refunds', 'paragraphs' => [
                     'If an application is refused, the unearned balance is returned to the original payment method within 14 days after the final decision or receipt of information needed to make the refund, whichever is later. The applicant receives a statement of completed stages and deductions.',
                 ], 'items' => [
                     'Before any service starts: a full refund, subject only to a valid and disclosed legal exception.',
-                    'After file opening and initial review are completed: 35% of the fee may be retained.',
+                    'After file opening and initial review are completed: up to 35% of the standard fee may be retained; before completion, only a fair proportion for work actually supplied may be retained.',
                     'Verification and assessment stages are deducted only when actually performed.',
                     'Registration, credential production and post-activation support are not deducted when an application is refused before those stages occur.',
                     'Actual, documented and non-recoverable third-party costs may be deducted only when disclosed and lawful; total deductions can never exceed the amount paid.',
@@ -68,13 +71,21 @@ return [
                 ['title' => '10. Complaints and governing law', 'paragraphs' => [
                     'Cancellation requests and complaints should be sent to info@iuoamc.uk with the application reference. These terms are governed by the law of England and Wales, without depriving consumers of mandatory protection in their country of residence. Courts have jurisdiction as determined by applicable law.',
                 ]],
+                ['title' => '11. Model cancellation form', 'paragraphs' => [
+                    'To cancel, copy and send the following wording to info@iuoamc.uk (or post it to the registered office): “I hereby give notice that I cancel my contract for membership-application services.”',
+                ], 'items' => [
+                    'Applicant name and postal address.',
+                    'Application reference and date the application was submitted.',
+                    'Date of cancellation.',
+                    'Signature only if the form is sent on paper.',
+                ]],
             ],
         ],
         'membership_privacy' => [
             'title' => 'Membership Application Privacy Notice',
             'intro' => 'How membership applicant data is collected, used, protected and retained.',
             'sections' => [
-                ['title' => '1. Data controller', 'paragraphs' => ['INTERNATIONAL UNION OF ARAB MASTER CHEFS LTD, company number 16649793, is the controller for IUOAMC membership applications. Its ICO data-protection registration reference is ZB971358. Contact: info@iuoamc.uk.']],
+                ['title' => '1. Data controller', 'paragraphs' => ['INTERNATIONAL UNION OF ARAB MASTER CHEFS LTD, company number 16649793, is the controller for IUOAMC membership applications. Registered office: 60 Tottenham Court Road, Suite 6842a, London, England, W1T 2EW. Its ICO data-protection registration reference is ZB971358. Contact: info@iuoamc.uk.']],
                 ['title' => '2. Data collected', 'items' => ['Account, contact, bilingual name and professional-profile information.', 'Date of birth, nationality, address, residence and identity-document details.', 'Qualifications, experience, portrait photograph, application information and correspondence.', 'Selected fee plan, payments, consent timestamps, security events and audit records.']],
                 ['title' => '3. Purposes and legal bases', 'paragraphs' => ['Data is used to take requested pre-contract steps, perform an approved membership contract, comply with legal duties, and prevent fraud and protect the register under legitimate interests. Consent is used where the law requires it.', 'The portrait is not used for automated facial recognition, and no membership decision is made solely by automated processing.']],
                 ['title' => '4. Access and sharing', 'paragraphs' => ['Access is limited to the account holder and authorised personnel according to role. The minimum necessary data may be shared with contracted hosting, mail, payment, signature and verification providers, advisers and public authorities where a lawful basis and suitable safeguards exist. Personal data is not sold.']],

@@ -19,8 +19,12 @@ final class MembershipLegalDocumentTest extends TestCase
             ->assertSee('£1,100.00')
             ->assertSee('£2,100.00')
             ->assertSee('35%')
+            ->assertSee('الحد الأقصى لقيمة مرحلة')
             ->assertSee('الرسم الأساسي قبل الخصم')
-            ->assertSee('لا ينشئ عضوية');
+            ->assertSee('لا ينشئ عضوية')
+            ->assertSee('60 Tottenham Court Road')
+            ->assertSee('نموذج الإلغاء القياسي')
+            ->assertSee('وسيلة الدفع الأصلية');
     }
 
     public function test_english_privacy_notice_is_public_and_versioned(): void

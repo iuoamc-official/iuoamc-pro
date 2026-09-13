@@ -56,6 +56,7 @@ final class JournalPublishingTest extends TestCase
             '2026_09_12_160000_add_pdf_downloads_to_content_articles.php',
             '2026_09_12_170000_add_scholarly_interoperability_to_journal_articles.php',
             '2026_09_12_180000_add_revision_intake_and_review_reminders.php',
+            '2026_09_13_000000_create_journal_submission_accounts.php',
         ] as $migrationFile) {
             $migration = require database_path('migrations/'.$migrationFile);
             $migration->up();
@@ -603,6 +604,126 @@ final class JournalPublishingTest extends TestCase
         ]);
     }
 
+    public function test_verified_author_submission_is_linked_to_their_account_automatically(): void
+    {
+        $this->installIntegrityKeys();
+        $this->enablePublicLaunch();
+        Storage::fake('local');
+        $author = User::factory()->create([
+            'email' => 'author@example.test',
+            'status' => 'active',
+            'must_change_password' => false,
+        ]);
+
+        $this->actingAs($author)->post('/en/journal/submit', $this->validSubmissionPayload())
+            ->assertRedirect('/en/journal/submission-confirmation');
+
+        $submission = JournalSubmission::query()->firstOrFail();
+        $this->assertDatabaseHas('journal_submission_accounts', [
+            'journal_submission_id' => $submission->id,
+            'user_id' => $author->id,
+            'link_method' => 'authenticated_submission',
+        ]);
+        $this->actingAs($author)->get('/en/account/journal')
+            ->assertOk()
+            ->assertSee('Controlled sensory manuscript');
+    }
+
+    public function test_verified_author_can_claim_an_existing_submission_with_matching_receipt(): void
+    {
+        $this->installIntegrityKeys();
+        $this->enablePublicLaunch();
+        Storage::fake('local');
+        $this->post('/en/journal/submit', $this->validSubmissionPayload())->assertRedirect();
+        $receipt = session('journal_submission_receipt');
+        $submission = JournalSubmission::query()->firstOrFail();
+        $author = User::factory()->create([
+            'email' => 'author@example.test',
+            'status' => 'active',
+            'must_change_password' => false,
+        ]);
+
+        $this->actingAs($author)->post('/en/account/journal/claims', [
+            'submission_code' => $receipt['code'],
+            'tracking_token' => $receipt['token'],
+        ])->assertRedirect('/en/account/journal/submissions/'.$submission->id);
+
+        $this->assertDatabaseHas('journal_submission_accounts', [
+            'journal_submission_id' => $submission->id,
+            'user_id' => $author->id,
+            'link_method' => 'tracking_claim',
+        ]);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'journal.submission.account_linked']);
+    }
+
+    public function test_receipt_cannot_be_claimed_by_an_account_with_a_different_email(): void
+    {
+        $this->installIntegrityKeys();
+        $this->enablePublicLaunch();
+        Storage::fake('local');
+        $this->post('/en/journal/submit', $this->validSubmissionPayload());
+        $receipt = session('journal_submission_receipt');
+        $intruder = User::factory()->create([
+            'email' => 'intruder@example.test',
+            'status' => 'active',
+            'must_change_password' => false,
+        ]);
+
+        $this->actingAs($intruder)->post('/en/account/journal/claims', [
+            'submission_code' => $receipt['code'],
+            'tracking_token' => $receipt['token'],
+        ])->assertNotFound();
+
+        $this->assertDatabaseCount('journal_submission_accounts', 0);
+    }
+
+    public function test_account_cannot_open_another_authors_submission_workspace(): void
+    {
+        $this->installIntegrityKeys();
+        $this->enablePublicLaunch();
+        Storage::fake('local');
+        $owner = User::factory()->create([
+            'email' => 'author@example.test',
+            'status' => 'active',
+            'must_change_password' => false,
+        ]);
+        $this->actingAs($owner)->post('/en/journal/submit', $this->validSubmissionPayload());
+        $submission = JournalSubmission::query()->firstOrFail();
+        $intruder = User::factory()->create([
+            'email' => 'intruder@example.test',
+            'status' => 'active',
+            'must_change_password' => false,
+        ]);
+
+        $this->actingAs($intruder)->get('/en/account/journal/submissions/'.$submission->id)
+            ->assertNotFound();
+    }
+
+    public function test_reviewer_dashboard_lists_only_the_signed_in_reviewers_assignments(): void
+    {
+        $assigned = $this->createArticle('peer_reviewed_research', 'under_review', 'Assigned dashboard record');
+        $other = $this->createArticle('peer_reviewed_research', 'under_review', 'Other reviewer record');
+        $reviewerRole = Role::query()->where('slug', 'journal-reviewer')->firstOrFail();
+        $reviewer = User::factory()->create(['status' => 'active', 'must_change_password' => false]);
+        $reviewer->roles()->attach($reviewerRole);
+        $otherReviewer = User::factory()->create(['status' => 'active', 'must_change_password' => false]);
+        $otherReviewer->roles()->attach($reviewerRole);
+        foreach ([[$assigned, $reviewer], [$other, $otherReviewer]] as [$article, $assignee]) {
+            JournalReview::query()->create([
+                'journal_article_id' => $article->id,
+                'reviewer_id' => $assignee->id,
+                'round' => 1,
+                'status' => 'invited',
+                'assigned_by' => $article->created_by,
+            ]);
+        }
+
+        $this->actingAs($reviewer)->get('/en/control/journal/reviews')
+            ->assertOk()
+            ->assertSee('Assigned dashboard record')
+            ->assertDontSee('Other reviewer record');
+    }
+
     public function test_public_research_intake_rejects_professional_articles(): void
     {
         $this->enablePublicLaunch();
@@ -1018,6 +1139,36 @@ final class JournalPublishingTest extends TestCase
         Storage::disk('local')->assertExists($revision->manuscript_path);
         Storage::disk('local')->assertExists($revision->response_letter_path);
         $this->assertDatabaseHas('journal_notification_outbox', ['event' => 'revision_received', 'status' => 'pending']);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'journal.submission.revision_received']);
+    }
+
+    public function test_linked_author_can_upload_a_revision_without_reentering_the_tracking_token(): void
+    {
+        $this->installIntegrityKeys();
+        $this->enablePublicLaunch();
+        Storage::fake('local');
+        $author = User::factory()->create([
+            'email' => 'author@example.test',
+            'status' => 'active',
+            'must_change_password' => false,
+        ]);
+        $this->actingAs($author)->post('/en/journal/submit', $this->validSubmissionPayload());
+        $submission = JournalSubmission::query()->firstOrFail();
+        $editor = $this->superAdmin();
+        $this->actingAs($editor)->post('/en/control/journal/submissions/'.$submission->id.'/convert')->assertRedirect();
+        $article = $submission->fresh()->convertedArticle;
+        foreach (['submit', 'screen', 'request_revision'] as $action) {
+            $article = app(JournalWorkflow::class)->transition($editor, $article->id, $article->lock_version, $action, 'Revision requested through the account portal.');
+        }
+
+        $this->actingAs($author)->post('/en/account/journal/submissions/'.$submission->id.'/revisions', [
+            'manuscript' => UploadedFile::fake()->create('account-revision.pdf', 120, 'application/pdf'),
+            'author_note' => 'Revision uploaded from the verified account.',
+        ])->assertRedirect();
+
+        $revision = JournalSubmissionRevision::query()->firstOrFail();
+        $this->assertSame(1, $revision->revision_number);
+        Storage::disk('local')->assertExists($revision->manuscript_path);
         $this->assertDatabaseHas('audit_logs', ['event' => 'journal.submission.revision_received']);
     }
 

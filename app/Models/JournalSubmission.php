@@ -7,6 +7,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use LogicException;
 
 final class JournalSubmission extends Model
@@ -69,5 +70,10 @@ final class JournalSubmission extends Model
     public function revisions(): HasMany
     {
         return $this->hasMany(JournalSubmissionRevision::class)->orderByDesc('revision_number');
+    }
+
+    public function accountLink(): HasOne
+    {
+        return $this->hasOne(JournalSubmissionAccount::class);
     }
 }

@@ -91,7 +91,7 @@ return [
     'reason_required' => 'A documented editorial reason is required.', 'correction_reason' => 'Explain why a correction record is required.',
     'create_correction' => 'Create linked correction', 'content_preview' => 'Current-language preview', 'issue_control_intro' => 'Create and publish numbered issues without replacing their history.',
     'peer_review_records' => 'Peer-review records', 'peer_review_help' => 'Reviewer identity and confidential comments remain restricted to the editorial workspace.',
-    'choose_reviewer' => 'Choose reviewer', 'assign_reviewer' => 'Assign reviewer', 'reviewer' => 'Reviewer', 'review_round' => 'Review round :round',
+    'choose_reviewer' => 'Choose reviewer', 'assign_reviewer' => 'Assign reviewer', 'reviewer' => 'Reviewer', 'review_round' => 'Review round :round', 'my_reviews'=>'My reviews','my_reviews_intro'=>'A private desk for your assigned manuscripts, deadlines and review actions.','assigned_reviews'=>'Assigned reviews','reviewer_confidentiality_notice'=>'Only your own assignments are shown. Author identity remains blinded where required and confidential comments stay restricted.','open_review'=>'Open review','overdue'=>'Overdue',
     'recommendation' => 'Recommendation', 'author_comments' => 'Comments for the author', 'confidential_comments' => 'Confidential comments for editors',
     'submit_review' => 'Submit review', 'no_reviews' => 'No peer-review reports have been assigned.', 'blinded_for_review' => 'Blinded for independent review',
     'review_statuses' => ['invited'=>'Invited','in_progress'=>'In progress','submitted'=>'Submitted','declined'=>'Declined'],

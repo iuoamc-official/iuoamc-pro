@@ -6,16 +6,17 @@ namespace App\Http\Controllers;
 
 use App\Models\Journal;
 use App\Models\JournalSubmission;
+use App\Models\JournalSubmissionAccount;
 use App\Models\PublicPage;
 use App\Services\AuditTrail;
 use App\Services\JournalNotificationService;
+use App\Services\JournalRevisionIntake;
 use App\Services\PublicSiteProfile;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use RuntimeException;
@@ -101,6 +102,23 @@ final class JournalSubmissionController extends Controller
                     'received_at' => now()->utc()->startOfSecond(),
                 ]);
 
+                $account = $request->user();
+                if ($account !== null
+                    && $account->isActive()
+                    && $account->hasVerifiedEmail()
+                    && hash_equals($submission->author_email_hash, $this->secureHash(Str::lower($account->email)))) {
+                    $link = JournalSubmissionAccount::query()->create([
+                        'journal_submission_id' => $submission->id,
+                        'user_id' => $account->id,
+                        'link_method' => 'authenticated_submission',
+                        'linked_at' => now()->utc()->startOfSecond(),
+                    ]);
+                    AuditTrail::record('journal.submission.account_linked', $link, [], [
+                        'submission_code' => $submission->submission_code,
+                        'link_method' => $link->link_method,
+                    ], [], $account->id);
+                }
+
                 AuditTrail::record('journal.submission.received', $submission, [], [
                     'submission_code' => $submission->submission_code,
                     'type' => $submission->type,
@@ -167,7 +185,7 @@ final class JournalSubmissionController extends Controller
         return view('journal.submissions.tracking', $this->shared($locale, $profile) + compact('submission'));
     }
 
-    public function storeRevision(Request $request, string $locale, JournalNotificationService $notifications): RedirectResponse
+    public function storeRevision(Request $request, string $locale, JournalRevisionIntake $intake): RedirectResponse
     {
         $validated = $request->validate([
             'submission_code' => ['required', 'string', 'max:80'],
@@ -189,69 +207,13 @@ final class JournalSubmissionController extends Controller
             404
         );
 
-        $uuid = (string) Str::uuid();
-        $manuscript = $request->file('manuscript');
-        $responseLetter = $request->file('response_letter');
-        $manuscriptHash = hash_file('sha256', $manuscript->getRealPath());
-        $manuscriptPath = $manuscript->storeAs(
-            'journal/submission-revisions/'.$uuid,
-            $manuscriptHash.'.'.$this->safeExtension($manuscript),
-            'local'
+        $intake->receive(
+            $submission,
+            $request->file('manuscript'),
+            $request->file('response_letter'),
+            $validated['author_note'] ?? null,
+            'public_revision_intake',
         );
-        if ($manuscriptPath === false) {
-            throw new RuntimeException('The revised manuscript could not be stored.');
-        }
-
-        $responseLetterHash = $responseLetter ? hash_file('sha256', $responseLetter->getRealPath()) : null;
-        $responseLetterPath = $responseLetter?->storeAs(
-            'journal/submission-revisions/'.$uuid,
-            $responseLetterHash.'.'.$this->safeExtension($responseLetter),
-            'local'
-        );
-        if ($responseLetter !== null && $responseLetterPath === false) {
-            Storage::disk('local')->delete($manuscriptPath);
-            throw new RuntimeException('The response letter could not be stored.');
-        }
-
-        try {
-            DB::transaction(function () use ($validated, $submission, $uuid, $manuscript, $manuscriptPath, $manuscriptHash, $responseLetter, $responseLetterPath, $responseLetterHash, $notifications): void {
-                $locked = JournalSubmission::query()->with('convertedArticle')->lockForUpdate()->findOrFail($submission->id);
-                abort_unless($locked->status === 'converted' && $locked->convertedArticle?->status === 'revision_required', 409);
-                $revisionNumber = (int) $locked->revisions()->max('revision_number') + 1;
-                $revision = $locked->revisions()->create([
-                    'record_uuid' => $uuid,
-                    'revision_number' => $revisionNumber,
-                    'manuscript_path' => $manuscriptPath,
-                    'original_filename' => $this->safeFilename($manuscript),
-                    'file_sha256' => $manuscriptHash,
-                    'response_letter_path' => $responseLetterPath,
-                    'response_letter_filename' => $responseLetter ? $this->safeFilename($responseLetter) : null,
-                    'response_letter_sha256' => $responseLetterHash,
-                    'author_note' => trim((string) ($validated['author_note'] ?? '')) ?: null,
-                    'status' => 'received',
-                    'received_at' => now()->utc()->startOfSecond(),
-                ]);
-                AuditTrail::record('journal.submission.revision_received', $revision, [], [
-                    'submission_code' => $locked->submission_code,
-                    'revision_number' => $revisionNumber,
-                    'file_sha256' => $manuscriptHash,
-                ], ['source' => 'public_revision_intake']);
-
-                $contactEmail = trim((string) $locked->journal->setting('contact_email'));
-                if ($contactEmail !== '') {
-                    $notifications->queue($locked->journal, 'revision_received', $contactEmail, 'en', [
-                        'name' => 'Editorial Office',
-                        'code' => $locked->submission_code,
-                        'title' => $locked->title,
-                        'revision' => $revisionNumber,
-                        'workspace_url' => route('journal.control.submissions.show', ['locale' => 'en', 'submission' => $locked]),
-                    ], $revision);
-                }
-            }, 5);
-        } catch (Throwable $exception) {
-            Storage::disk('local')->delete(array_filter([$manuscriptPath, $responseLetterPath]));
-            throw $exception;
-        }
 
         return redirect()->route('journal.public.submissions.tracking', ['locale' => $locale])
             ->with('success', trans('journal.messages.revision_received'));
@@ -273,18 +235,4 @@ final class JournalSubmissionController extends Controller
         return hash_hmac('sha256', $value, (string) config('app.key'));
     }
 
-    private function safeFilename(UploadedFile $file): string
-    {
-        return Str::limit((string) preg_replace('/[^\pL\pN._ -]+/u', '-', basename($file->getClientOriginalName())), 255, '');
-    }
-
-    private function safeExtension(UploadedFile $file): string
-    {
-        return match ($file->getMimeType()) {
-            'application/pdf' => 'pdf',
-            'application/msword' => 'doc',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
-            default => Str::lower($file->getClientOriginalExtension()),
-        };
-    }
 }

@@ -1,0 +1,48 @@
+.claim-form {
+    display: grid;
+    grid-template-columns: minmax(180px, .7fr) minmax(280px, 1.3fr) auto;
+    align-items: end;
+    gap: 14px;
+}
+
+.account-help {
+    margin: -4px 0 18px;
+    color: var(--muted);
+    font-size: .86rem;
+}
+
+.journal-summary .summary-text {
+    font-size: 1.05rem;
+}
+
+.decision-row {
+    padding: 18px 2px;
+    border-bottom: 1px solid var(--line);
+}
+
+.decision-row:last-child {
+    border-bottom: 0;
+}
+
+.decision-row header {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.decision-row time {
+    color: var(--muted);
+    font-size: .75rem;
+}
+
+.decision-row p {
+    margin-bottom: 0;
+    white-space: pre-line;
+    color: #344b60;
+}
+
+@media (max-width: 850px) {
+    .claim-form {
+        grid-template-columns: 1fr;
+    }
+}

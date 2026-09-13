@@ -6,11 +6,19 @@ FPS="${SHADOW_FPS:-25}"
 SIZE="${SHADOW_SIZE:-1280x720}"
 VIDEO_RATE="${SHADOW_VIDEO_RATE:-2500k}"
 AUDIO_RATE="${SHADOW_AUDIO_RATE:-128k}"
+TICKER_FILE="${SHADOW_TICKER_FILE:-/opt/shadow/ticker.txt}"
+TICKER_SPEED="${SHADOW_TICKER_SPEED:-140}"
+TICKER_HEIGHT="${SHADOW_TICKER_HEIGHT:-72}"
+TICKER_FONT_SIZE="${SHADOW_TICKER_FONT_SIZE:-30}"
 WIDTH="${SIZE%x*}"
 HEIGHT="${SIZE#*x}"
 
 [[ "$WIDTH" =~ ^[0-9]+$ && "$HEIGHT" =~ ^[0-9]+$ ]] || {
   echo "ERROR: SHADOW_SIZE must be WIDTHxHEIGHT (current: $SIZE)" >&2
+  exit 1
+}
+[[ -r "$TICKER_FILE" ]] || {
+  echo "ERROR: ticker file missing: $TICKER_FILE" >&2
   exit 1
 }
 
@@ -31,6 +39,9 @@ done
 
 echo "IUOAMC TV internal preview source starting (staging/shadow only)."
 echo "Sequence: IDENT -> Mise en Place -> UP NEXT -> Knife Skills -> IDENT"
+echo "Ticker: enabled (${TICKER_FILE})"
+
+video_filter="scale=${WIDTH}:${HEIGHT}:force_original_aspect_ratio=decrease,pad=${WIDTH}:${HEIGHT}:(ow-iw)/2:(oh-ih)/2,fps=${FPS},drawbox=x=0:y=h-${TICKER_HEIGHT}:w=w:h=${TICKER_HEIGHT}:color=black@0.72:t=fill,drawtext=font='Noto Sans Arabic':textfile=${TICKER_FILE}:reload=1:fontcolor=white:fontsize=${TICKER_FONT_SIZE}:y=h-${TICKER_HEIGHT}+20:x=w-mod(t*${TICKER_SPEED}\,w+text_w):fix_bounds=1"
 
 play_one() {
   local rel="$1" file="${MEDIA_ROOT}/${rel}"
@@ -44,7 +55,7 @@ play_one() {
   if [[ "$has_audio" -eq 1 ]]; then
     ffmpeg -hide_banner -loglevel warning -re -i "$file" \
       -map 0:v:0 -map 0:a:0 \
-      -vf "scale=${WIDTH}:${HEIGHT}:force_original_aspect_ratio=decrease,pad=${WIDTH}:${HEIGHT}:(ow-iw)/2:(oh-ih)/2,fps=${FPS}" \
+      -vf "$video_filter" \
       -c:v libx264 -preset veryfast -pix_fmt yuv420p \
       -b:v "$VIDEO_RATE" -maxrate 3000k -bufsize 6000k \
       -g 50 -keyint_min 50 -sc_threshold 0 \
@@ -55,7 +66,7 @@ play_one() {
     ffmpeg -hide_banner -loglevel warning -re -i "$file" \
       -f lavfi -i "anullsrc=channel_layout=stereo:sample_rate=48000" \
       -map 0:v:0 -map 1:a:0 \
-      -vf "scale=${WIDTH}:${HEIGHT}:force_original_aspect_ratio=decrease,pad=${WIDTH}:${HEIGHT}:(ow-iw)/2:(oh-ih)/2,fps=${FPS}" \
+      -vf "$video_filter" \
       -c:v libx264 -preset veryfast -pix_fmt yuv420p \
       -b:v "$VIDEO_RATE" -maxrate 3000k -bufsize 6000k \
       -g 50 -keyint_min 50 -sc_threshold 0 \

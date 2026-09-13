@@ -21,68 +21,50 @@ done
 echo "===== IUOAMC TV MODERN 4K PREVIEW ====="
 echo "Resolution: 3840x2160"
 echo "Public publishing: disabled"
-echo "Gateway bindings: loopback only"
+echo "Gateway bindings: direct loopback only"
 echo "CPU cores: $(nproc)"
 echo "Memory: $(free -h | awk '/^Mem:/ {print $2}')"
 
+# Remove temporary edge containers from earlier workarounds. They are no longer
+# part of the modern pipeline and must not mask direct MediaMTX port bindings.
+for c in \
+  iuoamc-modern4k-hls-edge \
+  iuoamc-modern4k-webrtc-edge \
+  iuoamc-modern4k-api-edge \
+  iuoamc-modern4k-metrics-edge; do
+  docker rm -f "$c" >/dev/null 2>&1 || true
+done
+
 compose=(docker compose -f compose.modern-4k.yaml)
 "${compose[@]}" config >/dev/null
+
+# Recreate the dedicated modern network so the previous `internal: true`
+# definition cannot survive as stale Docker state.
+"${compose[@]}" down >/dev/null 2>&1 || true
+docker network rm iuoamc_broadcast_nexus_modern4k >/dev/null 2>&1 || true
+
 "${compose[@]}" up -d --build --force-recreate modern-media-gateway modern-4k-source
 
 GATEWAY_ID="$("${compose[@]}" ps -q modern-media-gateway)"
 [[ -n "$GATEWAY_ID" ]] || { echo "ERROR: modern media gateway container not found" >&2; exit 1; }
 
-MODERN_NETWORK="$(docker inspect "$GATEWAY_ID" --format '{{range $name, $cfg := .NetworkSettings.Networks}}{{$name}}{{"\n"}}{{end}}' | grep 'modern4k' | head -1)"
-[[ -n "$MODERN_NETWORK" ]] || { echo "ERROR: modern4k Docker network not found" >&2; exit 1; }
-
-echo "Modern network: $MODERN_NETWORK"
-
-docker pull nginx:1.27-alpine >/dev/null
-docker pull alpine/socat:latest >/dev/null
-
-start_hls_edge() {
-  local name="iuoamc-modern4k-hls-edge"
-  docker rm -f "$name" >/dev/null 2>&1 || true
-
-  docker create \
-    --name "$name" \
-    --restart unless-stopped \
-    -p "127.0.0.1:58888:18088/tcp" \
-    -v "$ROOT/modern-media/hls-edge.conf:/etc/nginx/conf.d/default.conf:ro" \
-    nginx:1.27-alpine \
-    >/dev/null
-
-  docker network connect "$MODERN_NETWORK" "$name"
-  docker start "$name" >/dev/null
-
-  if ! docker port "$name" "18088/tcp" | grep -q '127.0.0.1:58888'; then
-    echo "ERROR: HLS edge did not publish 127.0.0.1:58888" >&2
-    docker inspect "$name" --format '{{json .NetworkSettings.Ports}}' >&2 || true
+# Root-cause guard: direct loopback host bindings must exist. If Docker does not
+# install them, stop here rather than adding another proxy workaround.
+required_bindings=(
+  "8888/tcp 127.0.0.1:58888"
+  "8889/tcp 127.0.0.1:58889"
+  "9997/tcp 127.0.0.1:59997"
+  "9998/tcp 127.0.0.1:59998"
+)
+for entry in "${required_bindings[@]}"; do
+  container_port="${entry%% *}"
+  host_binding="${entry#* }"
+  if ! docker port "$GATEWAY_ID" "$container_port" | grep -q "$host_binding"; then
+    echo "ERROR: missing direct loopback binding $container_port -> $host_binding" >&2
+    docker inspect "$GATEWAY_ID" --format '{{json .NetworkSettings.Ports}}' >&2 || true
     exit 1
   fi
-}
-
-start_tcp_edge() {
-  local name="$1" host_port="$2" listen_port="$3" target_port="$4"
-  docker rm -f "$name" >/dev/null 2>&1 || true
-  docker run -d \
-    --name "$name" \
-    --restart unless-stopped \
-    -p "127.0.0.1:${host_port}:${listen_port}/tcp" \
-    alpine/socat:latest \
-    -d -d "TCP-LISTEN:${listen_port},fork,reuseaddr" "TCP:modern-media-gateway:${target_port}" \
-    >/dev/null
-  docker network connect "$MODERN_NETWORK" "$name"
-  if ! docker port "$name" "${listen_port}/tcp" | grep -q "127.0.0.1:${host_port}"; then
-    echo "ERROR: loopback edge ${name} did not publish 127.0.0.1:${host_port}" >&2
-    exit 1
-  fi
-}
-
-start_hls_edge
-start_tcp_edge iuoamc-modern4k-webrtc-edge 58889 18089 8889
-start_tcp_edge iuoamc-modern4k-api-edge 59997 19997 9997
-start_tcp_edge iuoamc-modern4k-metrics-edge 59998 19998 9998
+done
 
 HLS_URL="http://127.0.0.1:58888/iuoamc-tv-4k/index.m3u8"
 for i in $(seq 1 60); do
@@ -98,14 +80,11 @@ for i in $(seq 1 60); do
   fi
 
   if [[ "$i" -eq 60 ]]; then
-    echo "ERROR: 4K LL-HLS did not become ready after following redirects" >&2
+    echo "ERROR: 4K LL-HLS did not become ready" >&2
     echo "===== FINAL HLS HEADERS =====" >&2
     curl -sSIL --max-redirs 8 "$HLS_URL" >&2 || true
     echo "===== GATEWAY/SOURCE LOGS =====" >&2
-    "${compose[@]}" logs --no-color --tail=100 modern-media-gateway modern-4k-source >&2 || true
-    echo "===== HLS EDGE =====" >&2
-    docker port iuoamc-modern4k-hls-edge >&2 || true
-    docker logs --tail=80 iuoamc-modern4k-hls-edge >&2 || true
+    "${compose[@]}" logs --no-color --tail=120 modern-media-gateway modern-4k-source >&2 || true
     exit 1
   fi
   sleep 2
@@ -116,18 +95,16 @@ echo "===== STREAM INFO ====="
 head -30 /tmp/iuoamc-tv-4k.m3u8
 
 echo
-echo "===== LOOPBACK ENDPOINTS ====="
-docker port iuoamc-modern4k-hls-edge || true
-docker port iuoamc-modern4k-webrtc-edge || true
-docker port iuoamc-modern4k-api-edge || true
+echo "===== DIRECT LOOPBACK ENDPOINTS ====="
+docker port "$GATEWAY_ID" || true
 
 echo
 echo "===== CONTAINERS ====="
 "${compose[@]}" ps modern-media-gateway modern-4k-source
 
 echo
-echo "Modern 4K preview is active on loopback only."
+echo "Modern 4K preview is active on direct loopback bindings."
 echo "LL-HLS: $HLS_URL"
-echo "WebRTC page: http://127.0.0.1:58889/iuoamc-tv-4k"
+echo "WebRTC page: http://127.0.0.1:58889/iuoamc-tv-4k/"
 echo "API: http://127.0.0.1:59997/v3/paths/list"
 echo "Production/public outputs remain disabled."

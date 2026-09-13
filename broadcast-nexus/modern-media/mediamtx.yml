@@ -1,8 +1,8 @@
 logLevel: info
 api: yes
-apiAddress: 127.0.0.1:9997
+apiAddress: :9997
 metrics: yes
-metricsAddress: 127.0.0.1:9998
+metricsAddress: :9998
 
 rtsp: yes
 rtspAddress: :8554

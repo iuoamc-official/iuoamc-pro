@@ -9,7 +9,8 @@ document.addEventListener('DOMContentLoaded',()=>{
     distribution:'/distribution-control/',
     iptv:'/iptv-control/',
     noc:'/noc-control/',
-    failover:'/failover-control/'
+    failover:'/failover-control/',
+    supervisor:'/supervisor-control/'
   };
   Object.entries(routes).forEach(([panel,url])=>{
     const button=document.querySelector(`#nav button[data-panel="${panel}"]`);

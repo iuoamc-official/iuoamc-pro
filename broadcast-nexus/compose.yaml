@@ -39,7 +39,7 @@ services:
       - nexus_nats:/data
 
   minio:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest
     restart: "no"
     command: server /data --console-address ":9001"
     environment:
@@ -52,7 +52,7 @@ services:
       - nexus_minio:/data
 
   minio-init:
-    image: minio/mc:latest
+    image: quay.io/minio/aistor/mc:latest
     restart: "no"
     depends_on:
       - minio

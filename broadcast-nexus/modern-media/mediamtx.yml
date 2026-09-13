@@ -19,7 +19,13 @@ hlsAllowOrigins: ['*']
 webrtc: yes
 webrtcAddress: :8889
 webrtcAllowOrigins: ['*']
-webrtcLocalUDPAddress: :8189
+# For the isolated staging preview, carry ICE over one deterministic TCP port.
+# SSH local forwarding transports TCP only, so advertising the default UDP ICE
+# listener would leave the browser stuck at 0:00 even though the WebRTC page loads.
+webrtcLocalUDPAddress: ""
+webrtcLocalTCPAddress: :8189
+webrtcIPsFromInterfaces: false
+webrtcAdditionalHosts: [127.0.0.1]
 
 srt: yes
 srtAddress: :8890

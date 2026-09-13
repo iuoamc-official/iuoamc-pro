@@ -4,7 +4,8 @@ document.addEventListener('DOMContentLoaded',()=>{
     channels:'/channels-control/',
     scheduler:'/scheduler-control/',
     media:'/media-control/',
-    playout:'/playout-control/'
+    playout:'/playout-control/',
+    encoder:'/encoder-control/'
   };
   Object.entries(routes).forEach(([panel,url])=>{
     const button=document.querySelector(`#nav button[data-panel="${panel}"]`);

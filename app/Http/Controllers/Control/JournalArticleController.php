@@ -13,6 +13,7 @@ use App\Models\JournalSection;
 use App\Models\User;
 use App\Services\AuditTrail;
 use App\Services\JournalWorkflow;
+use App\Support\CreditRoles;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -89,7 +90,7 @@ final class JournalArticleController extends Controller
             ]);
 
             $this->saveTranslations($article, $validated['translations']);
-            $this->savePrimaryAuthor($article, $validated['author'], $request->user()->id);
+            $this->saveAuthors($article, $validated['author'], $validated['coauthors'] ?? [], $request->user()->id);
             $article->sections()->sync($validated['sections'] ?? []);
             AuditTrail::record('journal.article.created', $article, [], ['article_code' => $article->article_code, 'type' => $article->type]);
 
@@ -148,7 +149,7 @@ final class JournalArticleController extends Controller
                 'updated_by' => $request->user()->id,
             ])->save();
             $this->saveTranslations($locked, $validated['translations']);
-            $this->savePrimaryAuthor($locked, $validated['author'], $request->user()->id);
+            $this->saveAuthors($locked, $validated['author'], $validated['coauthors'] ?? [], $request->user()->id);
             $locked->sections()->sync($validated['sections'] ?? []);
             AuditTrail::record('journal.article.updated', $locked, $old, $locked->fresh()->only(array_keys($old)));
         }, 5);
@@ -290,6 +291,7 @@ final class JournalArticleController extends Controller
                     'affiliation_name' => $author->pivot->affiliation_name,
                     'affiliation_ror' => $author->pivot->affiliation_ror,
                     'contribution' => $author->pivot->contribution,
+                    'contribution_roles' => $author->pivot->contribution_roles,
                 ]);
             }
             $copy->sections()->sync($source->sections()->pluck('journal_sections.id')->all());
@@ -336,11 +338,26 @@ final class JournalArticleController extends Controller
             'sections' => ['nullable', 'array', 'max:6'],
             'sections.*' => ['integer', 'exists:journal_sections,id'],
             'author.name' => ['required', 'string', 'max:255'],
+            'author.id' => ['nullable', 'integer', 'exists:journal_authors,id'],
             'author.latin_name' => ['nullable', 'string', 'max:255'],
             'author.email' => ['nullable', 'email:rfc', 'max:254'],
             'author.orcid' => ['nullable', 'regex:/^0000-000[0-9]-[0-9]{4}-[0-9]{3}[0-9X]$/'],
+            'author.country_code' => ['nullable', 'alpha:ascii', 'size:2'],
             'author.affiliation_name' => ['nullable', 'string', 'max:255'],
-            'author.affiliation_ror' => ['nullable', 'url', 'max:255'],
+            'author.affiliation_ror' => ['nullable', 'url:http,https', 'max:255'],
+            'author.contribution_roles' => ['nullable', 'array', 'max:14'],
+            'author.contribution_roles.*' => [Rule::in(CreditRoles::ALL)],
+            'coauthors' => ['nullable', 'array', 'max:19'],
+            'coauthors.*.id' => ['nullable', 'integer', 'exists:journal_authors,id'],
+            'coauthors.*.name' => ['required', 'string', 'max:255'],
+            'coauthors.*.latin_name' => ['nullable', 'string', 'max:255'],
+            'coauthors.*.email' => ['nullable', 'email:rfc', 'max:254'],
+            'coauthors.*.orcid' => ['nullable', 'regex:/^0000-000[0-9]-[0-9]{4}-[0-9]{3}[0-9X]$/'],
+            'coauthors.*.country_code' => ['nullable', 'alpha:ascii', 'size:2'],
+            'coauthors.*.affiliation_name' => ['nullable', 'string', 'max:255'],
+            'coauthors.*.affiliation_ror' => ['nullable', 'url:http,https', 'max:255'],
+            'coauthors.*.contribution_roles' => ['required', 'array', 'min:1', 'max:14'],
+            'coauthors.*.contribution_roles.*' => [Rule::in(CreditRoles::ALL)],
             'declarations.conflicts' => ['nullable', 'string', 'max:3000'],
             'declarations.funding' => ['nullable', 'string', 'max:3000'],
             'declarations.ethics' => ['nullable', 'string', 'max:3000'],
@@ -380,27 +397,38 @@ final class JournalArticleController extends Controller
         }
     }
 
-    /** @param array<string, string|null> $data */
-    private function savePrimaryAuthor(JournalArticle $article, array $data, int $actorId): void
+    /** @param array<string, mixed> $primary
+     *  @param array<int, array<string, mixed>> $coauthors
+     */
+    private function saveAuthors(JournalArticle $article, array $primary, array $coauthors, int $actorId): void
     {
-        $author = $article->authors()->first();
-        if ($author === null) {
-            $author = JournalAuthor::query()->create([
-                'record_uuid' => (string) Str::uuid(),
-                'created_by' => $actorId,
-                'updated_by' => $actorId,
-            ] + $this->authorAttributes($data));
-        } else {
-            $author->fill($this->authorAttributes($data) + ['updated_by' => $actorId])->save();
+        $existingIds = $article->authors()->pluck('journal_authors.id')->map(fn ($id): int => (int) $id)->all();
+        $sync = [];
+        foreach ([$primary, ...$coauthors] as $index => $data) {
+            $requestedId = isset($data['id']) ? (int) $data['id'] : null;
+            $author = $requestedId !== null && in_array($requestedId, $existingIds, true)
+                ? JournalAuthor::query()->findOrFail($requestedId)
+                : null;
+            if ($author === null) {
+                $author = JournalAuthor::query()->create([
+                    'record_uuid' => (string) Str::uuid(),
+                    'created_by' => $actorId,
+                    'updated_by' => $actorId,
+                ] + $this->authorAttributes($data));
+            } else {
+                $author->fill($this->authorAttributes($data) + ['updated_by' => $actorId])->save();
+            }
+            $roles = $data['contribution_roles'] ?? ($index === 0 ? ['writing_original_draft'] : []);
+            $sync[$author->id] = [
+                'position' => $index + 1,
+                'is_corresponding' => $index === 0,
+                'affiliation_name' => trim((string) ($data['affiliation_name'] ?? '')) ?: null,
+                'affiliation_ror' => trim((string) ($data['affiliation_ror'] ?? '')) ?: null,
+                'contribution' => null,
+                'contribution_roles' => json_encode(array_values(array_unique($roles)), JSON_THROW_ON_ERROR),
+            ];
         }
-
-        $article->authors()->sync([$author->id => [
-            'position' => 1,
-            'is_corresponding' => true,
-            'affiliation_name' => trim((string) ($data['affiliation_name'] ?? '')) ?: null,
-            'affiliation_ror' => trim((string) ($data['affiliation_ror'] ?? '')) ?: null,
-            'contribution' => null,
-        ]]);
+        $article->authors()->sync($sync);
     }
 
     /** @param array<string, string|null> $data
@@ -413,6 +441,7 @@ final class JournalArticleController extends Controller
             'latin_name' => trim((string) ($data['latin_name'] ?? '')) ?: null,
             'email' => trim((string) ($data['email'] ?? '')) ?: null,
             'orcid' => trim((string) ($data['orcid'] ?? '')) ?: null,
+            'country_code' => Str::upper(trim((string) ($data['country_code'] ?? ''))) ?: null,
         ];
     }
 

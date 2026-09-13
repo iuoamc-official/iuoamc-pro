@@ -211,6 +211,8 @@ final class JournalWorkflow
                 'affiliation_name' => $author->pivot->affiliation_name,
                 'affiliation_ror' => $author->pivot->affiliation_ror,
                 'position' => $author->pivot->position,
+                'is_corresponding' => (bool) $author->pivot->is_corresponding,
+                'contribution_roles' => json_decode((string) $author->pivot->contribution_roles, true) ?: [],
             ])->values()->all(),
             'translations' => $article->translations->sortBy('locale')->map(fn ($translation): array => [
                 'locale' => $translation->locale,

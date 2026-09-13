@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Account\AccountController;
 use App\Http\Controllers\Account\MembershipApplicationController;
 use App\Http\Controllers\Account\JournalSubmissionController;
+use App\Http\Controllers\Account\JournalMessageController;
 use App\Http\Controllers\LegalDocumentController;
 use App\Http\Middleware\EnsureVerifiedAccountEmail;
 use Illuminate\Support\Facades\Route;
@@ -28,6 +29,8 @@ Route::prefix('{locale}/account')->where(['locale' => 'ar|en|fr'])
             ->whereNumber('submission')->name('journal.submissions.show');
         Route::post('/journal/submissions/{submission}/revisions', [JournalSubmissionController::class, 'storeRevision'])
             ->whereNumber('submission')->middleware('throttle:5,1')->name('journal.submissions.revisions.store');
+        Route::post('/journal/submissions/{submission}/messages', [JournalMessageController::class, 'store'])
+            ->whereNumber('submission')->middleware('throttle:10,1')->name('journal.submissions.messages.store');
         Route::patch('/profile', [AccountController::class, 'updateProfile'])
             ->middleware('throttle:10,1')->name('profile.update');
         Route::post('/refresh', [AccountController::class, 'refresh'])

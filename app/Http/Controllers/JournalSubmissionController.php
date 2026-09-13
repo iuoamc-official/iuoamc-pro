@@ -12,12 +12,14 @@ use App\Services\AuditTrail;
 use App\Services\JournalNotificationService;
 use App\Services\JournalRevisionIntake;
 use App\Services\PublicSiteProfile;
+use App\Support\CreditRoles;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use RuntimeException;
 use Throwable;
@@ -40,10 +42,24 @@ final class JournalSubmissionController extends Controller
             'keywords' => ['required', 'string', 'max:1200'],
             'manuscript' => ['required', 'file', 'mimes:pdf,doc,docx', 'max:25600'],
             'author_name' => ['required', 'string', 'max:255'],
+            'author_latin_name' => ['nullable', 'string', 'max:255'],
             'author_email' => ['required', 'email:rfc', 'max:254'],
             'affiliation' => ['nullable', 'string', 'max:255'],
+            'author_affiliation_ror' => ['nullable', 'url:http,https', 'max:255'],
             'orcid' => ['nullable', 'regex:/^0000-000[0-9]-[0-9]{4}-[0-9]{3}[0-9X]$/'],
             'country_code' => ['nullable', 'alpha:ascii', 'size:2'],
+            'author_contribution_roles' => ['nullable', 'array', 'max:14'],
+            'author_contribution_roles.*' => [Rule::in(CreditRoles::ALL)],
+            'coauthors' => ['nullable', 'array', 'max:19'],
+            'coauthors.*.name' => ['required', 'string', 'max:255'],
+            'coauthors.*.latin_name' => ['nullable', 'string', 'max:255'],
+            'coauthors.*.email' => ['required', 'email:rfc', 'max:254'],
+            'coauthors.*.affiliation_name' => ['nullable', 'string', 'max:255'],
+            'coauthors.*.affiliation_ror' => ['nullable', 'url:http,https', 'max:255'],
+            'coauthors.*.orcid' => ['nullable', 'regex:/^0000-000[0-9]-[0-9]{4}-[0-9]{3}[0-9X]$/'],
+            'coauthors.*.country_code' => ['nullable', 'alpha:ascii', 'size:2'],
+            'coauthors.*.contribution_roles' => ['required', 'array', 'min:1', 'max:14'],
+            'coauthors.*.contribution_roles.*' => [Rule::in(CreditRoles::ALL)],
             'conflicts' => ['required', 'string', 'max:3000'],
             'funding' => ['required', 'string', 'max:3000'],
             'ethics' => ['required', 'string', 'max:3000'],
@@ -51,6 +67,11 @@ final class JournalSubmissionController extends Controller
             'originality_confirmed' => ['accepted'],
             'privacy_confirmed' => ['accepted'],
         ]);
+        $emails = collect([$validated['author_email'], ...collect($validated['coauthors'] ?? [])->pluck('email')->all()])
+            ->map(fn (string $email): string => Str::lower(trim($email)));
+        if ($emails->unique()->count() !== $emails->count()) {
+            throw ValidationException::withMessages(['coauthors' => trans('journal.duplicate_author_email')]);
+        }
 
         $journal = Journal::query()->where('status', 'active')->firstOrFail();
         $uuid = (string) Str::uuid();
@@ -101,6 +122,35 @@ final class JournalSubmissionController extends Controller
                     'consent_at' => now()->utc()->startOfSecond(),
                     'received_at' => now()->utc()->startOfSecond(),
                 ]);
+
+                $contributors = [[
+                    'name' => $validated['author_name'],
+                    'latin_name' => $validated['author_latin_name'] ?? null,
+                    'email' => $validated['author_email'],
+                    'affiliation_name' => $validated['affiliation'] ?? null,
+                    'affiliation_ror' => $validated['author_affiliation_ror'] ?? null,
+                    'orcid' => $validated['orcid'] ?? null,
+                    'country_code' => $validated['country_code'] ?? null,
+                    'contribution_roles' => $validated['author_contribution_roles'] ?? ['writing_original_draft'],
+                    'is_corresponding' => true,
+                ], ...($validated['coauthors'] ?? [])];
+                foreach ($contributors as $index => $contributor) {
+                    $email = Str::lower(trim((string) $contributor['email']));
+                    $submission->contributors()->create([
+                        'position' => $index + 1,
+                        'is_corresponding' => (bool) ($contributor['is_corresponding'] ?? false),
+                        'name' => trim((string) $contributor['name']),
+                        'latin_name' => trim((string) ($contributor['latin_name'] ?? '')) ?: null,
+                        'email' => $email,
+                        'email_hash' => $this->secureHash($email),
+                        'orcid' => trim((string) ($contributor['orcid'] ?? '')) ?: null,
+                        'affiliation_name' => trim((string) ($contributor['affiliation_name'] ?? '')) ?: null,
+                        'affiliation_ror' => trim((string) ($contributor['affiliation_ror'] ?? '')) ?: null,
+                        'country_code' => Str::upper(trim((string) ($contributor['country_code'] ?? ''))) ?: null,
+                        'contribution_roles' => array_values(array_unique($contributor['contribution_roles'])),
+                        'consent_confirmed_at' => now()->utc()->startOfSecond(),
+                    ]);
+                }
 
                 $account = $request->user();
                 if ($account !== null

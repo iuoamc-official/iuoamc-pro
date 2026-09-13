@@ -134,7 +134,7 @@ final class JournalArticle extends Model
     public function authors(): BelongsToMany
     {
         return $this->belongsToMany(JournalAuthor::class, 'journal_article_author')
-            ->withPivot(['position', 'is_corresponding', 'affiliation_name', 'affiliation_ror', 'contribution'])
+            ->withPivot(['position', 'is_corresponding', 'affiliation_name', 'affiliation_ror', 'contribution', 'contribution_roles'])
             ->orderByPivot('position');
     }
 

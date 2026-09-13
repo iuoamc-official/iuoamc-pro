@@ -81,6 +81,8 @@
                         @if ($author->pivot->affiliation_name)
                             <span>{{ $author->pivot->affiliation_name }}</span>
                         @endif
+                        @php($roles = is_array($author->pivot->contribution_roles) ? $author->pivot->contribution_roles : (json_decode((string) $author->pivot->contribution_roles, true) ?: []))
+                        @if($roles !== [])<small>{{ collect($roles)->map(fn($role)=>__('journal.credit.'.$role))->join(' · ') }}</small>@endif
                     </div>
                 @endforeach
             </div>

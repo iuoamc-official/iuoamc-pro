@@ -12,6 +12,13 @@
     <article><span>{{ __('journal.received_revisions') }}</span><strong>{{ $submission->revisions->count() }}</strong></article>
 </section>
 
+@if($submission->contributors->isNotEmpty())
+<section class="account-card">
+    <header><div><span>01</span><h2>{{ __('journal.contributors') }}</h2></div></header>
+    @foreach($submission->contributors as $contributor)<article class="record-row"><div><strong>{{ $contributor->name }}{{ $contributor->is_corresponding ? ' · ✉' : '' }}</strong><span>{{ $contributor->affiliation_name ?: '—' }}@if($contributor->orcid) · ORCID <bdi dir="ltr">{{ $contributor->orcid }}</bdi>@endif</span><small>{{ collect($contributor->contribution_roles)->map(fn($role)=>__('journal.credit.'.$role))->join(' · ') }}</small></div></article>@endforeach
+</section>
+@endif
+
 @if($submission->convertedArticle)
 <section class="account-card">
     <header><div><span>01</span><h2>{{ __('journal.editorial_record') }}</h2></div><small><bdi dir="ltr">{{ $submission->convertedArticle->article_code }}</bdi></small></header>
@@ -42,5 +49,11 @@
     @forelse($submission->revisions as $revision)
         <article class="record-row"><div><strong>{{ __('journal.revision_number',['number'=>$revision->revision_number]) }}</strong><span>{{ $revision->status }} · {{ $revision->received_at->format('Y-m-d H:i') }} UTC</span><small><bdi dir="ltr">SHA-256: {{ $revision->file_sha256 }}</bdi></small></div></article>
     @empty <div class="empty-state"><p>{{ __('account.no_revisions') }}</p></div>@endforelse
+</section>
+<section class="account-card">
+    <header><div><span>04</span><h2>{{ __('journal.editorial_correspondence') }}</h2></div><small>{{ __('account.private_verified_access') }}</small></header>
+    <p class="account-help">{{ __('journal.editorial_correspondence_help') }}</p>
+    <div class="journal-message-list">@forelse($submission->messages as $message)<article class="journal-message journal-message-{{ $message->sender_role }}"><header><strong>{{ $message->sender_role === 'editor' ? __('journal.editorial_office') : __('journal.you') }}</strong><time>{{ $message->sent_at->format('Y-m-d H:i') }} UTC</time></header><p>{!! nl2br(e($message->body)) !!}</p></article>@empty<div class="empty-state"><p>{{ __('journal.no_editorial_messages') }}</p></div>@endforelse</div>
+    <form method="post" action="{{ route('account.journal.submissions.messages.store',['locale'=>app()->getLocale(),'submission'=>$submission]) }}" class="account-form">@csrf<label class="wide"><span>{{ __('journal.message_body') }}</span><textarea name="body" maxlength="10000" rows="5" required>{{ old('body') }}</textarea></label><div class="form-footer"><button class="button" type="submit">{{ __('journal.send_message') }}</button></div></form>
 </section>
 @endsection

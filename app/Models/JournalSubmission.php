@@ -76,4 +76,14 @@ final class JournalSubmission extends Model
     {
         return $this->hasOne(JournalSubmissionAccount::class);
     }
+
+    public function contributors(): HasMany
+    {
+        return $this->hasMany(JournalSubmissionContributor::class)->orderBy('position');
+    }
+
+    public function messages(): HasMany
+    {
+        return $this->hasMany(JournalEditorialMessage::class)->orderBy('sent_at')->orderBy('id');
+    }
 }

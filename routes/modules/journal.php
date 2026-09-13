@@ -7,6 +7,7 @@ use App\Http\Controllers\Control\JournalIssueController;
 use App\Http\Controllers\Control\JournalEditorialMemberController;
 use App\Http\Controllers\Control\JournalOperationsController;
 use App\Http\Controllers\Control\JournalReviewController;
+use App\Http\Controllers\Control\JournalMessageController;
 use App\Http\Controllers\Control\JournalSubmissionController as ControlJournalSubmissionController;
 use App\Http\Controllers\Control\JournalSectionController;
 use App\Http\Controllers\JournalPublicController;
@@ -68,6 +69,7 @@ Route::prefix('{locale}/control/journal')->where(['locale' => 'ar|en|fr'])
         Route::post('/submissions/{submission}/screen', [ControlJournalSubmissionController::class, 'screen'])->whereNumber('submission')->middleware(['permission:journal.submissions', 'throttle:20,1'])->name('submissions.screen');
         Route::post('/submissions/{submission}/decline', [ControlJournalSubmissionController::class, 'decline'])->whereNumber('submission')->middleware(['permission:journal.submissions', 'throttle:20,1'])->name('submissions.decline');
         Route::post('/submissions/{submission}/convert', [ControlJournalSubmissionController::class, 'convert'])->whereNumber('submission')->middleware(['permission:journal.submissions', 'throttle:10,1'])->name('submissions.convert');
+        Route::post('/submissions/{submission}/messages', [JournalMessageController::class, 'store'])->whereNumber('submission')->middleware(['permission:journal.submissions', 'throttle:10,1'])->name('submissions.messages.store');
 
         Route::get('/issues', [JournalIssueController::class, 'index'])->name('issues.index');
         Route::get('/issues/create', [JournalIssueController::class, 'create'])->middleware('permission:journal.manage')->name('issues.create');

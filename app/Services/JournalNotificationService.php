@@ -34,7 +34,9 @@ final class JournalNotificationService
             'recipient' => $email,
             'recipient_hash' => hash_hmac('sha256', $email, (string) config('app.key')),
             'locale' => $locale,
-            'subject' => trans('journal.mail.subjects.'.$event, $payload, $locale),
+            'subject' => in_array($event, ['author_message_received', 'editor_message_received'], true)
+                ? trans('journal.editorial_message_email_subject', $payload, $locale)
+                : trans('journal.mail.subjects.'.$event, $payload, $locale),
             'template' => 'journal-workflow',
             'payload' => $payload,
             'subject_type' => $subject?->getMorphClass(),

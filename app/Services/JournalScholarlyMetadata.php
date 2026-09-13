@@ -83,8 +83,14 @@ final class JournalScholarlyMetadata
         $authors = $article->authors->map(function ($author): string {
             $name = $author->latin_name ?: $author->name;
             $orcid = $author->orcid ? '<contrib-id contrib-id-type="orcid">https://orcid.org/'.$this->xml($author->orcid).'</contrib-id>' : '';
+            $creditRoles = is_array($author->pivot->contribution_roles)
+                ? $author->pivot->contribution_roles
+                : (json_decode((string) $author->pivot->contribution_roles, true) ?: []);
+            $roles = collect($creditRoles)->map(
+                fn (string $role): string => '<role vocab="credit" vocab-identifier="https://credit.niso.org/" vocab-term-identifier="https://credit.niso.org/contributor-roles/'.$this->xml(str_replace('_', '-', $role)).'/">'.$this->xml(str_replace('_', ' ', $role)).'</role>'
+            )->implode('');
 
-            return '<contrib contrib-type="author"><name><surname>'.$this->xml($name).'</surname></name>'.$orcid.'</contrib>';
+            return '<contrib contrib-type="author"><name><surname>'.$this->xml($name).'</surname></name>'.$orcid.$roles.'</contrib>';
         })->implode('');
         $keywords = collect($translation?->keywords ?? [])->map(fn ($keyword): string => '<kwd>'.$this->xml((string) $keyword).'</kwd>')->implode('');
         $references = collect($translation?->references ?? [])->values()->map(

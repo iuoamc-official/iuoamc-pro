@@ -20,17 +20,17 @@ bash scripts/security-preflight.sh
 docker compose "${FILES[@]}" config --quiet
 
 COMBINED="$(docker compose "${FILES[@]}" config)"
-if printf '%s' "$COMBINED" | grep -Eqi 'a\.rtmp\.youtube\.com|rtmps?://|platform-iuoamc\.uk'; then
+if grep -Eqi 'a\.rtmp\.youtube\.com|rtmps?://|platform-iuoamc\.uk' <<<"$COMBINED"; then
   echo "FAIL: production destination/reference found in staging config"
   exit 4
 fi
 
-if ! printf '%s' "$COMBINED" | grep -q 'PRODUCTION_SWITCHING: "false"'; then
+if ! grep -q 'PRODUCTION_SWITCHING: "false"' <<<"$COMBINED"; then
   echo "FAIL: staging production switching guard missing"
   exit 5
 fi
 
-if ! printf '%s' "$COMBINED" | grep -q 'PRODUCTION_OUTPUTS_ENABLED: "false"'; then
+if ! grep -q 'PRODUCTION_OUTPUTS_ENABLED: "false"' <<<"$COMBINED"; then
   echo "FAIL: staging production outputs guard missing"
   exit 6
 fi

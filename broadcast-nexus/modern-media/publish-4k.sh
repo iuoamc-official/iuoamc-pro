@@ -24,7 +24,9 @@ for rel in "${PLAYLIST[@]}"; do
 done
 [[ -r "$TICKER_FILE" ]] || { echo "ERROR: missing ticker file $TICKER_FILE" >&2; exit 1; }
 
-vf="scale=${WIDTH}:${HEIGHT}:force_original_aspect_ratio=decrease,pad=${WIDTH}:${HEIGHT}:(ow-iw)/2:(oh-ih)/2,fps=${FPS},drawbox=x=0:y=ih-120:w=iw:h=120:color=black@0.72:t=fill,drawtext=font='Noto Sans Arabic':textfile=${TICKER_FILE}:reload=1:fontcolor=white:fontsize=48:y=ih-88:x=iw-mod(t*220\,iw+text_w):fix_bounds=1"
+# drawbox uses input-frame dimensions (iw/ih), while drawtext exposes output-frame
+# dimensions as w/h. Keep the expressions separate so FFmpeg can parse both filters.
+vf="scale=${WIDTH}:${HEIGHT}:force_original_aspect_ratio=decrease,pad=${WIDTH}:${HEIGHT}:(ow-iw)/2:(oh-ih)/2,fps=${FPS},drawbox=x=0:y=ih-120:w=iw:h=120:color=black@0.72:t=fill,drawtext=font='Noto Sans Arabic':textfile=${TICKER_FILE}:reload=1:fontcolor=white:fontsize=48:y=h-88:x=w-mod(t*220\,w+text_w):fix_bounds=1"
 
 echo "IUOAMC TV modern 4K publisher starting."
 echo "Master: ${WIDTH}x${HEIGHT} ${FPS}fps H.264/AAC"

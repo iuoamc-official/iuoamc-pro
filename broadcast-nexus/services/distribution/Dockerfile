@@ -7,4 +7,4 @@ COPY broadcast-nexus/services/distribution/app /app/app
 ENV PYTHONPATH=/app
 USER 65532:65532
 EXPOSE 8109
-CMD ["uvicorn","app.main:app","--host","0.0.0.0","--port","8109"]
+CMD ["uvicorn","app.runtime:app","--host","0.0.0.0","--port","8109"]

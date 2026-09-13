@@ -1,6 +1,6 @@
 services:
   modern-media-gateway:
-    image: bluenviron/mediamtx:v1.21.0
+    image: bluenviron/mediamtx:1.21.0
     restart: "no"
     volumes:
       - ./modern-media/mediamtx.yml:/mediamtx.yml:ro

@@ -9,6 +9,7 @@ services:
     depends_on:
       - dashboard-ui
       - dashboard-api
+      - operator-auth
       - supervisor
       - noc
       - control-room
@@ -34,6 +35,25 @@ services:
       PRODUCTION_OUTPUTS_ENABLED: "false"
       PUBLIC_PUBLISHING_ENABLED: "false"
       SHADOW_MODE: "true"
+    networks: [default]
+
+  operator-auth:
+    build:
+      context: ..
+      dockerfile: broadcast-nexus/services/operator-auth/Dockerfile
+    restart: unless-stopped
+    env_file: [.env]
+    environment:
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ISSUER: ${JWT_ISSUER}
+      JWT_AUDIENCE: ${JWT_AUDIENCE}
+      OPERATOR_SESSION_TTL_SECONDS: "1800"
+      SESSION_COOKIE_SECURE: "false"
+      DEPLOYMENT_ENV: staging
+      PRODUCTION_SWITCHING: "false"
+    depends_on:
+      - redis
     networks: [default]
 
   supervisor:

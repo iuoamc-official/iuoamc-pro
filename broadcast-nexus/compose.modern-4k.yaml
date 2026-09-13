@@ -34,6 +34,10 @@ services:
     command: ["/opt/shadow/publish-4k.sh"]
     networks: [modern4k]
 
+# Use a normal bridge network. Host exposure is still loopback-only because all
+# published ports above are explicitly bound to 127.0.0.1. This avoids the
+# staging Docker behavior where an internal network retained only ExposedPorts
+# and silently dropped host PortBindings.
 networks:
   modern4k:
-    internal: true
+    driver: bridge

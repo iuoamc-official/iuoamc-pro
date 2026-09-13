@@ -6,6 +6,12 @@
     @if(auth()->user()->canDo('memberships.view'))
         <a href="{{ route('memberships.index',['locale'=>app()->getLocale()]) }}" class="{{ request()->routeIs('memberships.*')?'active':'' }}"><span class="module-sidebar-icon">@include('control.navigation._icon',['icon'=>'memberships'])</span>{{ __('memberships.title') }}</a>
     @endif
+    {{-- IUOAMC_TV_SIDEBAR_1_0_0 --}}
+    @if(\Illuminate\Support\Facades\Route::has('tv.control.index') && auth()->user()?->status === 'active')
+        <a href="{{ route('tv.control.index',['locale'=>app()->getLocale()]) }}" class="{{ request()->routeIs('tv.control.*')?'active':'' }}" @if(request()->routeIs('tv.control.*')) aria-current="page" @endif data-iuoamc-tv-sidebar="1">
+            <span class="module-sidebar-icon">@include('control.navigation._icon',['icon'=>'tv'])</span>{{ __('platform.tv_title') }}
+        </a>
+    @endif
     {{-- IUOAMC_LEGACY_CERTIFICATE_SIDEBAR_1_0_0 --}}
     @if(auth()->user()?->status === 'active' && auth()->user()->hasRole('super-admin'))
         <a href="{{ route('legacy-certificates.index',['locale'=>app()->getLocale()]) }}" class="{{ request()->routeIs('legacy-certificates.*')?'active':'' }}"><span class="module-sidebar-icon">@include('control.navigation._icon',['icon'=>'legacy-certificates'])</span>{{ __('legacy_certificates.title') }}</a>

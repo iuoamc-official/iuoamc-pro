@@ -285,7 +285,10 @@ final class JournalPublishingTest extends TestCase
         $this->enablePublicLaunch();
         $this->get('/en/journal/author-guidelines')
             ->assertOk()
-            ->assertSee('Originality and authorship');
+            ->assertSee('Originality and authorship')
+            ->assertSee('Anonymous peer-review file')
+            ->assertSee('Artificial intelligence disclosure')
+            ->assertSee('Editorial timetable and communication');
 
         $this->get('/en/journal/submit')
             ->assertOk()

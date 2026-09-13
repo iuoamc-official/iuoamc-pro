@@ -1,0 +1,15 @@
+services:
+  shadow-source:
+    command: ["/opt/shadow/preview-source.sh"]
+    environment:
+      PREVIEW_MEDIA_ROOT: /preview-media
+      SHADOW_FPS: "25"
+      SHADOW_SIZE: "1280x720"
+      SHADOW_VIDEO_RATE: "2500k"
+      SHADOW_AUDIO_RATE: "128k"
+    volumes:
+      - /opt/iuoamc-broadcast/import/legacy-tv:/preview-media:ro
+
+  shadow-hls:
+    ports:
+      - "127.0.0.1:58118:80"

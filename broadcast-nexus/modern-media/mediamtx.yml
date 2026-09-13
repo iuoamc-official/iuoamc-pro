@@ -1,0 +1,30 @@
+logLevel: info
+api: yes
+apiAddress: 127.0.0.1:9997
+metrics: yes
+metricsAddress: 127.0.0.1:9998
+
+rtsp: yes
+rtspAddress: :8554
+rtmp: no
+
+hls: yes
+hlsAddress: :8888
+hlsVariant: lowLatency
+hlsSegmentCount: 7
+hlsSegmentDuration: 1s
+hlsPartDuration: 200ms
+hlsAllowOrigins: ['*']
+
+webrtc: yes
+webrtcAddress: :8889
+webrtcAllowOrigins: ['*']
+webrtcLocalUDPAddress: :8189
+
+srt: yes
+srtAddress: :8890
+
+paths:
+  iuoamc-tv-4k:
+    source: publisher
+    overridePublisher: yes

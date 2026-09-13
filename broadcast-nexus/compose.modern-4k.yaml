@@ -1,6 +1,6 @@
 services:
   modern-media-gateway:
-    image: bluenviron/mediamtx:latest-ffmpeg
+    image: bluenviron/mediamtx:latest
     restart: "no"
     volumes:
       - ./modern-media/mediamtx.yml:/mediamtx.yml:ro

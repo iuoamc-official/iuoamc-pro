@@ -29,7 +29,7 @@ done
 vf="scale=${WIDTH}:${HEIGHT}:force_original_aspect_ratio=decrease,pad=${WIDTH}:${HEIGHT}:(ow-iw)/2:(oh-ih)/2,fps=${FPS},drawbox=x=0:y=ih-120:w=iw:h=120:color=black@0.72:t=fill,drawtext=font='Noto Sans Arabic':textfile=${TICKER_FILE}:reload=1:fontcolor=white:fontsize=48:y=h-88:x=w-mod(t*220\,w+text_w):fix_bounds=1"
 
 echo "IUOAMC TV modern 4K publisher starting."
-echo "Master: ${WIDTH}x${HEIGHT} ${FPS}fps H.264/AAC"
+echo "Master: ${WIDTH}x${HEIGHT} ${FPS}fps H.264/Opus"
 echo "Output gateway: internal only"
 echo "Ticker: enabled"
 
@@ -45,7 +45,7 @@ publish_one() {
       -c:v libx264 -preset ultrafast -tune zerolatency -pix_fmt yuv420p \
       -b:v "$VIDEO_RATE" -maxrate "$VIDEO_RATE" -bufsize 32000k \
       -g "$GOP" -keyint_min "$GOP" -sc_threshold 0 \
-      -c:a aac -b:a "$AUDIO_RATE" -ar 48000 -ac 2 \
+      -c:a libopus -b:a "$AUDIO_RATE" -ar 48000 -ac 2 \
       -fflags +genpts -avoid_negative_ts make_zero \
       -f rtsp -rtsp_transport tcp "$TARGET"
   else
@@ -56,7 +56,7 @@ publish_one() {
       -c:v libx264 -preset ultrafast -tune zerolatency -pix_fmt yuv420p \
       -b:v "$VIDEO_RATE" -maxrate "$VIDEO_RATE" -bufsize 32000k \
       -g "$GOP" -keyint_min "$GOP" -sc_threshold 0 \
-      -c:a aac -b:a "$AUDIO_RATE" -ar 48000 -ac 2 -shortest \
+      -c:a libopus -b:a "$AUDIO_RATE" -ar 48000 -ac 2 -shortest \
       -fflags +genpts -avoid_negative_ts make_zero \
       -f rtsp -rtsp_transport tcp "$TARGET"
   fi

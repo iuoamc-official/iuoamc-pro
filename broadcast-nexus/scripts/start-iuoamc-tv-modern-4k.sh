@@ -44,8 +44,6 @@ start_hls_edge() {
   local name="iuoamc-modern4k-hls-edge"
   docker rm -f "$name" >/dev/null 2>&1 || true
 
-  # Create first on the normal bridge so Docker reliably installs the loopback
-  # PortBinding, attach it to modern4k so nginx can resolve MediaMTX, then start.
   docker create \
     --name "$name" \
     --restart unless-stopped \
@@ -86,15 +84,26 @@ start_tcp_edge iuoamc-modern4k-webrtc-edge 58889 18089 8889
 start_tcp_edge iuoamc-modern4k-api-edge 59997 19997 9997
 start_tcp_edge iuoamc-modern4k-metrics-edge 59998 19998 9998
 
+HLS_URL="http://127.0.0.1:58888/iuoamc-tv-4k/index.m3u8"
 for i in $(seq 1 60); do
-  code="$(curl -sS -o /tmp/iuoamc-tv-4k.m3u8 -w '%{http_code}' http://127.0.0.1:58888/iuoamc-tv-4k/index.m3u8 2>/dev/null || true)"
-  if [[ "$code" == "200" ]] && grep -q '^#EXTM3U' /tmp/iuoamc-tv-4k.m3u8 2>/dev/null; then
-    echo "OK: 4K LL-HLS manifest is available"
-    break
+  rm -f /tmp/iuoamc-tv-4k.m3u8
+  if curl -fsSL --max-redirs 8 \
+      -H 'Accept: application/vnd.apple.mpegurl,application/x-mpegURL,*/*' \
+      "$HLS_URL" \
+      -o /tmp/iuoamc-tv-4k.m3u8 2>/dev/null; then
+    if grep -q '^#EXTM3U' /tmp/iuoamc-tv-4k.m3u8 2>/dev/null; then
+      echo "OK: 4K LL-HLS manifest is available"
+      break
+    fi
   fi
+
   if [[ "$i" -eq 60 ]]; then
-    echo "ERROR: 4K LL-HLS did not become ready (last HTTP status: ${code:-none})" >&2
+    echo "ERROR: 4K LL-HLS did not become ready after following redirects" >&2
+    echo "===== FINAL HLS HEADERS =====" >&2
+    curl -sSIL --max-redirs 8 "$HLS_URL" >&2 || true
+    echo "===== GATEWAY/SOURCE LOGS =====" >&2
     "${compose[@]}" logs --no-color --tail=100 modern-media-gateway modern-4k-source >&2 || true
+    echo "===== HLS EDGE =====" >&2
     docker port iuoamc-modern4k-hls-edge >&2 || true
     docker logs --tail=80 iuoamc-modern4k-hls-edge >&2 || true
     exit 1
@@ -118,7 +127,7 @@ echo "===== CONTAINERS ====="
 
 echo
 echo "Modern 4K preview is active on loopback only."
-echo "LL-HLS: http://127.0.0.1:58888/iuoamc-tv-4k/index.m3u8"
+echo "LL-HLS: $HLS_URL"
 echo "WebRTC page: http://127.0.0.1:58889/iuoamc-tv-4k"
 echo "API: http://127.0.0.1:59997/v3/paths/list"
 echo "Production/public outputs remain disabled."

@@ -1257,6 +1257,7 @@ final class JournalPublishingTest extends TestCase
     public function test_submission_preserves_multiple_authors_and_credit_roles_through_conversion(): void
     {
         Storage::fake('local');
+        $this->enablePublicLaunch();
         $payload = $this->validSubmissionPayload() + [
             'author_latin_name' => 'Submission Author',
             'author_affiliation_ror' => 'https://ror.org/03yrm5c26',
@@ -1301,7 +1302,7 @@ final class JournalPublishingTest extends TestCase
         $this->actingAs($reviewer)->post('/en/control/journal/reviews/'.$review->id.'/response', [
             'response' => 'declare_conflict',
             'conflict_statement' => 'A recent direct collaboration prevents independent review.',
-        ])->assertRedirect();
+        ])->assertRedirect()->assertSessionHasNoErrors();
 
         $review->refresh();
         $this->assertSame('conflict_declared', $review->status);
@@ -1315,6 +1316,7 @@ final class JournalPublishingTest extends TestCase
     public function test_private_editorial_correspondence_is_owned_encrypted_and_blinds_editor_identity(): void
     {
         Storage::fake('local');
+        $this->enablePublicLaunch();
         $author = User::factory()->create([
             'email' => 'author@example.test', 'email_verified_at' => now(),
             'status' => 'active', 'must_change_password' => false,

@@ -42,5 +42,6 @@ def test_staging_gateway_routes_channel_controls():
     assert 'location /channels-control/' in conf
     assert 'proxy_pass http://dashboard-ui:80/channels/;' in conf
     assert 'location /supervisor/' in conf
-    assert 'proxy_set_header Authorization $http_authorization;' in conf
+    assert 'auth_request /_session_validate;' in conf
+    assert 'proxy_set_header Authorization $session_authorization;' in conf
     assert 'X-Production-Switching "false"' in conf

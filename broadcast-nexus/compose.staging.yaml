@@ -1,0 +1,96 @@
+services:
+  staging-gateway:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:58200:80"
+    volumes:
+      - ./infra/nginx/staging.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - dashboard-ui
+      - dashboard-api
+      - operator-auth
+      - supervisor
+      - noc
+      - control-room
+    networks: [default]
+
+  dashboard-ui:
+    build:
+      context: ..
+      dockerfile: broadcast-nexus/services/dashboard-ui/Dockerfile
+    restart: unless-stopped
+    networks: [default]
+
+  dashboard-api:
+    build:
+      context: ..
+      dockerfile: broadcast-nexus/services/dashboard-api/Dockerfile
+    restart: unless-stopped
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DEPLOYMENT_ENV: staging
+      PRODUCTION_SWITCHING: "false"
+      PRODUCTION_OUTPUTS_ENABLED: "false"
+      PUBLIC_PUBLISHING_ENABLED: "false"
+      SHADOW_MODE: "true"
+    networks: [default]
+
+  operator-auth:
+    build:
+      context: ..
+      dockerfile: broadcast-nexus/services/operator-auth/Dockerfile
+    restart: unless-stopped
+    env_file: [.env]
+    environment:
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ISSUER: ${JWT_ISSUER}
+      JWT_AUDIENCE: ${JWT_AUDIENCE}
+      OPERATOR_SESSION_TTL_SECONDS: "1800"
+      SESSION_COOKIE_SECURE: "false"
+      DEPLOYMENT_ENV: staging
+      PRODUCTION_SWITCHING: "false"
+    depends_on:
+      - redis
+    networks: [default]
+
+  supervisor:
+    environment:
+      DEPLOYMENT_ENV: staging
+      PRODUCTION_SWITCHING: "false"
+
+  failover:
+    environment:
+      DEPLOYMENT_ENV: staging
+      SHADOW_MODE: "true"
+
+  distribution:
+    environment:
+      DEPLOYMENT_ENV: staging
+      PRODUCTION_OUTPUTS_ENABLED: "false"
+
+  encoder:
+    environment:
+      DEPLOYMENT_ENV: staging
+      PRODUCTION_OUTPUTS_ENABLED: "false"
+
+  iptv:
+    environment:
+      DEPLOYMENT_ENV: staging
+      PUBLIC_PUBLISHING_ENABLED: "false"
+
+  rtc-gateway:
+    environment:
+      DEPLOYMENT_ENV: staging
+      PRODUCTION_OUTPUTS_ENABLED: "false"
+      PUBLIC_WEBRTC_INGRESS_ENABLED: "false"
+      SFU_PROVIDER: ${SFU_PROVIDER:-loopback}
+      SFU_ENABLED: ${SFU_ENABLED:-false}
+      TURN_ENABLED: ${TURN_ENABLED:-false}
+      SFU_INTERNAL_URL: ${SFU_INTERNAL_URL:-http://sfu:7880}
+      TURN_INTERNAL_URL: ${TURN_INTERNAL_URL:-turn:turn:3478}
+      SFU_API_KEY: ${SFU_API_KEY:-CHANGE_ME_SFU_API_KEY}
+      SFU_API_SECRET: ${SFU_API_SECRET:-CHANGE_ME_SFU_API_SECRET}
+      TURN_SHARED_SECRET: ${TURN_SHARED_SECRET:-CHANGE_ME_TURN_SHARED_SECRET}

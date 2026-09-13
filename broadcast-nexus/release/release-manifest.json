@@ -1,0 +1,34 @@
+{
+  "name": "IUOAMC Broadcast Nexus",
+  "release_channel": "staging",
+  "release_version": "0.16.0-staging",
+  "architecture_phase": 16,
+  "production_switching": false,
+  "production_outputs_enabled": false,
+  "public_publishing_enabled": false,
+  "required_compose_files": [
+    "compose.yaml",
+    "compose.noc.yaml",
+    "compose.shadow.yaml",
+    "compose.supervisor.yaml",
+    "compose.staging.yaml"
+  ],
+  "required_scripts": [
+    "scripts/security-preflight.sh",
+    "scripts/staging-preflight.sh",
+    "scripts/deploy-staging.sh",
+    "scripts/rollback-staging.sh",
+    "scripts/staging-smoke-test.sh"
+  ],
+  "required_docs": [
+    "docs/STAGING-DEPLOYMENT-v1.md",
+    "docs/CUTOVER-ROLLBACK-RUNBOOK-v1.md",
+    "docs/BACKUP-DR-v1.md"
+  ],
+  "deployment_policy": {
+    "dns_changes_allowed": false,
+    "production_credentials_allowed": false,
+    "production_database_access_allowed": false,
+    "production_stream_outputs_allowed": false
+  }
+}

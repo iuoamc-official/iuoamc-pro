@@ -1,0 +1,104 @@
+services:
+  shadow-encoder-a:
+    build:
+      context: ..
+      dockerfile: broadcast-nexus/services/shadow-media/Dockerfile
+    restart: "no"
+    command: ["/opt/shadow/encoder.sh"]
+    environment:
+      SHADOW_ENCODER_NAME: a
+    volumes:
+      - shadow_hls:/shadow-hls
+    networks: [shadow]
+
+  shadow-encoder-b:
+    build:
+      context: ..
+      dockerfile: broadcast-nexus/services/shadow-media/Dockerfile
+    restart: "no"
+    command: ["/opt/shadow/encoder.sh"]
+    environment:
+      SHADOW_ENCODER_NAME: b
+    volumes:
+      - shadow_hls:/shadow-hls
+    networks: [shadow]
+
+  shadow-source:
+    build:
+      context: ..
+      dockerfile: broadcast-nexus/services/shadow-media/Dockerfile
+    restart: "no"
+    command: ["/opt/shadow/source.sh"]
+    depends_on:
+      - shadow-encoder-a
+      - shadow-encoder-b
+    networks: [shadow]
+
+  shadow-hls:
+    image: nginx:1.27-alpine
+    restart: "no"
+    volumes:
+      - shadow_hls:/usr/share/nginx/html:ro
+    ports:
+      - "127.0.0.1:58118:80"
+    networks: [shadow]
+
+  shadow-validator:
+    build:
+      context: ..
+      dockerfile: broadcast-nexus/services/shadow-validator/Dockerfile
+    restart: "no"
+    ports:
+      - "127.0.0.1:58117:8117"
+    depends_on:
+      - shadow-hls
+    networks: [shadow]
+
+  shadow-program-switcher:
+    build:
+      context: ..
+      dockerfile: broadcast-nexus/services/shadow-program-switcher/Dockerfile
+    restart: "no"
+    environment:
+      SHADOW_MODE: "true"
+      SHADOW_VALIDATOR_URL: http://shadow-validator:8117/v1/validate
+      SHADOW_SOURCE_A: http://shadow-hls/a
+      SHADOW_SOURCE_B: http://shadow-hls/b
+      SHADOW_SWITCH_CHECK_INTERVAL: "2"
+      SHADOW_FAILBACK_GOOD_CHECKS: "5"
+    ports:
+      - "127.0.0.1:58119:8119"
+    depends_on:
+      shadow-validator: {condition: service_started}
+    networks: [shadow]
+
+  failover:
+    environment:
+      SHADOW_MODE: "true"
+      SHADOW_LAB_KEY: ${SHADOW_LAB_KEY}
+    networks: [default, shadow]
+
+  shadow-noc-bridge:
+    build:
+      context: ..
+      dockerfile: broadcast-nexus/services/shadow-noc-bridge/Dockerfile
+    restart: "no"
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      SHADOW_VALIDATOR_URL: http://shadow-validator:8117/v1/validate
+      SHADOW_FAILOVER_URL: http://failover:8113
+      SHADOW_LAB_KEY: ${SHADOW_LAB_KEY}
+      SHADOW_SAMPLE_INTERVAL: "5"
+    depends_on:
+      postgres: {condition: service_healthy}
+      shadow-validator: {condition: service_started}
+      failover: {condition: service_started}
+    networks: [default, shadow]
+
+networks:
+  shadow:
+    internal: true
+
+volumes:
+  shadow_hls:

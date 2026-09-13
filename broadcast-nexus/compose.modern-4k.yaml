@@ -1,0 +1,57 @@
+services:
+  modern-media-gateway:
+    image: bluenviron/mediamtx:1.21.0
+    restart: "no"
+    volumes:
+      - ./modern-media/mediamtx.yml:/mediamtx.yml:ro
+    command: ["/mediamtx.yml"]
+    ports:
+      - "127.0.0.1:58888:8888"
+      - "127.0.0.1:58889:8889"
+      - "127.0.0.1:58189:8189/tcp"
+      - "127.0.0.1:59997:9997"
+      - "127.0.0.1:59998:9998"
+    networks: [modern4k]
+
+  modern-4k-source:
+    build:
+      context: ..
+      dockerfile: broadcast-nexus/services/shadow-media/Dockerfile
+    restart: "no"
+    depends_on:
+      - modern-media-gateway
+    environment:
+      PREVIEW_MEDIA_ROOT: /preview-media
+      MODERN_WIDTH: "3840"
+      MODERN_HEIGHT: "2160"
+      MODERN_FPS: "25"
+      MODERN_VIDEO_RATE: "16000k"
+      MODERN_AUDIO_RATE: "192k"
+      MODERN_GOP: "50"
+      MODERN_TICKER_FILE: /opt/shadow/ticker.txt
+    volumes:
+      - /opt/iuoamc-broadcast/import/legacy-tv:/preview-media:ro
+      - ./modern-media/publish-4k.sh:/opt/shadow/publish-4k.sh:ro
+    command: ["/opt/shadow/publish-4k.sh"]
+    networks: [modern4k]
+
+  modern-webrtc-player:
+    build:
+      context: .
+      dockerfile: modern-media/player/Dockerfile
+      args:
+        MEDIAMTX_VERSION: v1.21.0
+    restart: "no"
+    depends_on:
+      - modern-media-gateway
+    ports:
+      - "127.0.0.1:58900:8080"
+    networks: [modern4k]
+
+# Use a normal bridge network. Host exposure is still loopback-only because all
+# published ports above are explicitly bound to 127.0.0.1. This avoids the
+# staging Docker behavior where an internal network retained only ExposedPorts
+# and silently dropped host PortBindings.
+networks:
+  modern4k:
+    driver: bridge

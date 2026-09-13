@@ -5,9 +5,11 @@ return [
     'available'=>'Available to you',
     'open'=>'Open module',
     'empty'=>'No modules are currently available to your account. Contact your access administrator.',
+    'tv'=>'IUOAMC TV',
     'descriptions'=>[
         'governance'=>'Institutional entities, users, roles and permissions, and the audit trail.',
         'memberships'=>'Member records, review and approval, validity periods, and renewal.',
         'journal'=>'Manage research, professional articles, peer review, issues, publishing and the WICP record.',
+        'tv'=>'Channel control center for 4K broadcast, scheduling, preview, audio status and operational AI.',
     ],
 ];

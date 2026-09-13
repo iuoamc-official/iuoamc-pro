@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>IUOAMC Broadcast Nexus NOC</title>
+<style>
+:root{font-family:Inter,system-ui,sans-serif;background:#07111f;color:#eef4ff}body{margin:0;background:#07111f}.wrap{max-width:1500px;margin:auto;padding:24px}.top{display:flex;justify-content:space-between;gap:16px;align-items:center}.brand{font-size:24px;font-weight:800}.muted{color:#91a4bd}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:18px}.card{background:#0e1b2d;border:1px solid #20334c;border-radius:14px;padding:16px}.big{font-size:28px;font-weight:800}.ok{color:#45d483}.warn{color:#ffd166}.crit{color:#ff6b6b}.section{margin-top:22px}.table{width:100%;border-collapse:collapse}.table th,.table td{text-align:left;padding:10px;border-bottom:1px solid #20334c;font-size:14px}.badge{padding:4px 8px;border-radius:999px;background:#172a42}.toolbar{display:flex;gap:10px;flex-wrap:wrap}button{border:1px solid #2b4668;background:#13243a;color:#fff;padding:9px 12px;border-radius:9px;cursor:pointer}button:hover{background:#19314f}@media(max-width:900px){.grid{grid-template-columns:1fr 1fr}}@media(max-width:560px){.grid{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div><div class="brand">IUOAMC Broadcast Nexus — NOC</div><div class="muted">Isolated development control room · no production switching</div></div>
+    <div class="toolbar"><button onclick="refreshNow()">Refresh</button><button onclick="loadScenarios()">Chaos Scenarios</button></div>
+  </div>
+  <div class="grid">
+    <div class="card"><div class="muted">Open incidents</div><div id="incidents" class="big">—</div></div>
+    <div class="card"><div class="muted">Pending failover decisions</div><div id="decisions" class="big">—</div></div>
+    <div class="card"><div class="muted">Critical metrics</div><div id="critical" class="big crit">—</div></div>
+    <div class="card"><div class="muted">Last refresh</div><div id="refreshed" class="big">—</div></div>
+  </div>
+  <div class="section card">
+    <h3>Real-time telemetry snapshot</h3>
+    <table class="table"><thead><tr><th>Service</th><th>Source</th><th>Metric</th><th>Value</th><th>Status</th><th>Observed</th></tr></thead><tbody id="metrics"><tr><td colspan="6" class="muted">Waiting for local control-room API...</td></tr></tbody></table>
+  </div>
+  <div class="section card">
+    <h3>Chaos simulation catalog</h3>
+    <div id="scenarios" class="muted">Not loaded.</div>
+  </div>
+</div>
+<script>
+const api='http://127.0.0.1:58115';
+const token=localStorage.getItem('iuoamc_noc_token')||'';
+const headers=token?{Authorization:'Bearer '+token}:{};
+async function jget(path){const r=await fetch(api+path,{headers});if(!r.ok)throw new Error(r.status+' '+r.statusText);return r.json()}
+function val(m){if(m.metric_value!==null&&m.metric_value!==undefined)return m.metric_value;if(m.metric_text)return m.metric_text;return '—'}
+async function refreshNow(){try{const d=await jget('/v1/overview');document.getElementById('incidents').textContent=d.open_incidents;document.getElementById('decisions').textContent=d.pending_failover_decisions;document.getElementById('critical').textContent=d.metrics.filter(x=>x.status==='critical').length;document.getElementById('refreshed').textContent=new Date().toLocaleTimeString();const rows=d.metrics.map(m=>`<tr><td>${m.source_service}</td><td>${m.source_id}</td><td>${m.metric_name}</td><td>${val(m)}</td><td><span class="badge ${m.status==='critical'?'crit':m.status==='warning'?'warn':'ok'}">${m.status}</span></td><td>${new Date(m.observed_at).toLocaleString()}</td></tr>`).join('');document.getElementById('metrics').innerHTML=rows||'<tr><td colspan="6" class="muted">No telemetry yet.</td></tr>'}catch(e){document.getElementById('metrics').innerHTML='<tr><td colspan="6" class="crit">'+e.message+'</td></tr>'}}
+async function loadScenarios(){try{const s=await jget('/v1/chaos/scenarios');document.getElementById('scenarios').innerHTML=s.map(x=>`<div style="margin:8px 0"><b>${x.code}</b> — ${x.name} <span class="badge">${x.severity}</span><div class="muted">${x.description||''}</div></div>`).join('')}catch(e){document.getElementById('scenarios').textContent=e.message}}
+setInterval(refreshNow,5000);refreshNow();
+</script>
+</body>
+</html>

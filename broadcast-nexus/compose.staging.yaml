@@ -1,0 +1,60 @@
+services:
+  staging-gateway:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:58200:80"
+    volumes:
+      - ./infra/nginx/staging.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - dashboard-ui
+      - dashboard-api
+      - supervisor
+      - noc
+      - control-room
+    networks: [default]
+
+  dashboard-ui:
+    build:
+      context: ..
+      dockerfile: broadcast-nexus/services/dashboard-ui/Dockerfile
+    restart: unless-stopped
+    networks: [default]
+
+  dashboard-api:
+    build:
+      context: ..
+      dockerfile: broadcast-nexus/services/dashboard-api/Dockerfile
+    restart: unless-stopped
+    environment:
+      DEPLOYMENT_ENV: staging
+      PRODUCTION_SWITCHING: "false"
+      PRODUCTION_OUTPUTS_ENABLED: "false"
+      PUBLIC_PUBLISHING_ENABLED: "false"
+      SHADOW_MODE: "true"
+    networks: [default]
+
+  supervisor:
+    environment:
+      DEPLOYMENT_ENV: staging
+      PRODUCTION_SWITCHING: "false"
+
+  failover:
+    environment:
+      DEPLOYMENT_ENV: staging
+      SHADOW_MODE: "true"
+
+  distribution:
+    environment:
+      DEPLOYMENT_ENV: staging
+      PRODUCTION_OUTPUTS_ENABLED: "false"
+
+  encoder:
+    environment:
+      DEPLOYMENT_ENV: staging
+      PRODUCTION_OUTPUTS_ENABLED: "false"
+
+  iptv:
+    environment:
+      DEPLOYMENT_ENV: staging
+      PUBLIC_PUBLISHING_ENABLED: "false"

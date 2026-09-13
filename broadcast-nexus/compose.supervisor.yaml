@@ -1,0 +1,17 @@
+services:
+  supervisor:
+    build:
+      context: ..
+      dockerfile: broadcast-nexus/services/supervisor/Dockerfile
+    restart: "no"
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      NATS_URL: nats://${NATS_USER}:${NATS_PASSWORD}@nats:4222
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ISSUER: ${JWT_ISSUER}
+      JWT_AUDIENCE: ${JWT_AUDIENCE}
+    ports:
+      - "127.0.0.1:58120:8120"
+    depends_on:
+      postgres: {condition: service_healthy}

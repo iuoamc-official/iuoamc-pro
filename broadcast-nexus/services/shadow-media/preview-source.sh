@@ -6,6 +6,13 @@ FPS="${SHADOW_FPS:-25}"
 SIZE="${SHADOW_SIZE:-1280x720}"
 VIDEO_RATE="${SHADOW_VIDEO_RATE:-2500k}"
 AUDIO_RATE="${SHADOW_AUDIO_RATE:-128k}"
+WIDTH="${SIZE%x*}"
+HEIGHT="${SIZE#*x}"
+
+[[ "$WIDTH" =~ ^[0-9]+$ && "$HEIGHT" =~ ^[0-9]+$ ]] || {
+  echo "ERROR: SHADOW_SIZE must be WIDTHxHEIGHT (current: $SIZE)" >&2
+  exit 1
+}
 
 PLAYLIST=(
   "transitions/mca-tv-official-ident-3s.mp4"
@@ -37,7 +44,7 @@ play_one() {
   if [[ "$has_audio" -eq 1 ]]; then
     ffmpeg -hide_banner -loglevel warning -re -i "$file" \
       -map 0:v:0 -map 0:a:0 \
-      -vf "scale=${SIZE}:force_original_aspect_ratio=decrease,pad=${SIZE}:(ow-iw)/2:(oh-ih)/2,fps=${FPS}" \
+      -vf "scale=${WIDTH}:${HEIGHT}:force_original_aspect_ratio=decrease,pad=${WIDTH}:${HEIGHT}:(ow-iw)/2:(oh-ih)/2,fps=${FPS}" \
       -c:v libx264 -preset veryfast -pix_fmt yuv420p \
       -b:v "$VIDEO_RATE" -maxrate 3000k -bufsize 6000k \
       -g 50 -keyint_min 50 -sc_threshold 0 \
@@ -48,7 +55,7 @@ play_one() {
     ffmpeg -hide_banner -loglevel warning -re -i "$file" \
       -f lavfi -i "anullsrc=channel_layout=stereo:sample_rate=48000" \
       -map 0:v:0 -map 1:a:0 \
-      -vf "scale=${SIZE}:force_original_aspect_ratio=decrease,pad=${SIZE}:(ow-iw)/2:(oh-ih)/2,fps=${FPS}" \
+      -vf "scale=${WIDTH}:${HEIGHT}:force_original_aspect_ratio=decrease,pad=${WIDTH}:${HEIGHT}:(ow-iw)/2:(oh-ih)/2,fps=${FPS}" \
       -c:v libx264 -preset veryfast -pix_fmt yuv420p \
       -b:v "$VIDEO_RATE" -maxrate 3000k -bufsize 6000k \
       -g 50 -keyint_min 50 -sc_threshold 0 \

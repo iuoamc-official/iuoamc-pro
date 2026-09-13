@@ -29,10 +29,22 @@ for rel in "${required[@]}"; do
   [[ -r "$IMPORT_DIR/$rel" ]] || { echo "ERROR: missing preview asset $IMPORT_DIR/$rel" >&2; exit 1; }
 done
 
-preview_compose=(docker compose -f compose.shadow.yaml -f compose.preview.yaml)
+# compose.shadow.yaml extends the failover service declared in compose.noc.yaml,
+# while compose.noc.yaml extends core services declared in compose.yaml.
+# Always load the complete dependency chain before applying the preview overlay.
+preview_compose=(
+  docker compose
+  -f compose.yaml
+  -f compose.noc.yaml
+  -f compose.shadow.yaml
+  -f compose.preview.yaml
+)
 
 echo "===== START INTERNAL SHADOW PREVIEW ====="
 echo "Loopback HLS only: 127.0.0.1:58118"
+
+# Validate the merged project first so a compose dependency error fails before build/start.
+"${preview_compose[@]}" config >/dev/null
 
 "${preview_compose[@]}" up -d --build \
   shadow-encoder-a shadow-encoder-b shadow-source shadow-hls

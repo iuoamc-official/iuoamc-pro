@@ -18,7 +18,6 @@ done
 
 compose=(docker compose -f compose.yaml -f compose.noc.yaml -f compose.supervisor.yaml -f compose.staging.yaml)
 
-# Ensure the expected imported files exist locally. We use them only to measure duration.
 required=(
   transitions/mca-tv-official-ident-3s.mp4
   programs/mca-tv-episode-02-mise-en-place.mp4
@@ -29,16 +28,28 @@ for rel in "${required[@]}"; do
   [[ -f "$IMPORT_DIR/$rel" ]] || { echo "ERROR: missing $IMPORT_DIR/$rel" >&2; exit 1; }
 done
 
-# Obtain exact durations. Prefer host ffprobe; otherwise use a short-lived ffmpeg container.
+# Obtain exact durations. Prefer host ffprobe. Otherwise run ffprobe explicitly
+# inside a short-lived ffmpeg container; the linuxserver image defaults to ffmpeg,
+# so --entrypoint ffprobe is required here.
 probe_ms() {
-  local file="$1" seconds
+  local file="$1" seconds rel
   if command -v ffprobe >/dev/null 2>&1; then
-    seconds="$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 "$file")"
+    seconds="$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 "$file" 2>/dev/null || true)"
   else
-    seconds="$(docker run --rm -v "$IMPORT_DIR:/media:ro" linuxserver/ffmpeg:latest \
-      -v error -show_entries format=duration -of default=nw=1:nk=1 "/media/${file#$IMPORT_DIR/}" 2>/dev/null || true)"
+    rel="${file#$IMPORT_DIR/}"
+    seconds="$(docker run --rm \
+      --entrypoint ffprobe \
+      -v "$IMPORT_DIR:/media:ro" \
+      linuxserver/ffmpeg:latest \
+      -v error -show_entries format=duration -of default=nw=1:nk=1 "/media/$rel" \
+      2>/dev/null || true)"
   fi
-  [[ -n "$seconds" ]] || { echo "ERROR: could not determine duration for $file" >&2; exit 1; }
+
+  # Accept only a numeric duration and convert seconds to rounded milliseconds.
+  if [[ ! "$seconds" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+    echo "ERROR: could not determine duration for $file (ffprobe output: ${seconds:-empty})" >&2
+    exit 1
+  fi
   awk -v s="$seconds" 'BEGIN { printf "%d", (s*1000)+0.5 }'
 }
 
@@ -53,8 +64,6 @@ echo "===== MEASURED DURATIONS ====="
 printf 'IDENT: %d ms\nMise en Place: %d ms\nUP NEXT: %d ms\nKnife Skills: %d ms\nTOTAL LOOP: %d ms\n' \
   "$ident_ms" "$mise_ms" "$upnext_ms" "$knife_ms" "$total_ms"
 
-# Persist exact durations and create a single staging schedule slot for the playlist.
-# The slot is intentionally not public/published and the rundown remains draft.
 "${compose[@]}" exec -T postgres psql -v ON_ERROR_STOP=1 \
   -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
   -v ident_ms="$ident_ms" -v mise_ms="$mise_ms" -v upnext_ms="$upnext_ms" -v knife_ms="$knife_ms" -v total_ms="$total_ms" <<'SQL'
@@ -105,7 +114,6 @@ WHERE c.slug='iuoamc-tv' AND r.name='IUOAMC TV Experimental Broadcast 001' AND r
 COMMIT;
 SQL
 
-# Compile through the service API using a short-lived, in-container token; nothing is exposed publicly.
 rundown_id="$(${compose[@]} exec -T postgres psql -At -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
   "SELECT r.id FROM rundowns r JOIN channels c ON c.id=r.channel_id WHERE c.slug='iuoamc-tv' AND r.name='IUOAMC TV Experimental Broadcast 001' AND r.version=1 LIMIT 1;")"
 [[ -n "$rundown_id" ]] || { echo "ERROR: experimental rundown not found" >&2; exit 1; }

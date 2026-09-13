@@ -34,9 +34,20 @@ JOB_ALLOWED = {
     "failed": set(),
 }
 
+HOUSE_PROFILES = [
+    {"code": "house-1080p25", "width": 1920, "height": 1080, "fps": 25, "video_codec": "h264", "audio_codec": "aac", "audio_hz": 48000},
+    {"code": "house-720p25", "width": 1280, "height": 720, "fps": 25, "video_codec": "h264", "audio_codec": "aac", "audio_hz": 48000},
+    {"code": "house-audio-only", "width": None, "height": None, "fps": None, "video_codec": None, "audio_codec": "aac", "audio_hz": 48000},
+]
+
 
 def _production_outputs_enabled() -> bool:
     return os.getenv("PRODUCTION_OUTPUTS_ENABLED", "false").lower() == "true"
+
+
+@app.get('/v1/profiles')
+def profiles(_: dict = Depends(require_permission('broadcast.read'))):
+    return {"profiles": HOUSE_PROFILES, "production_execution": False}
 
 
 @app.get('/v1/nodes')

@@ -6,6 +6,7 @@ use App\Notifications\ResetAccountPassword;
 use App\Notifications\VerifyAccountEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Notifications\Notifiable;
@@ -50,6 +51,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->belongsToMany(Organization::class)
             ->withPivot(['title', 'is_primary'])
             ->withTimestamps();
+    }
+
+    public function journalSubmissionLinks(): HasMany
+    {
+        return $this->hasMany(JournalSubmissionAccount::class);
     }
 
     public function hasRole(string $slug): bool

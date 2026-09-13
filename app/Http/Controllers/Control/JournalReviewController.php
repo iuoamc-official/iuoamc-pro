@@ -14,10 +14,29 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 
 final class JournalReviewController extends Controller
 {
     public function __construct(private readonly JournalNotificationService $notifications) {}
+
+    public function index(Request $request): View
+    {
+        $base = JournalReview::query()->where('reviewer_id', $request->user()->id);
+        $reviews = (clone $base)
+            ->with(['article.translations'])
+            ->orderByRaw('case when status = ? then 0 when status = ? then 1 else 2 end', ['invited', 'in_progress'])
+            ->orderByRaw('case when due_at is null then 1 else 0 end')
+            ->orderBy('due_at')
+            ->latest('id')
+            ->paginate(20);
+        $counts = (clone $base)
+            ->selectRaw('status, count(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
+        return view('control.journal.reviews.index', compact('reviews', 'counts'));
+    }
 
     public function store(Request $request, string $locale, JournalArticle $article): RedirectResponse
     {

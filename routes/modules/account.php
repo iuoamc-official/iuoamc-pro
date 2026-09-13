@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Account\AccountController;
 use App\Http\Controllers\Account\MembershipApplicationController;
+use App\Http\Controllers\Account\JournalSubmissionController;
 use App\Http\Controllers\LegalDocumentController;
 use App\Http\Middleware\EnsureVerifiedAccountEmail;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +21,13 @@ Route::prefix('{locale}/account')->where(['locale' => 'ar|en|fr'])
     ->middleware(['locale', 'auth', 'active', EnsureVerifiedAccountEmail::class])
     ->name('account.')->group(function (): void {
         Route::get('/', [AccountController::class, 'index'])->name('dashboard');
+        Route::get('/journal', [JournalSubmissionController::class, 'index'])->name('journal.index');
+        Route::post('/journal/claims', [JournalSubmissionController::class, 'claim'])
+            ->middleware('throttle:10,1')->name('journal.claims.store');
+        Route::get('/journal/submissions/{submission}', [JournalSubmissionController::class, 'show'])
+            ->whereNumber('submission')->name('journal.submissions.show');
+        Route::post('/journal/submissions/{submission}/revisions', [JournalSubmissionController::class, 'storeRevision'])
+            ->whereNumber('submission')->middleware('throttle:5,1')->name('journal.submissions.revisions.store');
         Route::patch('/profile', [AccountController::class, 'updateProfile'])
             ->middleware('throttle:10,1')->name('profile.update');
         Route::post('/refresh', [AccountController::class, 'refresh'])

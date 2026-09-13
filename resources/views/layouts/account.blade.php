@@ -7,6 +7,7 @@
     <meta name="robots" content="noindex,nofollow,noarchive">
     <title>@yield('title') — IUOAMC</title>
     <link rel="stylesheet" href="{{ asset('assets/css/iuoamc-account-1.0.0.css') }}?v={{ filemtime(public_path('assets/css/iuoamc-account-1.0.0.css')) }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/iuoamc-account-journal-1.0.0.css') }}?v={{ filemtime(public_path('assets/css/iuoamc-account-journal-1.0.0.css')) }}">
     <link rel="stylesheet" href="{{ asset('assets/css/membership-policy.css') }}?v={{ filemtime(public_path('assets/css/membership-policy.css')) }}">
 </head>
 <body class="account-body">
@@ -20,6 +21,7 @@
                 <a href="{{ route('account.dashboard',['locale'=>app()->getLocale()]) }}#memberships">{{ __('account.memberships') }}</a>
                 <a href="{{ route('account.dashboard',['locale'=>app()->getLocale()]) }}#certificates">{{ __('account.certificates') }}</a>
                 <a href="{{ route('account.dashboard',['locale'=>app()->getLocale()]) }}#documents">{{ __('account.documents') }}</a>
+                <a href="{{ route('account.journal.index',['locale'=>app()->getLocale()]) }}">{{ __('account.research_portal') }}</a>
                 <a href="{{ route('account.membership.create',['locale'=>app()->getLocale()]) }}">{{ __('account.apply_membership') }}</a>
                 @if(auth()->user()->canAccessControl())
                     <a class="admin-link" href="{{ route('dashboard',['locale'=>app()->getLocale()]) }}">{{ __('account.control_center') }}</a>
@@ -32,6 +34,7 @@
                     <a href="{{ route('account.dashboard',['locale'=>app()->getLocale()]) }}#memberships">{{ __('account.memberships') }}</a>
                     <a href="{{ route('account.dashboard',['locale'=>app()->getLocale()]) }}#certificates">{{ __('account.certificates') }}</a>
                     <a href="{{ route('account.dashboard',['locale'=>app()->getLocale()]) }}#documents">{{ __('account.documents_invoices_receipts') }}</a>
+                    <a href="{{ route('account.journal.index',['locale'=>app()->getLocale()]) }}">{{ __('account.my_submissions') }}</a>
                     @if(auth()->user()->canAccessControl())
                         <a href="{{ route('dashboard',['locale'=>app()->getLocale()]) }}">{{ __('account.control_center') }}</a>
                     @endif

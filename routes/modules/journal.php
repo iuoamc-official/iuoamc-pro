@@ -56,6 +56,7 @@ Route::prefix('{locale}/control/journal')->where(['locale' => 'ar|en|fr'])
         Route::post('/sections', [JournalSectionController::class, 'store'])->middleware(['permission:journal.manage', 'throttle:20,1'])->name('sections.store');
         Route::get('/sections/{section}/edit', [JournalSectionController::class, 'edit'])->whereNumber('section')->middleware('permission:journal.manage')->name('sections.edit');
         Route::put('/sections/{section}', [JournalSectionController::class, 'update'])->whereNumber('section')->middleware(['permission:journal.manage', 'throttle:20,1'])->name('sections.update');
+        Route::get('/reviews', [JournalReviewController::class, 'index'])->middleware('permission:journal.review')->name('reviews.index');
         Route::post('/articles/{article}/reviews', [JournalReviewController::class, 'store'])->whereNumber('article')->middleware(['permission:journal.review', 'throttle:20,1'])->name('reviews.store');
         Route::post('/reviews/{review}/response', [JournalReviewController::class, 'respond'])->whereNumber('review')->middleware(['permission:journal.review', 'throttle:20,1'])->name('reviews.respond');
         Route::put('/reviews/{review}', [JournalReviewController::class, 'update'])->whereNumber('review')->middleware('throttle:20,1')->name('reviews.update');

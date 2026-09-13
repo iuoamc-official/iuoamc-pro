@@ -1,0 +1,39 @@
+services:
+  modern-media-gateway:
+    image: bluenviron/mediamtx:latest-ffmpeg
+    restart: "no"
+    volumes:
+      - ./modern-media/mediamtx.yml:/mediamtx.yml:ro
+    command: ["/mediamtx.yml"]
+    ports:
+      - "127.0.0.1:58888:8888"
+      - "127.0.0.1:58889:8889"
+      - "127.0.0.1:59997:9997"
+      - "127.0.0.1:59998:9998"
+    networks: [modern4k]
+
+  modern-4k-source:
+    build:
+      context: ..
+      dockerfile: broadcast-nexus/services/shadow-media/Dockerfile
+    restart: "no"
+    depends_on:
+      - modern-media-gateway
+    environment:
+      PREVIEW_MEDIA_ROOT: /preview-media
+      MODERN_WIDTH: "3840"
+      MODERN_HEIGHT: "2160"
+      MODERN_FPS: "25"
+      MODERN_VIDEO_RATE: "16000k"
+      MODERN_AUDIO_RATE: "192k"
+      MODERN_GOP: "50"
+      MODERN_TICKER_FILE: /opt/shadow/ticker.txt
+    volumes:
+      - /opt/iuoamc-broadcast/import/legacy-tv:/preview-media:ro
+      - ./modern-media/publish-4k.sh:/opt/shadow/publish-4k.sh:ro
+    command: ["/opt/shadow/publish-4k.sh"]
+    networks: [modern4k]
+
+networks:
+  modern4k:
+    internal: true

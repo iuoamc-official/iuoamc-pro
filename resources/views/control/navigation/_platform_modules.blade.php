@@ -18,6 +18,10 @@
     if (\Illuminate\Support\Facades\Route::has('journal.control.articles.index') && auth()->user()?->canDo('journal.view')) {
         $platformModules[] = ['key'=>'journal','route'=>'journal.control.articles.index','title'=>'journal.title'];
     }
+    // IUOAMC_TV_CONTROL_MODULE_1_0_0
+    if (\Illuminate\Support\Facades\Route::has('tv.control.index') && auth()->user()?->status === 'active') {
+        $platformModules[] = ['key'=>'tv','route'=>'tv.control.index','title'=>'platform.tv','description'=>'platform.descriptions.tv'];
+    }
 @endphp
 <nav class="governance-icon-links is-hub platform-module-links" aria-label="{{ __('platform.modules') }}" data-platform-modules="1.0.1">
     @forelse($platformModules as $platformModule)

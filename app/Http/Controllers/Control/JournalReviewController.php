@@ -126,9 +126,9 @@ final class JournalReviewController extends Controller
         abort_unless($review->status === 'invited', 409);
         $validated = $request->validate([
             'response' => ['required', Rule::in(['accept', 'decline', 'declare_conflict'])],
-            'decline_reason' => [Rule::requiredIf($request->input('response') === 'decline'), 'nullable', 'string', 'max:2000'],
-            'conflict_statement' => [Rule::requiredIf($request->input('response') === 'declare_conflict'), 'nullable', 'string', 'max:3000'],
-            'independence_confirmed' => [Rule::requiredIf($request->input('response') === 'accept'), 'nullable', 'accepted'],
+            'decline_reason' => ['exclude_unless:response,decline', 'required', 'string', 'max:2000'],
+            'conflict_statement' => ['exclude_unless:response,declare_conflict', 'required', 'string', 'max:3000'],
+            'independence_confirmed' => ['exclude_unless:response,accept', 'required', 'accepted'],
         ]);
 
         DB::transaction(function () use ($request, $review, $validated): void {

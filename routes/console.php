@@ -12,3 +12,8 @@ Schedule::command('journal:dispatch-notifications --limit=50')
     ->everyMinute()
     ->withoutOverlapping(10)
     ->onOneServer();
+
+Schedule::command('journal:queue-review-reminders --days=3 --limit=100')
+    ->dailyAt('08:00')
+    ->withoutOverlapping(60)
+    ->onOneServer();

@@ -46,11 +46,12 @@ final class JournalMetadataController extends Controller
     {
         $journal = Journal::query()->where('status', 'active')->firstOrFail();
         abort_unless($journal->isPubliclyLaunched() && $journal->setting('oai_pmh_enabled', false) === true, 404);
-        $verb = Str::limit((string) $request->query('verb'), 80, '');
-        $identifier = Str::limit((string) $request->query('identifier'), 255, '');
-        $metadataPrefix = Str::limit((string) $request->query('metadataPrefix'), 80, '');
+        $arguments = collect(['verb', 'identifier', 'metadataPrefix', 'from', 'until', 'set', 'resumptionToken'])
+            ->mapWithKeys(fn (string $key): array => [$key => Str::limit((string) $request->query($key), 2048, '')])
+            ->filter(fn (string $value): bool => $value !== '')
+            ->all();
 
-        return response($metadata->oai($journal, $verb, $identifier ?: null, $metadataPrefix ?: null), 200, [
+        return response($metadata->oai($journal, $arguments), 200, [
             'Content-Type' => 'text/xml; charset=UTF-8',
             'Cache-Control' => 'public, max-age=300',
             'X-Content-Type-Options' => 'nosniff',

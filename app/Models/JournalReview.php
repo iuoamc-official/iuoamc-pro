@@ -13,6 +13,7 @@ final class JournalReview extends Model
         'journal_article_id', 'reviewer_id', 'round', 'status', 'recommendation',
         'author_comments', 'confidential_comments', 'due_at', 'responded_at',
         'decline_reason', 'submitted_at', 'assigned_by',
+        'last_reminded_at', 'reminder_count',
     ];
 
     protected $hidden = ['reviewer_id', 'confidential_comments', 'decline_reason'];
@@ -25,6 +26,8 @@ final class JournalReview extends Model
             'due_at' => 'datetime',
             'responded_at' => 'datetime',
             'submitted_at' => 'datetime',
+            'last_reminded_at' => 'datetime',
+            'reminder_count' => 'integer',
         ];
     }
 

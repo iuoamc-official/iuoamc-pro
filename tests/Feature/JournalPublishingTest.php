@@ -12,6 +12,7 @@ use App\Models\JournalEditorialMember;
 use App\Models\JournalNotificationOutbox;
 use App\Models\JournalReview;
 use App\Models\JournalSubmission;
+use App\Models\JournalSubmissionRevision;
 use App\Models\ContentArticle;
 use App\Models\Role;
 use App\Models\User;
@@ -54,6 +55,7 @@ final class JournalPublishingTest extends TestCase
             '2026_09_12_140000_add_legacy_provenance_to_content_articles.php',
             '2026_09_12_160000_add_pdf_downloads_to_content_articles.php',
             '2026_09_12_170000_add_scholarly_interoperability_to_journal_articles.php',
+            '2026_09_12_180000_add_revision_intake_and_review_reminders.php',
         ] as $migrationFile) {
             $migration = require database_path('migrations/'.$migrationFile);
             $migration->up();
@@ -74,6 +76,21 @@ final class JournalPublishingTest extends TestCase
             ->assertSee($research->translation('en')->title)
             ->assertSee($professional->translation('en')->title)
             ->assertDontSee($draft->translation('en')->title);
+    }
+
+    public function test_public_journal_kickers_follow_the_selected_language(): void
+    {
+        $this->enablePublicLaunch();
+
+        $this->get('/ar/journal')
+            ->assertOk()
+            ->assertSee('MCIJ · النشر العلمي')
+            ->assertDontSee('SCHOLARLY PUBLISHING');
+
+        $this->get('/fr/journal/author-guidelines')
+            ->assertOk()
+            ->assertSee('MCIJ · Auteurs')
+            ->assertDontSee('MCIJ · AUTHORS');
     }
 
     public function test_public_catalog_filters_articles_by_managed_section(): void
@@ -912,6 +929,131 @@ final class JournalPublishingTest extends TestCase
             ->assertSee('Discoverable Culinary Research')
             ->assertDontSee($draft->article_code)
             ->assertDontSee('Private Manuscript');
+    }
+
+    public function test_oai_pmh_filters_records_and_rejects_invalid_dates(): void
+    {
+        $this->enablePublicLaunch();
+        $article = $this->createArticle('peer_reviewed_research', 'published', 'Filtered Culinary Research');
+        $section = \App\Models\JournalSection::query()->where('slug', 'sensory-science')->firstOrFail();
+        $article->sections()->attach($section);
+
+        $this->get('/journal/oai?verb=ListRecords&metadataPrefix=oai_dc&set=sensory-science&from='.now()->subDay()->toDateString())
+            ->assertOk()
+            ->assertSee($article->article_code);
+        $this->get('/journal/oai?verb=ListRecords&metadataPrefix=oai_dc&from=invalid-date')
+            ->assertOk()
+            ->assertSee('badArgument');
+    }
+
+    public function test_oai_pmh_continues_large_harvests_with_an_opaque_resumption_token(): void
+    {
+        $this->enablePublicLaunch();
+        $first = $this->createArticle('peer_reviewed_research', 'published', 'Harvest Record 1');
+        for ($number = 2; $number <= 26; $number++) {
+            $article = JournalArticle::query()->create([
+                'record_uuid' => (string) Str::uuid(),
+                'journal_id' => $first->journal_id,
+                'journal_issue_id' => $first->journal_issue_id,
+                'article_code' => 'HARVEST-'.$number,
+                'slug' => 'harvest-record-'.$number,
+                'type' => 'peer_reviewed_research',
+                'status' => 'draft',
+                'primary_locale' => 'en',
+                'license' => 'all-rights-reserved',
+                'published_at' => now(),
+                'created_by' => $first->created_by,
+                'updated_by' => $first->updated_by,
+            ]);
+            $article->translations()->create([
+                'locale' => 'en',
+                'title' => 'Harvest Record '.$number,
+                'abstract' => 'A record used to verify paginated scholarly harvesting.',
+                'body' => 'Controlled content.',
+                'keywords' => ['harvest'],
+                'references' => [],
+            ]);
+            $article->update(['status' => 'published', 'published_at' => now()]);
+        }
+
+        $firstPage = $this->get('/journal/oai?verb=ListIdentifiers&metadataPrefix=oai_dc')->assertOk();
+        $this->assertSame(1, preg_match('/<resumptionToken[^>]*>([^<]+)<\/resumptionToken>/', $firstPage->getContent(), $matches));
+        $secondPage = $this->get('/journal/oai?verb=ListIdentifiers&resumptionToken='.urlencode($matches[1]));
+
+        $secondPage->assertOk()->assertSee('HARVEST-26')->assertDontSee($first->article_code);
+    }
+
+    public function test_author_can_upload_an_immutable_revision_only_after_revision_request(): void
+    {
+        $this->installIntegrityKeys();
+        $this->enablePublicLaunch();
+        $journal = Journal::query()->firstOrFail();
+        $journal->update(['settings' => array_merge($journal->settings ?? [], ['contact_email' => 'info@iuoamc.uk'])]);
+        Storage::fake('local');
+        $this->post('/en/journal/submit', $this->validSubmissionPayload())->assertRedirect();
+        $receipt = session('journal_submission_receipt');
+        $submission = JournalSubmission::query()->firstOrFail();
+        $editor = $this->superAdmin();
+        $this->actingAs($editor)->post('/en/control/journal/submissions/'.$submission->id.'/convert')->assertRedirect();
+        $article = $submission->fresh()->convertedArticle;
+        foreach (['submit', 'screen', 'request_revision'] as $action) {
+            $article = app(JournalWorkflow::class)->transition($editor, $article->id, $article->lock_version, $action, 'Revision requested for testing.');
+        }
+
+        $this->post('/en/journal/track-submission/revisions', [
+            'submission_code' => $receipt['code'],
+            'tracking_token' => $receipt['token'],
+            'manuscript' => UploadedFile::fake()->create('revision.pdf', 120, 'application/pdf'),
+            'response_letter' => UploadedFile::fake()->create('response.pdf', 30, 'application/pdf'),
+            'author_note' => 'Every reviewer point has been addressed.',
+        ])->assertRedirect('/en/journal/track-submission');
+
+        $revision = JournalSubmissionRevision::query()->firstOrFail();
+        $this->assertSame(1, $revision->revision_number);
+        $this->assertSame(64, strlen($revision->file_sha256));
+        Storage::disk('local')->assertExists($revision->manuscript_path);
+        Storage::disk('local')->assertExists($revision->response_letter_path);
+        $this->assertDatabaseHas('journal_notification_outbox', ['event' => 'revision_received', 'status' => 'pending']);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'journal.submission.revision_received']);
+    }
+
+    public function test_invalid_tracking_token_cannot_upload_a_revision(): void
+    {
+        $this->installIntegrityKeys();
+        $this->enablePublicLaunch();
+        Storage::fake('local');
+        $this->post('/en/journal/submit', $this->validSubmissionPayload());
+        $submission = JournalSubmission::query()->firstOrFail();
+
+        $this->post('/en/journal/track-submission/revisions', [
+            'submission_code' => $submission->submission_code,
+            'tracking_token' => str_repeat('x', 64),
+            'manuscript' => UploadedFile::fake()->create('revision.pdf', 120, 'application/pdf'),
+        ])->assertNotFound();
+
+        $this->assertDatabaseCount('journal_submission_revisions', 0);
+    }
+
+    public function test_due_review_reminder_is_queued_once_per_day(): void
+    {
+        $this->installIntegrityKeys();
+        $article = $this->createArticle('peer_reviewed_research', 'under_review', 'Reminder Research');
+        $reviewer = User::factory()->create(['status' => 'active', 'must_change_password' => false, 'preferred_locale' => 'en']);
+        $review = JournalReview::query()->create([
+            'journal_article_id' => $article->id,
+            'reviewer_id' => $reviewer->id,
+            'round' => 1,
+            'status' => 'in_progress',
+            'due_at' => now()->addDays(2),
+            'assigned_by' => $this->superAdmin()->id,
+        ]);
+
+        $this->artisan('journal:queue-review-reminders --days=3')->assertSuccessful();
+        $this->artisan('journal:queue-review-reminders --days=3')->assertSuccessful();
+
+        $this->assertSame(1, $review->fresh()->reminder_count);
+        $this->assertDatabaseCount('journal_notification_outbox', 1);
+        $this->assertDatabaseHas('journal_notification_outbox', ['event' => 'review_reminder']);
     }
 
     public function test_public_article_view_metric_counts_once_per_session_and_day(): void

@@ -159,7 +159,7 @@ class MembershipCredentialPdfTest extends TestCase
         $this->assertStringContainsString("name('credentials.preview')", $routes);
         $this->assertStringContainsString('public function previewCredentials', $controller);
         $this->assertStringContainsString('public function preview(', $registry);
-        $this->assertStringContainsString("renderCard($payload, $photoPath, true)", $registry);
+        $this->assertStringContainsString('renderCard($payload, $photoPath, true)', $registry);
         $this->assertStringContainsString('DRAFT PREVIEW · NOT VALID FOR USE', $card);
         $this->assertStringContainsString('DRAFT PREVIEW · NOT VALID FOR USE', $certificate);
     }

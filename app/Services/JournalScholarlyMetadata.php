@@ -6,10 +6,18 @@ namespace App\Services;
 
 use App\Models\Journal;
 use App\Models\JournalArticle;
+use DateTimeImmutable;
+use DateTimeZone;
+use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
+use JsonException;
 
 final class JournalScholarlyMetadata
 {
+    private const OAI_PAGE_SIZE = 25;
+
     public function bibtex(JournalArticle $article, string $locale): string
     {
         $article->loadMissing(['journal', 'issue', 'authors', 'translations']);
@@ -107,26 +115,31 @@ final class JournalScholarlyMetadata
             .'<body>'.$body.'</body>'.($references !== '' ? '<back><ref-list>'.$references.'</ref-list></back>' : '').'</article>';
     }
 
-    public function oai(Journal $journal, string $verb, ?string $identifier = null, ?string $metadataPrefix = null, string $locale = 'en'): string
+    /** @param array<string, string> $arguments */
+    public function oai(Journal $journal, array $arguments, string $locale = 'en'): string
     {
         $baseUrl = route('journal.oai');
         $responseDate = now()->utc()->format('Y-m-d\TH:i:s\Z');
+        $verb = $arguments['verb'] ?? '';
+        $identifier = $arguments['identifier'] ?? null;
+        $metadataPrefix = $arguments['metadataPrefix'] ?? null;
         $metadataVerbs = ['GetRecord', 'ListIdentifiers', 'ListRecords'];
         $content = match (true) {
-            in_array($verb, $metadataVerbs, true) && $metadataPrefix !== 'oai_dc' => '<error code="cannotDisseminateFormat">Only oai_dc metadata is available.</error>',
+            isset($arguments['resumptionToken']) && array_diff(array_keys($arguments), ['verb', 'resumptionToken']) !== [] => '<error code="badArgument">A resumptionToken must be the only argument besides the verb.</error>',
+            in_array($verb, $metadataVerbs, true) && ! isset($arguments['resumptionToken']) && $metadataPrefix !== 'oai_dc' => '<error code="cannotDisseminateFormat">Only oai_dc metadata is available.</error>',
             $verb === 'GetRecord' && blank($identifier) => '<error code="badArgument">The identifier argument is required.</error>',
             $verb === 'Identify' => $this->oaiIdentify($journal, $baseUrl),
             $verb === 'ListMetadataFormats' => '<ListMetadataFormats><metadataFormat><metadataPrefix>oai_dc</metadataPrefix><schema>http://www.openarchives.org/OAI/2.0/oai_dc.xsd</schema><metadataNamespace>http://www.openarchives.org/OAI/2.0/oai_dc/</metadataNamespace></metadataFormat></ListMetadataFormats>',
             $verb === 'ListSets' => $this->oaiSets($journal, $locale),
             $verb === 'GetRecord' => $this->oaiGetRecord($journal, $identifier, $locale),
-            $verb === 'ListIdentifiers' => $this->oaiList($journal, $locale, false),
-            $verb === 'ListRecords' => $this->oaiList($journal, $locale, true),
+            $verb === 'ListIdentifiers' => $this->oaiList($journal, $locale, false, $arguments),
+            $verb === 'ListRecords' => $this->oaiList($journal, $locale, true, $arguments),
             default => '<error code="badVerb">The verb argument is missing or illegal.</error>',
         };
 
         return '<?xml version="1.0" encoding="UTF-8"?>'."\n"
             .'<OAI-PMH xmlns="http://www.openarchives.org/OAI/2.0/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd">'
-            .'<responseDate>'.$responseDate.'</responseDate><request verb="'.$this->xml($verb).'">'.$this->xml($baseUrl).'</request>'.$content.'</OAI-PMH>';
+            .'<responseDate>'.$responseDate.'</responseDate>'.$this->oaiRequest($baseUrl, $arguments).$content.'</OAI-PMH>';
     }
 
     private function oaiIdentify(Journal $journal, string $baseUrl): string
@@ -158,15 +171,78 @@ final class JournalScholarlyMetadata
             : '<error code="idDoesNotExist">The identifier does not match a published record.</error>';
     }
 
-    private function oaiList(Journal $journal, string $locale, bool $includeMetadata): string
+    /** @param array<string, string> $arguments */
+    private function oaiList(Journal $journal, string $locale, bool $includeMetadata, array $arguments): string
     {
-        $articles = $journal->articles()->published()->with(['translations', 'authors', 'sections'])->oldest('published_at')->orderBy('id')->limit(1000)->get();
+        $state = ['after' => 0, 'from' => $arguments['from'] ?? null, 'until' => $arguments['until'] ?? null, 'set' => $arguments['set'] ?? null];
+        if (isset($arguments['resumptionToken'])) {
+            try {
+                $decoded = json_decode(Crypt::decryptString($arguments['resumptionToken']), true, 512, JSON_THROW_ON_ERROR);
+            } catch (DecryptException|JsonException) {
+                return '<error code="badResumptionToken">The resumption token is invalid or expired.</error>';
+            }
+            if (! is_array($decoded) || ($decoded['verb'] ?? null) !== ($includeMetadata ? 'ListRecords' : 'ListIdentifiers') || (int) ($decoded['expires'] ?? 0) < now()->timestamp) {
+                return '<error code="badResumptionToken">The resumption token is invalid or expired.</error>';
+            }
+            $state = array_merge($state, array_intersect_key($decoded, $state));
+        }
+
+        $from = $this->oaiDate($state['from'], false);
+        $until = $this->oaiDate($state['until'], true);
+        if (($state['from'] !== null && $from === null) || ($state['until'] !== null && $until === null) || ($from !== null && $until !== null && $from > $until)) {
+            return '<error code="badArgument">The from and until arguments must be valid UTC dates in chronological order.</error>';
+        }
+
+        $query = $journal->articles()->published()
+            ->with(['translations', 'authors', 'sections'])
+            ->when($from, fn (Builder $query, DateTimeImmutable $date): Builder => $query->where('published_at', '>=', $date->format('Y-m-d H:i:s')))
+            ->when($until, fn (Builder $query, DateTimeImmutable $date): Builder => $query->where('published_at', '<=', $date->format('Y-m-d H:i:s')))
+            ->when($state['set'], fn (Builder $query, string $set): Builder => $query->whereHas('sections', fn (Builder $section): Builder => $section->where('slug', $set)->where('status', 'active')))
+            ->where('journal_articles.id', '>', (int) $state['after'])
+            ->orderBy('journal_articles.id');
+        $articles = $query->limit(self::OAI_PAGE_SIZE + 1)->get();
         if ($articles->isEmpty()) {
             return '<error code="noRecordsMatch">No published records match the request.</error>';
         }
-        $records = $articles->map(fn (JournalArticle $article): string => $this->oaiRecord($article, $locale, $includeMetadata))->implode('');
+        $hasMore = $articles->count() > self::OAI_PAGE_SIZE;
+        $page = $articles->take(self::OAI_PAGE_SIZE);
+        $records = $page->map(fn (JournalArticle $article): string => $this->oaiRecord($article, $locale, $includeMetadata))->implode('');
+        $token = '';
+        if ($hasMore) {
+            $next = array_merge($state, [
+                'verb' => $includeMetadata ? 'ListRecords' : 'ListIdentifiers',
+                'after' => $page->last()->id,
+                'expires' => now()->addDay()->timestamp,
+            ]);
+            $token = '<resumptionToken expirationDate="'.now()->addDay()->utc()->format('Y-m-d\TH:i:s\Z').'">'.$this->xml(Crypt::encryptString((string) json_encode($next, JSON_THROW_ON_ERROR))).'</resumptionToken>';
+        }
 
-        return '<'.($includeMetadata ? 'ListRecords' : 'ListIdentifiers').'>'.$records.'</'.($includeMetadata ? 'ListRecords' : 'ListIdentifiers').'>';
+        return '<'.($includeMetadata ? 'ListRecords' : 'ListIdentifiers').'>'.$records.$token.'</'.($includeMetadata ? 'ListRecords' : 'ListIdentifiers').'>';
+    }
+
+    /** @param array<string, string> $arguments */
+    private function oaiRequest(string $baseUrl, array $arguments): string
+    {
+        $attributes = collect($arguments)->map(
+            fn (string $value, string $key): string => ' '.$this->xml($key).'="'.$this->xml($value).'"'
+        )->implode('');
+
+        return '<request'.$attributes.'>'.$this->xml($baseUrl).'</request>';
+    }
+
+    private function oaiDate(mixed $value, bool $endOfDay): ?DateTimeImmutable
+    {
+        if (! is_string($value) || $value === '') {
+            return null;
+        }
+        $timezone = new DateTimeZone('UTC');
+        $format = preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1 ? '!Y-m-d' : '!Y-m-d\TH:i:s\Z';
+        $date = DateTimeImmutable::createFromFormat($format, $value, $timezone);
+        if ($date === false || $date->format(ltrim($format, '!')) !== $value) {
+            return null;
+        }
+
+        return $endOfDay && $format === '!Y-m-d' ? $date->setTime(23, 59, 59) : $date;
     }
 
     private function oaiRecord(JournalArticle $article, string $locale, bool $includeMetadata): string

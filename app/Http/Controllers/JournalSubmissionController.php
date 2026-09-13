@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use RuntimeException;
@@ -155,7 +156,7 @@ final class JournalSubmissionController extends Controller
         ]);
 
         $submission = JournalSubmission::query()
-            ->with(['convertedArticle.decisions'])
+            ->with(['convertedArticle.decisions', 'revisions'])
             ->where('submission_code', Str::upper(trim($validated['submission_code'])))
             ->first();
 
@@ -164,6 +165,96 @@ final class JournalSubmissionController extends Controller
         }
 
         return view('journal.submissions.tracking', $this->shared($locale, $profile) + compact('submission'));
+    }
+
+    public function storeRevision(Request $request, string $locale, JournalNotificationService $notifications): RedirectResponse
+    {
+        $validated = $request->validate([
+            'submission_code' => ['required', 'string', 'max:80'],
+            'tracking_token' => ['required', 'string', 'size:64'],
+            'manuscript' => ['required', 'file', 'mimes:pdf,doc,docx', 'max:25600'],
+            'response_letter' => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:10240'],
+            'author_note' => ['nullable', 'string', 'max:5000'],
+        ]);
+
+        $submission = JournalSubmission::query()
+            ->with('convertedArticle')
+            ->where('submission_code', Str::upper(trim($validated['submission_code'])))
+            ->first();
+        abort_unless(
+            $submission !== null
+            && hash_equals($submission->tracking_token_hash, $this->secureHash($validated['tracking_token']))
+            && $submission->status === 'converted'
+            && $submission->convertedArticle?->status === 'revision_required',
+            404
+        );
+
+        $uuid = (string) Str::uuid();
+        $manuscript = $request->file('manuscript');
+        $responseLetter = $request->file('response_letter');
+        $manuscriptHash = hash_file('sha256', $manuscript->getRealPath());
+        $manuscriptPath = $manuscript->storeAs(
+            'journal/submission-revisions/'.$uuid,
+            $manuscriptHash.'.'.$this->safeExtension($manuscript),
+            'local'
+        );
+        if ($manuscriptPath === false) {
+            throw new RuntimeException('The revised manuscript could not be stored.');
+        }
+
+        $responseLetterHash = $responseLetter ? hash_file('sha256', $responseLetter->getRealPath()) : null;
+        $responseLetterPath = $responseLetter?->storeAs(
+            'journal/submission-revisions/'.$uuid,
+            $responseLetterHash.'.'.$this->safeExtension($responseLetter),
+            'local'
+        );
+        if ($responseLetter !== null && $responseLetterPath === false) {
+            Storage::disk('local')->delete($manuscriptPath);
+            throw new RuntimeException('The response letter could not be stored.');
+        }
+
+        try {
+            DB::transaction(function () use ($validated, $submission, $uuid, $manuscript, $manuscriptPath, $manuscriptHash, $responseLetter, $responseLetterPath, $responseLetterHash, $notifications): void {
+                $locked = JournalSubmission::query()->with('convertedArticle')->lockForUpdate()->findOrFail($submission->id);
+                abort_unless($locked->status === 'converted' && $locked->convertedArticle?->status === 'revision_required', 409);
+                $revisionNumber = (int) $locked->revisions()->max('revision_number') + 1;
+                $revision = $locked->revisions()->create([
+                    'record_uuid' => $uuid,
+                    'revision_number' => $revisionNumber,
+                    'manuscript_path' => $manuscriptPath,
+                    'original_filename' => $this->safeFilename($manuscript),
+                    'file_sha256' => $manuscriptHash,
+                    'response_letter_path' => $responseLetterPath,
+                    'response_letter_filename' => $responseLetter ? $this->safeFilename($responseLetter) : null,
+                    'response_letter_sha256' => $responseLetterHash,
+                    'author_note' => trim((string) ($validated['author_note'] ?? '')) ?: null,
+                    'status' => 'received',
+                    'received_at' => now()->utc()->startOfSecond(),
+                ]);
+                AuditTrail::record('journal.submission.revision_received', $revision, [], [
+                    'submission_code' => $locked->submission_code,
+                    'revision_number' => $revisionNumber,
+                    'file_sha256' => $manuscriptHash,
+                ], ['source' => 'public_revision_intake']);
+
+                $contactEmail = trim((string) $locked->journal->setting('contact_email'));
+                if ($contactEmail !== '') {
+                    $notifications->queue($locked->journal, 'revision_received', $contactEmail, 'en', [
+                        'name' => 'Editorial Office',
+                        'code' => $locked->submission_code,
+                        'title' => $locked->title,
+                        'revision' => $revisionNumber,
+                        'workspace_url' => route('journal.control.submissions.show', ['locale' => 'en', 'submission' => $locked]),
+                    ], $revision);
+                }
+            }, 5);
+        } catch (Throwable $exception) {
+            Storage::disk('local')->delete(array_filter([$manuscriptPath, $responseLetterPath]));
+            throw $exception;
+        }
+
+        return redirect()->route('journal.public.submissions.tracking', ['locale' => $locale])
+            ->with('success', trans('journal.messages.revision_received'));
     }
 
     /** @return array<string, mixed> */
@@ -180,5 +271,20 @@ final class JournalSubmissionController extends Controller
     private function secureHash(string $value): string
     {
         return hash_hmac('sha256', $value, (string) config('app.key'));
+    }
+
+    private function safeFilename(UploadedFile $file): string
+    {
+        return Str::limit((string) preg_replace('/[^\pL\pN._ -]+/u', '-', basename($file->getClientOriginalName())), 255, '');
+    }
+
+    private function safeExtension(UploadedFile $file): string
+    {
+        return match ($file->getMimeType()) {
+            'application/pdf' => 'pdf',
+            'application/msword' => 'doc',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+            default => Str::lower($file->getClientOriginalExtension()),
+        };
     }
 }

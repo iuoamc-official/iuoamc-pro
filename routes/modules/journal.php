@@ -32,6 +32,7 @@ Route::prefix('{locale}/journal')->where(['locale' => 'ar|en|fr'])->middleware([
     Route::get('/submission-confirmation', [JournalSubmissionController::class, 'confirmation'])->name('submissions.confirmation');
     Route::get('/track-submission', [JournalSubmissionController::class, 'tracking'])->name('submissions.tracking');
     Route::post('/track-submission', [JournalSubmissionController::class, 'track'])->middleware('throttle:20,1')->name('submissions.track');
+    Route::post('/track-submission/revisions', [JournalSubmissionController::class, 'storeRevision'])->middleware('throttle:5,1')->name('submissions.revisions.store');
 });
 
 Route::get('/journal/oai', [JournalMetadataController::class, 'oai'])
@@ -62,6 +63,7 @@ Route::prefix('{locale}/control/journal')->where(['locale' => 'ar|en|fr'])
         Route::get('/submissions', [ControlJournalSubmissionController::class, 'index'])->middleware('permission:journal.submissions')->name('submissions.index');
         Route::get('/submissions/{submission}', [ControlJournalSubmissionController::class, 'show'])->whereNumber('submission')->middleware('permission:journal.submissions')->name('submissions.show');
         Route::get('/submissions/{submission}/manuscript', [ControlJournalSubmissionController::class, 'download'])->whereNumber('submission')->middleware(['permission:journal.submissions', 'throttle:30,1'])->name('submissions.download');
+        Route::get('/submissions/{submission}/revisions/{revision}/{file}', [ControlJournalSubmissionController::class, 'downloadRevision'])->whereNumber(['submission', 'revision'])->whereIn('file', ['manuscript', 'response-letter'])->middleware(['permission:journal.submissions', 'throttle:30,1'])->name('submissions.revisions.download');
         Route::post('/submissions/{submission}/screen', [ControlJournalSubmissionController::class, 'screen'])->whereNumber('submission')->middleware(['permission:journal.submissions', 'throttle:20,1'])->name('submissions.screen');
         Route::post('/submissions/{submission}/decline', [ControlJournalSubmissionController::class, 'decline'])->whereNumber('submission')->middleware(['permission:journal.submissions', 'throttle:20,1'])->name('submissions.decline');
         Route::post('/submissions/{submission}/convert', [ControlJournalSubmissionController::class, 'convert'])->whereNumber('submission')->middleware(['permission:journal.submissions', 'throttle:10,1'])->name('submissions.convert');

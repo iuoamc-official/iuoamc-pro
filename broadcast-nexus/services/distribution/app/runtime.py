@@ -1,2 +1,2 @@
 from app.main import app
-import app.phase25  # noqa: F401
+from app import phase25 as _phase25  # noqa: F401

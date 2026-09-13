@@ -7,7 +7,11 @@
 @endpush
 
 @section('content')
-<div class="tv-control" data-tv-control data-timezone="{{ $channel['timezone'] }}" data-locale="{{ app()->getLocale() }}">
+<div class="tv-control"
+     data-tv-control
+     data-timezone="{{ $channel['timezone'] }}"
+     data-locale="{{ app()->getLocale() }}"
+     data-status-url="{{ route('tv.control.status', ['locale' => app()->getLocale()]) }}">
     <section class="tv-top">
         <div class="tv-brand">
             <img src="{{ asset('assets/brand/master-v1/iuoamc-tv-seal-v1.webp') }}" alt="IUOAMC TV">
@@ -54,21 +58,22 @@
             <div class="tv-now-next">
                 <div>
                     <small>NOW</small>
-                    <strong>IUOAMC TV Experimental Service</strong>
-                    <span>Read-only operational view</span>
+                    <strong data-tv-now-title>IUOAMC TV Experimental Service</strong>
+                    <span data-tv-now-subtitle>Read-only operational view</span>
                 </div>
                 <div>
                     <small>NEXT</small>
-                    <strong>Scheduler / Playout Sync</strong>
-                    <span>Now / Next سيصبح ديناميكيًا بعد ربط Scheduler API.</span>
+                    <strong data-tv-next-title>Scheduler / Playout Sync</strong>
+                    <span data-tv-next-subtitle>Now / Next سيصبح ديناميكيًا بعد ربط Scheduler API.</span>
                 </div>
             </div>
         </article>
 
         <aside class="tv-side">
             <article class="tv-panel">
-                <header class="tv-panel-head"><h3>Broadcast Health</h3><small>Read-only</small></header>
+                <header class="tv-panel-head"><h3>Broadcast Health</h3><small data-tv-last-check>Read-only</small></header>
                 <div class="tv-status-list">
+                    <div class="tv-status-row"><div><b>Broadcast Nexus</b><small data-tv-nexus-state>{{ $channel['status_url'] ? 'Configured / checking' : 'Status endpoint not configured' }}</small></div><span class="tv-led" data-tv-nexus-led></span></div>
                     <div class="tv-status-row"><div><b>4K Master</b><small>3840×2160 / 25fps</small></div><span class="tv-led ok"></span></div>
                     <div class="tv-status-row"><div><b>Preview Player</b><small>{{ $channel['preview_url'] ? 'Connected' : 'Not connected' }}</small></div><span class="tv-led {{ $channel['preview_url'] ? 'ok' : '' }}"></span></div>
                     <div class="tv-status-row"><div><b>4K HLS</b><small>{{ $channel['hls_url'] ? 'Configured' : 'Not exposed to site' }}</small></div><span class="tv-led {{ $channel['hls_url'] ? 'ok' : '' }}"></span></div>
@@ -100,23 +105,18 @@
     <section class="tv-panel">
         <header class="tv-panel-head">
             <div><div class="tv-eyebrow">EPG / RUNDOWN</div><h3>الجدول التشغيلي</h3></div>
-            <small>Preview until Scheduler API is connected</small>
+            <small data-tv-epg-source>Read-only preview</small>
         </header>
-        <div class="tv-epg">
+        <div class="tv-epg" data-tv-epg>
             <div class="tv-epg-row">
                 <div class="tv-epg-time">LIVE</div>
-                <div class="tv-epg-title"><b>Experimental Service</b><small>واجهة القناة الجديدة داخل iuoamc.pro</small></div>
+                <div class="tv-epg-title"><b>Experimental Service</b><small>بانتظار ربط Scheduler status feed.</small></div>
                 <span class="tv-badge ready">CONTROL VIEW</span>
             </div>
             <div class="tv-epg-row">
                 <div class="tv-epg-time">+ NEXT</div>
-                <div class="tv-epg-title"><b>Scheduler Integration</b><small>ربط Now / Next وEPG من Broadcast Nexus بدل البيانات الثابتة</small></div>
+                <div class="tv-epg-title"><b>Scheduler Integration</b><small>سيتم استبدال هذا الصف ببيانات Nexus عند تفعيل endpoint الآمن.</small></div>
                 <span class="tv-badge locked">PENDING</span>
-            </div>
-            <div class="tv-epg-row">
-                <div class="tv-epg-time">+ 02</div>
-                <div class="tv-epg-title"><b>Playout Integration</b><small>قراءة rundown والqueue وحالة التشغيل بدون صلاحيات إنتاجية</small></div>
-                <span class="tv-badge locked">PLANNED</span>
             </div>
         </div>
     </section>

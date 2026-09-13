@@ -1,6 +1,6 @@
 services:
   modern-media-gateway:
-    image: bluenviron/mediamtx:latest
+    image: bluenviron/mediamtx:v1.21.0
     restart: "no"
     volumes:
       - ./modern-media/mediamtx.yml:/mediamtx.yml:ro
@@ -33,6 +33,19 @@ services:
       - /opt/iuoamc-broadcast/import/legacy-tv:/preview-media:ro
       - ./modern-media/publish-4k.sh:/opt/shadow/publish-4k.sh:ro
     command: ["/opt/shadow/publish-4k.sh"]
+    networks: [modern4k]
+
+  modern-webrtc-player:
+    build:
+      context: .
+      dockerfile: modern-media/player/Dockerfile
+      args:
+        MEDIAMTX_VERSION: v1.21.0
+    restart: "no"
+    depends_on:
+      - modern-media-gateway
+    ports:
+      - "127.0.0.1:58900:8080"
     networks: [modern4k]
 
 # Use a normal bridge network. Host exposure is still loopback-only because all

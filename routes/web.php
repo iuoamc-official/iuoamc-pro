@@ -190,3 +190,6 @@ require __DIR__.'/modules/account.php';
 
 // Immutable PDF documents, invoices and receipts issued to account holders.
 require __DIR__.'/modules/account_documents.php';
+
+// IUOAMC TV broadcast control workspace.
+require __DIR__.'/modules/tv.php';

@@ -78,66 +78,72 @@ sql_asset() {
     -v role="$role" \
     -v package="$package" \
     -v source_url="$source_url" <<'SQL'
-DO $$
-DECLARE
-  existing_id uuid;
-  new_id uuid;
-BEGIN
-  SELECT id INTO existing_id
-  FROM media_assets
-  WHERE storage_bucket = :'bucket' AND storage_object = :'storage_object'
-  LIMIT 1;
+BEGIN;
 
-  IF existing_id IS NULL THEN
-    new_id := gen_random_uuid();
-    INSERT INTO media_assets(
-      id, asset_key, title, media_type, mime_type, size_bytes, status,
-      checksum_sha256, storage_bucket, storage_object, metadata
-    ) VALUES (
-      new_id, :'asset_key', :'title', :'media_type', :'mime', :'size_bytes'::bigint, 'ready',
-      :'checksum', :'bucket', :'storage_object',
-      jsonb_build_object(
-        'source','legacy-channel',
-        'source_url',:'source_url',
-        'migration_package',:'package',
-        'legacy_object',:'storage_object',
-        'asset_role',:'role',
-        'channel','IUOAMC TV',
-        'channel_slug','iuoamc-tv',
-        'staging_only',true,
-        'production_outputs_enabled',false,
-        'public_publishing_enabled',false
-      )
-    );
-    INSERT INTO audit_events(actor_label,action,resource_type,resource_id,source_service,payload)
-    VALUES(
-      'legacy-media-import','media.legacy.import','media_asset',new_id::text,'media-library',
-      jsonb_build_object('package',:'package','storage_object',:'storage_object','checksum_sha256',:'checksum')
-    );
-  ELSE
-    UPDATE media_assets
-    SET title = :'title',
-        media_type = :'media_type',
-        mime_type = :'mime',
-        size_bytes = :'size_bytes'::bigint,
-        status = 'ready',
-        checksum_sha256 = :'checksum',
-        metadata = coalesce(metadata,'{}'::jsonb) || jsonb_build_object(
-          'source','legacy-channel',
-          'source_url',:'source_url',
-          'migration_package',:'package',
-          'legacy_object',:'storage_object',
-          'asset_role',:'role',
-          'channel','IUOAMC TV',
-          'channel_slug','iuoamc-tv',
-          'staging_only',true,
-          'production_outputs_enabled',false,
-          'public_publishing_enabled',false
-        ),
-        updated_at = now()
-    WHERE id = existing_id;
-  END IF;
-END $$;
+UPDATE media_assets
+SET title = :'title',
+    media_type = :'media_type',
+    mime_type = :'mime',
+    size_bytes = :'size_bytes'::bigint,
+    status = 'ready',
+    checksum_sha256 = :'checksum',
+    metadata = coalesce(metadata,'{}'::jsonb) || jsonb_build_object(
+      'source','legacy-channel',
+      'source_url',:'source_url',
+      'migration_package',:'package',
+      'legacy_object',:'storage_object',
+      'asset_role',:'role',
+      'channel','IUOAMC TV',
+      'channel_slug','iuoamc-tv',
+      'staging_only',true,
+      'production_outputs_enabled',false,
+      'public_publishing_enabled',false
+    ),
+    updated_at = now()
+WHERE storage_bucket = :'bucket'
+  AND storage_object = :'storage_object';
+
+INSERT INTO media_assets(
+  id, asset_key, title, media_type, mime_type, size_bytes, status,
+  checksum_sha256, storage_bucket, storage_object, metadata
+)
+SELECT
+  gen_random_uuid(), :'asset_key', :'title', :'media_type', :'mime', :'size_bytes'::bigint, 'ready',
+  :'checksum', :'bucket', :'storage_object',
+  jsonb_build_object(
+    'source','legacy-channel',
+    'source_url',:'source_url',
+    'migration_package',:'package',
+    'legacy_object',:'storage_object',
+    'asset_role',:'role',
+    'channel','IUOAMC TV',
+    'channel_slug','iuoamc-tv',
+    'staging_only',true,
+    'production_outputs_enabled',false,
+    'public_publishing_enabled',false
+  )
+WHERE NOT EXISTS (
+  SELECT 1 FROM media_assets
+  WHERE storage_bucket = :'bucket'
+    AND storage_object = :'storage_object'
+);
+
+INSERT INTO audit_events(actor_label,action,resource_type,resource_id,source_service,payload)
+SELECT
+  'legacy-media-import','media.legacy.import','media_asset',id::text,'media-library',
+  jsonb_build_object('package',:'package','storage_object',:'storage_object','checksum_sha256',:'checksum')
+FROM media_assets
+WHERE storage_bucket = :'bucket'
+  AND storage_object = :'storage_object'
+  AND NOT EXISTS (
+    SELECT 1 FROM audit_events a
+    WHERE a.action='media.legacy.import'
+      AND a.resource_type='media_asset'
+      AND a.resource_id=media_assets.id::text
+      AND a.payload->>'package'=:'package'
+  );
+
+COMMIT;
 SQL
 }
 

@@ -16,7 +16,7 @@
     @endforeach
     <title>@yield('title', $journal->localized('name')) — IUOAMC</title>
     <link rel="stylesheet" href="{{ asset('assets/css/iuoamc-public-1.0.0.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/css/iuoamc-journal-1.0.0.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/iuoamc-journal-1.0.0.css') }}?v={{ filemtime(public_path('assets/css/iuoamc-journal-1.0.0.css')) }}">
     @stack('metadata')
 </head>
 <body class="journal-public">

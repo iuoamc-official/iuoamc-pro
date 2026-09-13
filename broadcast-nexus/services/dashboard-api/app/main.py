@@ -6,9 +6,10 @@ import time
 from datetime import datetime, timezone
 
 import httpx
+import psycopg
 from fastapi import FastAPI
 
-app = FastAPI(title="IUOAMC Broadcast Nexus Dashboard API", version="0.18.0")
+app = FastAPI(title="IUOAMC Broadcast Nexus Dashboard API", version="0.19.0")
 
 SERVICES = {
     "orchestrator": "http://orchestrator:8100/health",
@@ -42,6 +43,22 @@ def safety_envelope() -> dict:
         "production_outputs": not env_false("PRODUCTION_OUTPUTS_ENABLED"),
         "public_publishing": not env_false("PUBLIC_PUBLISHING_ENABLED"),
         "shadow_mode": os.getenv("SHADOW_MODE", "true").strip().lower() == "true",
+    }
+
+
+def database_url() -> str:
+    return os.environ["DATABASE_URL"].replace("postgresql+psycopg://", "postgresql://")
+
+
+def serialize_slot(row) -> dict | None:
+    if not row:
+        return None
+    return {
+        "title": row[0],
+        "subtitle": row[1] or "",
+        "start": row[2].isoformat() if row[2] else "",
+        "end": row[3].isoformat() if row[3] else "",
+        "status": row[4] or "",
     }
 
 
@@ -113,3 +130,78 @@ async def summary():
         "safety": {**safety, "safe_for_staging": safe},
         "services": services,
     }
+
+
+@app.get("/v1/iuoamc-tv/status")
+def iuoamc_tv_status():
+    slug = os.getenv("IUOAMC_TV_CHANNEL_SLUG", "iuoamc-tv")
+    safety = safety_envelope()
+    payload = {
+        "service": "iuoamc-tv-status",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "environment": safety["environment"],
+        "safe": not safety["production_switching"] and not safety["production_outputs"] and not safety["public_publishing"],
+        "channel": None,
+        "now": None,
+        "next": None,
+        "epg": [],
+    }
+
+    with psycopg.connect(database_url()) as conn:
+        channel = conn.execute(
+            "SELECT id,name,status,timezone FROM channels WHERE slug=%s",
+            (slug,),
+        ).fetchone()
+
+        if not channel:
+            payload["state"] = "channel_not_found"
+            return payload
+
+        channel_id = channel[0]
+        payload["channel"] = {
+            "id": str(channel_id),
+            "slug": slug,
+            "name": channel[1],
+            "status": channel[2],
+            "timezone": channel[3],
+        }
+
+        now_row = conn.execute(
+            """SELECT title, COALESCE(metadata->>'subtitle',''), starts_at, ends_at, state
+               FROM schedule_slots
+               WHERE channel_id=%s
+                 AND state NOT IN ('cancelled','completed')
+                 AND starts_at <= now() AND ends_at > now()
+               ORDER BY priority ASC, starts_at ASC
+               LIMIT 1""",
+            (channel_id,),
+        ).fetchone()
+
+        next_row = conn.execute(
+            """SELECT title, COALESCE(metadata->>'subtitle',''), starts_at, ends_at, state
+               FROM schedule_slots
+               WHERE channel_id=%s
+                 AND state NOT IN ('cancelled','completed')
+                 AND starts_at > now()
+               ORDER BY starts_at ASC, priority ASC
+               LIMIT 1""",
+            (channel_id,),
+        ).fetchone()
+
+        epg_rows = conn.execute(
+            """SELECT title, COALESCE(metadata->>'subtitle',''), starts_at, ends_at, state
+               FROM schedule_slots
+               WHERE channel_id=%s
+                 AND state NOT IN ('cancelled','completed')
+                 AND ends_at > now() - interval '1 minute'
+               ORDER BY starts_at ASC, priority ASC
+               LIMIT 6""",
+            (channel_id,),
+        ).fetchall()
+
+        payload["now"] = serialize_slot(now_row)
+        payload["next"] = serialize_slot(next_row)
+        payload["epg"] = [serialize_slot(row) for row in epg_rows if row]
+        payload["state"] = "online"
+
+    return payload

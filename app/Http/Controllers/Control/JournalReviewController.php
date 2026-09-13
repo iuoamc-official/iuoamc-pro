@@ -125,17 +125,29 @@ final class JournalReviewController extends Controller
         abort_unless($review->reviewer_id === $request->user()->id, 403);
         abort_unless($review->status === 'invited', 409);
         $validated = $request->validate([
-            'response' => ['required', Rule::in(['accept', 'decline'])],
-            'decline_reason' => [Rule::requiredIf($request->input('response') === 'decline'), 'nullable', 'string', 'max:2000'],
+            'response' => ['required', Rule::in(['accept', 'decline', 'declare_conflict'])],
+            'decline_reason' => ['exclude_unless:response,decline', 'required', 'string', 'max:2000'],
+            'conflict_statement' => ['exclude_unless:response,declare_conflict', 'required', 'string', 'max:3000'],
+            'independence_confirmed' => ['exclude_unless:response,accept', 'required', 'accepted'],
         ]);
 
         DB::transaction(function () use ($request, $review, $validated): void {
+            $status = match ($validated['response']) {
+                'accept' => 'in_progress',
+                'declare_conflict' => 'conflict_declared',
+                default => 'declined',
+            };
             $review->update([
-                'status' => $validated['response'] === 'accept' ? 'in_progress' : 'declined',
+                'status' => $status,
+                'conflict_status' => $validated['response'] === 'accept' ? 'none' : ($validated['response'] === 'declare_conflict' ? 'declared' : null),
                 'responded_at' => now()->utc()->startOfSecond(),
                 'decline_reason' => $validated['response'] === 'decline' ? trim((string) $validated['decline_reason']) : null,
+                'conflict_statement' => $validated['response'] === 'declare_conflict' ? trim((string) $validated['conflict_statement']) : null,
+                'conflict_declared_at' => $validated['response'] === 'declare_conflict' ? now()->utc()->startOfSecond() : null,
+                'independence_confirmed_at' => $validated['response'] === 'accept' ? now()->utc()->startOfSecond() : null,
             ]);
-            AuditTrail::record('journal.review.'.$validated['response'].'ed', $review->article, ['status' => 'invited'], [
+            $event = $validated['response'] === 'declare_conflict' ? 'conflict_declared' : $validated['response'].'ed';
+            AuditTrail::record('journal.review.'.$event, $review->article, ['status' => 'invited'], [
                 'review_id' => $review->id,
                 'status' => $review->status,
             ], [], $request->user()->id);

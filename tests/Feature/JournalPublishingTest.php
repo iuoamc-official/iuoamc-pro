@@ -57,6 +57,7 @@ final class JournalPublishingTest extends TestCase
             '2026_09_12_170000_add_scholarly_interoperability_to_journal_articles.php',
             '2026_09_12_180000_add_revision_intake_and_review_reminders.php',
             '2026_09_13_000000_create_journal_submission_accounts.php',
+            '2026_09_13_010000_add_journal_editorial_collaboration.php',
         ] as $migrationFile) {
             $migration = require database_path('migrations/'.$migrationFile);
             $migration->up();
@@ -1240,12 +1241,106 @@ final class JournalPublishingTest extends TestCase
             'recommendation' => 'accept',
             'author_comments' => 'A complete review.',
         ])->assertConflict();
+        $this->actingAs($reviewer)->from('/en/control/journal/articles/'.$article->id)->post('/en/control/journal/reviews/'.$review->id.'/response', [
+            'response' => 'accept',
+        ])->assertSessionHasErrors('independence_confirmed');
         $this->actingAs($reviewer)->post('/en/control/journal/reviews/'.$review->id.'/response', [
             'response' => 'accept',
+            'independence_confirmed' => '1',
         ])->assertRedirect();
 
         $this->assertSame('in_progress', $review->fresh()->status);
         $this->assertNotNull($review->fresh()->responded_at);
+        $this->assertNotNull($review->fresh()->independence_confirmed_at);
+    }
+
+    public function test_submission_preserves_multiple_authors_and_credit_roles_through_conversion(): void
+    {
+        Storage::fake('local');
+        $this->enablePublicLaunch();
+        $payload = $this->validSubmissionPayload() + [
+            'author_latin_name' => 'Submission Author',
+            'author_affiliation_ror' => 'https://ror.org/03yrm5c26',
+            'author_contribution_roles' => ['conceptualization', 'writing_original_draft'],
+            'coauthors' => [[
+                'name' => 'Second Researcher',
+                'latin_name' => 'Second Researcher',
+                'email' => 'second@example.test',
+                'affiliation_name' => 'Culinary Science Laboratory',
+                'affiliation_ror' => 'https://ror.org/02mhbdp94',
+                'orcid' => '0000-0001-5109-3700',
+                'country_code' => 'FR',
+                'contribution_roles' => ['methodology', 'formal_analysis'],
+            ]],
+        ];
+
+        $this->post('/en/journal/submit', $payload)->assertRedirect();
+        $submission = JournalSubmission::query()->firstOrFail();
+        $this->assertCount(2, $submission->contributors);
+        $this->assertNotSame('second@example.test', DB::table('journal_submission_contributors')->where('position', 2)->value('email'));
+
+        $editor = $this->superAdmin();
+        $this->actingAs($editor)->post('/en/control/journal/submissions/'.$submission->id.'/convert')->assertRedirect();
+        $article = $submission->fresh()->convertedArticle()->with('authors')->firstOrFail();
+
+        $this->assertCount(2, $article->authors);
+        $this->assertSame('Second Researcher', $article->authors->get(1)->name);
+        $this->assertSame(2, $article->authors->get(1)->pivot->position);
+        $this->assertSame(['methodology', 'formal_analysis'], json_decode($article->authors->get(1)->pivot->contribution_roles, true));
+    }
+
+    public function test_reviewer_can_declare_a_conflict_and_is_blocked_from_reviewing(): void
+    {
+        $article = $this->createArticle('peer_reviewed_research', 'under_review', 'Conflict Declaration Record');
+        $reviewer = User::factory()->create(['status' => 'active', 'must_change_password' => false]);
+        $reviewer->roles()->attach(Role::query()->where('slug', 'journal-reviewer')->firstOrFail());
+        $review = JournalReview::query()->create([
+            'journal_article_id' => $article->id, 'reviewer_id' => $reviewer->id, 'round' => 1,
+            'status' => 'invited', 'assigned_by' => $this->superAdmin()->id,
+        ]);
+
+        $this->actingAs($reviewer)->post('/en/control/journal/reviews/'.$review->id.'/response', [
+            'response' => 'declare_conflict',
+            'conflict_statement' => 'A recent direct collaboration prevents independent review.',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $review->refresh();
+        $this->assertSame('conflict_declared', $review->status);
+        $this->assertSame('declared', $review->conflict_status);
+        $this->assertNotSame('A recent direct collaboration prevents independent review.', DB::table('journal_reviews')->where('id', $review->id)->value('conflict_statement'));
+        $this->actingAs($reviewer)->put('/en/control/journal/reviews/'.$review->id, [
+            'recommendation' => 'accept', 'author_comments' => 'Should not be stored.',
+        ])->assertConflict();
+    }
+
+    public function test_private_editorial_correspondence_is_owned_encrypted_and_blinds_editor_identity(): void
+    {
+        Storage::fake('local');
+        $this->enablePublicLaunch();
+        $author = User::factory()->create([
+            'email' => 'author@example.test', 'email_verified_at' => now(),
+            'status' => 'active', 'must_change_password' => false,
+        ]);
+        $this->actingAs($author)->post('/en/journal/submit', $this->validSubmissionPayload())->assertRedirect();
+        $submission = JournalSubmission::query()->firstOrFail();
+
+        $this->actingAs($author)->post('/en/account/journal/submissions/'.$submission->id.'/messages', [
+            'body' => 'Please confirm receipt of the supplementary data.',
+        ])->assertRedirect();
+        $editor = $this->superAdmin();
+        $this->actingAs($editor)->post('/en/control/journal/submissions/'.$submission->id.'/messages', [
+            'body' => 'The editorial office confirms secure receipt.',
+        ])->assertRedirect();
+
+        $this->assertDatabaseCount('journal_editorial_messages', 2);
+        $this->assertNotSame('Please confirm receipt of the supplementary data.', DB::table('journal_editorial_messages')->oldest('id')->value('body'));
+        $this->actingAs($author)->get('/en/account/journal/submissions/'.$submission->id)
+            ->assertOk()
+            ->assertSee('The editorial office confirms secure receipt.')
+            ->assertSee('Editorial office')
+            ->assertDontSee($editor->name);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'journal.correspondence.author_message_sent']);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'journal.correspondence.editor_message_sent']);
     }
 
     public function test_crossref_deposit_uses_configured_credentials_and_seals_production_state(): void

@@ -73,7 +73,7 @@ final class JournalSubmissionController extends Controller
     public function show(Request $request, string $locale, JournalSubmission $submission): View
     {
         $this->authorizeOwnership($request, $submission);
-        $submission->load(['convertedArticle.translations', 'convertedArticle.decisions', 'revisions']);
+        $submission->load(['convertedArticle.translations', 'convertedArticle.decisions', 'revisions', 'contributors', 'messages.sender']);
 
         return view('account.journal.show', compact('submission'));
     }

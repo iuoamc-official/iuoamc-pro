@@ -56,7 +56,7 @@ final class JournalSubmissionController extends Controller
 
     public function show(string $locale, JournalSubmission $submission): View
     {
-        $submission->load(['convertedArticle', 'handler', 'revisions']);
+        $submission->load(['convertedArticle', 'handler', 'revisions', 'contributors', 'messages.sender']);
 
         return view('control.journal.submissions.show', compact('submission'));
     }
@@ -64,7 +64,7 @@ final class JournalSubmissionController extends Controller
     public function screen(Request $request, string $locale, JournalSubmission $submission): RedirectResponse
     {
         DB::transaction(function () use ($request, $submission): void {
-            $locked = JournalSubmission::query()->lockForUpdate()->findOrFail($submission->id);
+            $locked = JournalSubmission::query()->with('contributors')->lockForUpdate()->findOrFail($submission->id);
             abort_unless($locked->status === 'submitted', 409);
             $locked->update(['status' => 'screening', 'handled_by' => $request->user()->id]);
             AuditTrail::record('journal.submission.screening_started', $locked, ['status' => 'submitted'], ['status' => 'screening']);
@@ -129,20 +129,40 @@ final class JournalSubmissionController extends Controller
                 'seo_title' => Str::limit($locked->title, 180, ''),
                 'seo_description' => Str::limit($locked->abstract, 320, ''),
             ]);
-            $author = JournalAuthor::query()->create([
-                'record_uuid' => (string) Str::uuid(),
-                'name' => $locked->author_name,
-                'email' => $locked->author_email,
-                'orcid' => $locked->orcid,
-                'country_code' => $locked->country_code,
-                'created_by' => $request->user()->id,
-                'updated_by' => $request->user()->id,
-            ]);
-            $article->authors()->attach($author->id, [
-                'position' => 1,
-                'is_corresponding' => true,
-                'affiliation_name' => $locked->affiliation,
-            ]);
+            $contributors = $locked->contributors;
+            if ($contributors->isEmpty()) {
+                $contributors = collect([(object) [
+                    'position' => 1,
+                    'is_corresponding' => true,
+                    'name' => $locked->author_name,
+                    'latin_name' => null,
+                    'email' => $locked->author_email,
+                    'orcid' => $locked->orcid,
+                    'country_code' => $locked->country_code,
+                    'affiliation_name' => $locked->affiliation,
+                    'affiliation_ror' => null,
+                    'contribution_roles' => ['writing_original_draft'],
+                ]]);
+            }
+            foreach ($contributors as $contributor) {
+                $author = JournalAuthor::query()->create([
+                    'record_uuid' => (string) Str::uuid(),
+                    'name' => $contributor->name,
+                    'latin_name' => $contributor->latin_name,
+                    'email' => $contributor->email,
+                    'orcid' => $contributor->orcid,
+                    'country_code' => $contributor->country_code,
+                    'created_by' => $request->user()->id,
+                    'updated_by' => $request->user()->id,
+                ]);
+                $article->authors()->attach($author->id, [
+                    'position' => $contributor->position,
+                    'is_corresponding' => $contributor->is_corresponding,
+                    'affiliation_name' => $contributor->affiliation_name,
+                    'affiliation_ror' => $contributor->affiliation_ror,
+                    'contribution_roles' => json_encode($contributor->contribution_roles, JSON_THROW_ON_ERROR),
+                ]);
+            }
 
             $oldStatus = $locked->status;
             $locked->update([

@@ -13,21 +13,25 @@ final class JournalReview extends Model
         'journal_article_id', 'reviewer_id', 'round', 'status', 'recommendation',
         'author_comments', 'confidential_comments', 'due_at', 'responded_at',
         'decline_reason', 'submitted_at', 'assigned_by',
-        'last_reminded_at', 'reminder_count',
+        'last_reminded_at', 'reminder_count', 'conflict_status', 'conflict_statement',
+        'conflict_declared_at', 'independence_confirmed_at',
     ];
 
-    protected $hidden = ['reviewer_id', 'confidential_comments', 'decline_reason'];
+    protected $hidden = ['reviewer_id', 'confidential_comments', 'decline_reason', 'conflict_statement'];
 
     protected function casts(): array
     {
         return [
             'confidential_comments' => 'encrypted',
             'decline_reason' => 'encrypted',
+            'conflict_statement' => 'encrypted',
             'due_at' => 'datetime',
             'responded_at' => 'datetime',
             'submitted_at' => 'datetime',
             'last_reminded_at' => 'datetime',
             'reminder_count' => 'integer',
+            'conflict_declared_at' => 'datetime',
+            'independence_confirmed_at' => 'datetime',
         ];
     }
 

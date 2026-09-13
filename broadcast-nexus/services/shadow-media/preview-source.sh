@@ -41,7 +41,9 @@ echo "IUOAMC TV internal preview source starting (staging/shadow only)."
 echo "Sequence: IDENT -> Mise en Place -> UP NEXT -> Knife Skills -> IDENT"
 echo "Ticker: enabled (${TICKER_FILE})"
 
-video_filter="scale=${WIDTH}:${HEIGHT}:force_original_aspect_ratio=decrease,pad=${WIDTH}:${HEIGHT}:(ow-iw)/2:(oh-ih)/2,fps=${FPS},drawbox=x=0:y=h-${TICKER_HEIGHT}:w=w:h=${TICKER_HEIGHT}:color=black@0.72:t=fill,drawtext=font='Noto Sans Arabic':textfile=${TICKER_FILE}:reload=1:fontcolor=white:fontsize=${TICKER_FONT_SIZE}:y=h-${TICKER_HEIGHT}+20:x=w-mod(t*${TICKER_SPEED}\,w+text_w):fix_bounds=1"
+# drawbox uses iw/ih for input dimensions. Using w/h here can fail during
+# filter initialization on FFmpeg builds where those aliases are unavailable.
+video_filter="scale=${WIDTH}:${HEIGHT}:force_original_aspect_ratio=decrease,pad=${WIDTH}:${HEIGHT}:(ow-iw)/2:(oh-ih)/2,fps=${FPS},drawbox=x=0:y=ih-${TICKER_HEIGHT}:w=iw:h=${TICKER_HEIGHT}:color=black@0.72:t=fill,drawtext=font='Noto Sans Arabic':textfile=${TICKER_FILE}:reload=1:fontcolor=white:fontsize=${TICKER_FONT_SIZE}:y=h-${TICKER_HEIGHT}+20:x=w-mod(t*${TICKER_SPEED}\,w+text_w):fix_bounds=1"
 
 play_one() {
   local rel="$1" file="${MEDIA_ROOT}/${rel}"

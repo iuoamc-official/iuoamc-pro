@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>IUOAMC TV 4K Preview</title>
+  <style>
+    *{box-sizing:border-box} body{margin:0;background:#07111f;color:#fff;font-family:Arial,sans-serif;min-height:100vh;display:grid;place-items:center}
+    .wrap{width:min(96vw,1280px)}
+    .card{background:#0d1b2a;border:1px solid #23354a;border-radius:18px;overflow:hidden;box-shadow:0 18px 60px rgba(0,0,0,.35)}
+    video{display:block;width:100%;aspect-ratio:16/9;background:#000}
+    .bar{padding:14px 16px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+    .left{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.badge{font-size:13px;padding:7px 10px;border-radius:999px;background:#17283a}
+    button{border:0;border-radius:10px;padding:11px 16px;font-weight:700;cursor:pointer;background:#d7b15a;color:#111}
+    button:disabled{opacity:.5;cursor:not-allowed}.status{font-size:13px;opacity:.9}.error{color:#ff9b9b}
+  </style>
+  <script defer src="./reader.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <video id="video" controls autoplay muted playsinline></video>
+      <div class="bar">
+        <div class="left">
+          <button id="sound" disabled>تشغيل الصوت</button>
+          <span class="badge">IUOAMC TV 4K</span>
+          <span class="badge" id="tracks">الصوت: انتظار</span>
+        </div>
+        <div class="status" id="status">جاري الاتصال بالبث…</div>
+      </div>
+    </div>
+  </div>
+<script>
+  const video = document.getElementById('video');
+  const sound = document.getElementById('sound');
+  const statusEl = document.getElementById('status');
+  const tracksEl = document.getElementById('tracks');
+  let reader = null;
+
+  function setStatus(text, error=false){
+    statusEl.textContent = text;
+    statusEl.className = error ? 'status error' : 'status';
+  }
+
+  function updateTrackInfo(stream){
+    const audio = stream.getAudioTracks();
+    const videoTracks = stream.getVideoTracks();
+    tracksEl.textContent = `الصوت: ${audio.length} | الفيديو: ${videoTracks.length}`;
+    if (audio.length) {
+      audio.forEach(t => t.enabled = true);
+      sound.disabled = false;
+      setStatus('البث متصل — اضغط «تشغيل الصوت» مرة واحدة');
+    } else {
+      sound.disabled = true;
+      setStatus('البث متصل لكن لم يصل Audio Track إلى المتصفح', true);
+    }
+  }
+
+  window.addEventListener('load', () => {
+    const whep = 'http://127.0.0.1:58889/iuoamc-tv-4k/whep';
+    reader = new MediaMTXWebRTCReader({
+      url: whep,
+      user: '',
+      pass: '',
+      token: '',
+      onError: (err) => setStatus(String(err), true),
+      onTrack: (evt) => {
+        const stream = evt.streams[0];
+        video.srcObject = stream;
+        video.muted = true;
+        video.volume = 1;
+        updateTrackInfo(stream);
+        video.play().catch(() => {});
+      },
+      onDataChannel: () => {},
+    });
+  });
+
+  sound.addEventListener('click', async () => {
+    if (!video.srcObject) return;
+    video.muted = false;
+    video.volume = 1;
+    video.srcObject.getAudioTracks().forEach(t => t.enabled = true);
+    try {
+      await video.play();
+      sound.textContent = 'الصوت يعمل';
+      setStatus('الصورة والصوت يعملان');
+    } catch (err) {
+      setStatus('المتصفح منع الصوت. اضغط زر التشغيل داخل الفيديو ثم «تشغيل الصوت» مرة أخرى.', true);
+      console.error(err);
+    }
+  });
+
+  video.addEventListener('volumechange', () => {
+    if (!video.muted && video.volume > 0) sound.textContent = 'الصوت يعمل';
+  });
+
+  window.addEventListener('beforeunload', () => {
+    if (reader) reader.close();
+  });
+</script>
+</body>
+</html>

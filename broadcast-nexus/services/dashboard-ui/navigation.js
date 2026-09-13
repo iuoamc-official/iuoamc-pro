@@ -8,7 +8,8 @@ document.addEventListener('DOMContentLoaded',()=>{
     encoder:'/encoder-control/',
     distribution:'/distribution-control/',
     iptv:'/iptv-control/',
-    noc:'/noc-control/'
+    noc:'/noc-control/',
+    failover:'/failover-control/'
   };
   Object.entries(routes).forEach(([panel,url])=>{
     const button=document.querySelector(`#nav button[data-panel="${panel}"]`);

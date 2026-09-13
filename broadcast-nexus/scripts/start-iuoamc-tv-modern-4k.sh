@@ -42,19 +42,29 @@ docker pull alpine/socat:latest >/dev/null
 start_edge() {
   local name="$1" host_port="$2" listen_port="$3" target_port="$4"
   docker rm -f "$name" >/dev/null 2>&1 || true
+
+  # Start on the normal bridge so Docker's host port publishing is reliable,
+  # then attach the same container to the isolated modern4k network so it can
+  # reach MediaMTX by service name. This keeps the public side bound to
+  # 127.0.0.1 only while avoiding the staging host's internal-network port bug.
   docker run -d \
     --name "$name" \
     --restart unless-stopped \
-    --network "$MODERN_NETWORK" \
-    -p "127.0.0.1:${host_port}:${listen_port}" \
+    -p "127.0.0.1:${host_port}:${listen_port}/tcp" \
     alpine/socat:latest \
     -d -d "TCP-LISTEN:${listen_port},fork,reuseaddr" "TCP:modern-media-gateway:${target_port}" \
     >/dev/null
+
+  docker network connect "$MODERN_NETWORK" "$name"
+
+  # Verify Docker actually created the loopback binding before continuing.
+  if ! docker port "$name" "${listen_port}/tcp" | grep -q "127.0.0.1:${host_port}"; then
+    echo "ERROR: loopback edge ${name} did not publish 127.0.0.1:${host_port}" >&2
+    docker inspect "$name" --format '{{json .NetworkSettings.Ports}}' >&2 || true
+    exit 1
+  fi
 }
 
-# Docker Compose on this staging host has intermittently retained only exposed
-# container ports without host PortBindings. Dedicated loopback edge forwarders
-# make the preview deterministic while keeping every endpoint private.
 start_edge iuoamc-modern4k-hls-edge 58888 18088 8888
 start_edge iuoamc-modern4k-webrtc-edge 58889 18089 8889
 start_edge iuoamc-modern4k-api-edge 59997 19997 9997
@@ -70,6 +80,7 @@ for i in $(seq 1 60); do
   if [[ "$i" -eq 60 ]]; then
     echo "ERROR: 4K LL-HLS did not become ready" >&2
     "${compose[@]}" logs --no-color --tail=80 modern-media-gateway modern-4k-source >&2 || true
+    docker port iuoamc-modern4k-hls-edge >&2 || true
     docker logs --tail=40 iuoamc-modern4k-hls-edge >&2 || true
     exit 1
   fi

@@ -61,6 +61,7 @@ services:
     ports: ["127.0.0.1:58114:8114"]
     depends_on:
       postgres: {condition: service_healthy}
+    networks: [default]
 
   control-room:
     build:

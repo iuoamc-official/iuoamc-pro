@@ -1,25 +1,25 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
-use App\Http\Controllers\Auth\PasswordController;
-use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
-use App\Http\Controllers\Auth\VerifyEmailController;
-use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\NewPasswordController;
-use App\Http\Controllers\Control\DashboardController;
-use App\Http\Controllers\Control\OrganizationController;
-use App\Http\Controllers\Control\UserController;
-use App\Http\Controllers\Control\RoleController;
+use App\Http\Controllers\Auth\PasswordController;
+use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Control\AuditLogController;
-use App\Http\Controllers\Control\PublicPageController;
-use App\Http\Controllers\Control\PublicSiteSettingController;
 use App\Http\Controllers\Control\ContentArticleController;
 use App\Http\Controllers\Control\ContentSectionController;
-use App\Http\Controllers\PublicSiteController;
-use App\Http\Controllers\PublicArticleController;
+use App\Http\Controllers\Control\DashboardController;
+use App\Http\Controllers\Control\OrganizationController;
+use App\Http\Controllers\Control\PublicPageController;
+use App\Http\Controllers\Control\PublicSiteSettingController;
+use App\Http\Controllers\Control\RoleController;
+use App\Http\Controllers\Control\UserController;
 use App\Http\Controllers\DiscoveryController;
 use App\Http\Controllers\PublicAiConciergeController;
+use App\Http\Controllers\PublicArticleController;
+use App\Http\Controllers\PublicSiteController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -191,3 +191,5 @@ require __DIR__.'/modules/account.php';
 
 // Immutable PDF documents, invoices and receipts issued to account holders.
 require __DIR__.'/modules/account_documents.php';
+
+require __DIR__.'/modules/learning.php';

@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Account\SensoryLearningController;
+use App\Http\Controllers\Account\SensoryLearningProjectController;
 use App\Http\Controllers\Auth\LearningAccessController;
 use App\Http\Controllers\Control\LearningInvitationController;
 use App\Http\Controllers\Control\SensoryLearningController as LearningControlController;
+use App\Http\Controllers\Control\SensoryLearningProjectController as LearningProjectControlController;
 use App\Http\Middleware\EnsureVerifiedAccountEmail;
 use Illuminate\Support\Facades\Route;
 
@@ -27,6 +29,8 @@ Route::prefix('{locale}/account/learning')->where(['locale' => 'ar|en|fr'])
         Route::get('/exam', [SensoryLearningController::class, 'exam'])->name('exam');
         Route::post('/exam/start', [SensoryLearningController::class, 'startExam'])->middleware('throttle:6,1')->name('exam.start');
         Route::post('/exam', [SensoryLearningController::class, 'saveExam'])->middleware('throttle:120,1')->name('exam.save');
+        Route::get('/project', [SensoryLearningProjectController::class, 'show'])->name('project');
+        Route::post('/project', [SensoryLearningProjectController::class, 'store'])->middleware('throttle:30,1,learning-project')->name('project.save');
         Route::get('/assignment', [SensoryLearningController::class, 'assignment'])->name('assignment');
         Route::post('/assignment', [SensoryLearningController::class, 'submitAssignment'])->middleware('throttle:6,1')->name('assignment.submit');
     });
@@ -39,6 +43,8 @@ Route::prefix('{locale}/control/learning')->where(['locale' => 'ar|en|fr'])
         Route::post('/invitations', [LearningInvitationController::class, 'store'])->middleware('throttle:20,1')->name('invitations.store');
         Route::delete('/invitations/{invitation}', [LearningInvitationController::class, 'destroy'])->whereNumber('invitation')->name('invitations.destroy');
         Route::get('/{enrollment}', [LearningControlController::class, 'show'])->whereNumber('enrollment')->name('show');
+        Route::get('/{enrollment}/project', [LearningProjectControlController::class, 'show'])->whereNumber('enrollment')->name('project');
+        Route::post('/{enrollment}/project/review', [LearningProjectControlController::class, 'review'])->whereNumber('enrollment')->middleware('throttle:30,1,learning-project-review')->name('project.review');
         Route::get('/{enrollment}/report', [LearningControlController::class, 'report'])->whereNumber('enrollment')->name('report');
         Route::post('/{enrollment}/review', [LearningControlController::class, 'review'])->whereNumber('enrollment')->middleware('throttle:20,1')->name('review');
     });

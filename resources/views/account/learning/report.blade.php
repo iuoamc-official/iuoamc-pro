@@ -6,5 +6,6 @@
 <p class="learning-report-outcome"><strong>{{ __('learning.review_result') }}: {{ $record->final_score >= 75 ? __('learning.passed') : __('learning.needs_improvement') }}</strong></p>
 @include('account.learning._rubric',['reviewed'=>true])
 <section class="learning-report-feedback"><h2>{{ __('learning.review_feedback') }}</h2><p class="learning-pre">{{ $record->review_feedback }}</p></section>
+@if($approvedProject)<section class="learning-report-feedback"><h2>{{ __('learning.project_title') }} · {{ __('learning.project_approved') }}</h2><p>{{ __('learning.project_score') }}: <strong>{{ number_format((float)$approvedProject->score,2) }} / 20</strong></p><p>{{ __('learning.project_independent') }}</p><small>{{ __('learning.project_version') }} {{ $approvedProject->submission_number }} · <bdi>{{ $approvedProject->reviewed_at }} UTC</bdi></small></section>@endif
 <footer><p>{{ __('learning.report_scope') }}</p><small>IUOAMC · {{ \App\Services\SensoryLearningContent::MODULE_ID }}</small></footer></article></div>
 <script src="{{ asset('assets/js/iuoamc-learning-experience-1.0.0.js') }}?v={{ filemtime(public_path('assets/js/iuoamc-learning-experience-1.0.0.js')) }}" defer></script></body></html>

@@ -33,8 +33,10 @@ final class SensoryLearningController extends Controller
             $enrollment = $this->objectiveExam->closeExpired($enrollment->id);
         }
 
+        $project = $enrollment ? DB::table('learning_projects')->where('enrollment_id', $enrollment->id)->first() : null;
+
         return view('account.learning.index', [
-            'course' => $this->content->student(),
+            'course' => $this->content->student(), 'project' => $project,
             'enrollment' => $enrollment,
             'learningStatus' => $enrollment ? $this->progress->status($enrollment) : null,
             'canReport' => $enrollment ? $this->progress->canReport($enrollment) : false,
@@ -128,6 +130,7 @@ final class SensoryLearningController extends Controller
         abort_unless($this->progress->canReport($record), 409, __('learning.report_not_ready'));
 
         return response()->view('account.learning.report', [
+            'approvedProject' => DB::table('learning_projects')->where('enrollment_id', $record->id)->where('status', 'approved')->first(),
             'returnUrl' => route('account.learning.index', ['locale' => $locale]),
             'record' => $record, 'student' => $request->user(), 'course' => $this->content->student(),
             'summaryScores' => $this->decode($record->summary_scores), 'summaryCaps' => $this->content->summaryCaps(),

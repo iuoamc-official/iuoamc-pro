@@ -26,23 +26,26 @@ final class SensoryLearningController extends Controller
         $this->authorizeAdmin($request);
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:120'],
-            'state' => ['nullable', Rule::in(['all', 'studying', 'exam', 'review', 'reviewed'])],
+            'state' => ['nullable', Rule::in(['all', 'studying', 'exam', 'review', 'reviewed', 'project'])],
         ]);
         $stats = DB::table('learning_enrollments')->where('module_id', SensoryLearningContent::MODULE_ID)
             ->selectRaw('COUNT(*) as total, SUM(CASE WHEN exam_started_at IS NULL THEN 1 ELSE 0 END) as studying, SUM(CASE WHEN exam_started_at IS NOT NULL AND exam_submitted_at IS NULL THEN 1 ELSE 0 END) as exam, SUM(CASE WHEN exam_submitted_at IS NOT NULL AND summary_submitted_at IS NOT NULL AND reviewed_at IS NULL THEN 1 ELSE 0 END) as review, SUM(CASE WHEN reviewed_at IS NOT NULL THEN 1 ELSE 0 END) as reviewed')->first();
-        $query = DB::table('learning_enrollments')->join('users', 'users.id', '=', 'learning_enrollments.user_id')
+        $stats->project_review = DB::table('learning_projects')->join('learning_enrollments', 'learning_enrollments.id', '=', 'learning_projects.enrollment_id')
+            ->where('learning_enrollments.module_id', SensoryLearningContent::MODULE_ID)->where('learning_projects.status', 'submitted')->count();
+        $query = DB::table('learning_enrollments')->leftJoin('learning_projects', 'learning_projects.enrollment_id', '=', 'learning_enrollments.id')->join('users', 'users.id', '=', 'learning_enrollments.user_id')
             ->where('module_id', SensoryLearningContent::MODULE_ID)
-            ->select(['learning_enrollments.id', 'learning_enrollments.completed_sections', 'learning_enrollments.exam_started_at', 'learning_enrollments.exam_submitted_at', 'learning_enrollments.summary_submitted_at', 'learning_enrollments.reviewed_at', 'learning_enrollments.exam_format', 'learning_enrollments.objective_score', 'learning_enrollments.final_score', 'users.name', 'users.email']);
+            ->select(['learning_enrollments.id', 'learning_enrollments.completed_sections', 'learning_enrollments.exam_started_at', 'learning_enrollments.exam_submitted_at', 'learning_enrollments.summary_submitted_at', 'learning_enrollments.reviewed_at', 'learning_enrollments.exam_format', 'learning_enrollments.objective_score', 'learning_enrollments.final_score', 'users.name', 'users.email', 'learning_projects.status as project_status']);
         if ($search = trim($filters['search'] ?? '')) {
             $query->where(function ($query) use ($search): void {
                 $query->where('users.name', 'like', '%'.$search.'%')->orWhere('users.email', 'like', '%'.$search.'%');
             });
         }
         match ($filters['state'] ?? 'all') {
-            'studying' => $query->whereNull('exam_started_at'),
-            'exam' => $query->whereNotNull('exam_started_at')->whereNull('exam_submitted_at'),
-            'review' => $query->whereNotNull('exam_submitted_at')->whereNotNull('summary_submitted_at')->whereNull('reviewed_at'),
-            'reviewed' => $query->whereNotNull('reviewed_at'),
+            'studying' => $query->whereNull('learning_enrollments.exam_started_at'),
+            'exam' => $query->whereNotNull('learning_enrollments.exam_started_at')->whereNull('learning_enrollments.exam_submitted_at'),
+            'review' => $query->whereNotNull('learning_enrollments.exam_submitted_at')->whereNotNull('learning_enrollments.summary_submitted_at')->whereNull('learning_enrollments.reviewed_at'),
+            'reviewed' => $query->whereNotNull('learning_enrollments.reviewed_at'),
+            'project' => $query->where('learning_projects.status', 'submitted'),
             default => null,
         };
         $enrollments = $query->orderByDesc('learning_enrollments.id')->paginate(25)->withQueryString();
@@ -106,6 +109,7 @@ final class SensoryLearningController extends Controller
         abort_unless($this->progress->canReport($record), 409, __('learning.report_not_ready'));
 
         return response()->view('account.learning.report', [
+            'approvedProject' => DB::table('learning_projects')->where('enrollment_id', $record->id)->where('status', 'approved')->first(),
             'returnUrl' => route('learning.control.show', ['locale' => $locale, 'enrollment' => $record->id]),
             'record' => $record, 'student' => DB::table('users')->find($record->user_id), 'course' => $this->content->student(),
             'summaryScores' => $this->decode($record->summary_scores), 'summaryCaps' => $this->content->summaryCaps(),

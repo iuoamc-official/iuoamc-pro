@@ -116,6 +116,45 @@
         if (expired) queue('expire');
         else if (dirty) queue('save');
     }, 10000);
+    const questions = Array.from(form.querySelectorAll('[data-question-id]'));
+    const pagination = form.querySelector('[data-exam-pagination]');
+    if (pagination) {
+        const size = Number(form.dataset.pageSize) || 5;
+        const total = Math.ceil(questions.length / size);
+        const previous = pagination.querySelector('[data-exam-previous]');
+        const next = pagination.querySelector('[data-exam-next]');
+        const pageStatus = pagination.querySelector('[data-exam-page-status]');
+        const finalSubmit = form.querySelector('[data-exam-final-submit]');
+        let page = 0;
+        const showPage = (requested, focus = true) => {
+            if (expired || blocked || completed) return;
+            page = Math.max(0, Math.min(total - 1, requested));
+            questions.forEach((question, index) => { question.hidden = Math.floor(index / size) !== page; });
+            previous.disabled = page === 0;
+            next.disabled = page === total - 1;
+            finalSubmit.hidden = page !== total - 1;
+            pageStatus.textContent = pageStatus.dataset.label
+                .replace(':page', page + 1).replace(':total', total)
+                .replace(':first', page * size + 1).replace(':last', Math.min((page + 1) * size, questions.length));
+            document.querySelectorAll('[data-question-link]').forEach((link, index) => {
+                if (Math.floor(index / size) === page) link.setAttribute('aria-current', 'page');
+                else link.removeAttribute('aria-current');
+            });
+            if (dirty) { clearTimeout(debounce); queue('save'); }
+            if (focus) questions[page * size].focus();
+        };
+        previous.addEventListener('click', () => showPage(page - 1));
+        next.addEventListener('click', () => showPage(page + 1));
+        document.querySelectorAll('[data-question-link]').forEach((link, index) => {
+            link.addEventListener('click', event => {
+                event.preventDefault();
+                showPage(Math.floor(index / size), false);
+                if (!expired && !blocked && !completed) questions[index].focus();
+            });
+        });
+        pagination.hidden = false;
+        showPage(0, false);
+    }
     refreshAnswers(); tick();
     window.setInterval(tick, 250);
 })();

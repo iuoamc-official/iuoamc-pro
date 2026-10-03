@@ -14,3 +14,5 @@
 @media(max-width:560px){.learning-access{padding:14px}.learning-access-top{flex-wrap:wrap;justify-content:center}.learning-access-top .learning-nav{margin:0}.learning-access-top .learning-logo{width:170px;height:auto}.learning-form-grid{grid-template-columns:1fr;gap:0}.learning-hero{padding:24px}.learning-reading{font-size:17px}.learning-stats span{padding:8px 10px;font-size:14px}.learning-question-map{gap:5px}.learning-question-map a{width:31px;height:31px;font-size:13px}.learning-exam-toolbar{position:static}.learning-exam-actions{bottom:0}.learning fieldset.learning-card{scroll-margin-top:20px}}
 @media(prefers-reduced-motion:reduce){.learning-lesson-card{transition:none}}
 .learning button:disabled{opacity:.55;cursor:not-allowed}.learning-exam-score{font-size:clamp(24px,4vw,34px)}.learning [data-autosave-status]{font-size:14px;line-height:1.8;margin:8px 0 0}.learning input:disabled{cursor:not-allowed}
+
+.learning-exam-pages{padding:16px;background:#eef5f5;border:1px solid #c8dedf;border-radius:12px;margin-bottom:20px;justify-content:space-between}.learning-question-map a[aria-current=page]{outline:2px solid #ab8035;outline-offset:2px}

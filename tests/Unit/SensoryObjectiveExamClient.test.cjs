@@ -13,16 +13,25 @@ function harness(responder) {
     const timer = {dataset:{remainingMs:'1800000'}, textContent:''};
     const status = {dataset:{saving:'saving',saved:'saved',failed:'failed',expired:'expired',conflict:'conflict'}};
     const count = {textContent:''};
-    const question = {dataset:{questionId:'1'},querySelector:() => checked ? radio : null};
-    const link = {dataset:{}};
+    const questions = Array.from({length:30}, (_,index) => ({dataset:{questionId:String(index+1)},hidden:false,querySelector:() => index===0 && checked ? radio : null,focus:()=>{focused=index+1;}}));
+    let focused;
+    const links = questions.map(() => ({dataset:{},setAttribute:()=>{},removeAttribute:()=>{},addEventListener:(name,fn)=>{},}));
+    const link = links[0];
+    const previous = {disabled:false,addEventListener:(name,fn)=>listeners.previous=fn};
+    const next = {disabled:false,addEventListener:(name,fn)=>listeners.next=fn};
+    const pageStatus = {dataset:{label:'Page :page of :total · Questions :first–:last'}};
+    const finalSubmit = {disabled:false,hidden:false};
+    buttons.push(previous,next,finalSubmit);
+    const pagination = {hidden:true,querySelector:selector=>({'[data-exam-previous]':previous,'[data-exam-next]':next,'[data-exam-page-status]':pageStatus}[selector])};
     const form = {
-        dataset:{questionCount:'30',confirm:'Final?',resultUrl:'/result'},action:'/exam',
+        dataset:{questionCount:'30',pageSize:'5',confirm:'Final?',resultUrl:'/result'},action:'/exam',
         elements:{namedItem: key => key === 'draft_revision' ? revision : {value:'csrf'}},
+        querySelector:selector=>({'[data-exam-pagination]':pagination,'[data-exam-final-submit]':finalSubmit}[selector] || null),
         addEventListener:(name,fn) => listeners[name] = fn,
-        querySelectorAll: selector => ({'[data-question-id]':[question], 'input[type=radio]:checked':checked?[radio]:[], 'input[type=radio],button':[radio,...buttons], 'button':buttons}[selector] || [])
+        querySelectorAll: selector => ({'[data-question-id]':questions, 'input[type=radio]:checked':checked?[radio]:[], 'input[type=radio],button':[radio,...buttons], 'button':buttons}[selector] || [])
     };
     let destination;
-    const document = {hidden:false,addEventListener:()=>{},querySelector: selector => selector.includes('data-question-link') ? link : ({'[data-objective-exam]':form,'[data-remaining-ms]':timer,'[data-autosave-status]':status,'[data-answered-count]':count}[selector] || null)};
+    const document = {hidden:false,addEventListener:()=>{},querySelectorAll:()=>links,querySelector: selector => selector.includes('data-question-link') ? link : ({'[data-objective-exam]':form,'[data-remaining-ms]':timer,'[data-autosave-status]':status,'[data-answered-count]':count}[selector] || null)};
     const context = {
         document,performance:{now:()=>time},Date:{now:()=>9000000000000},
         window:{location:{assign:url=>destination=url},confirm:()=>true,addEventListener:()=>{},setInterval:(fn,ms)=>intervals.push({fn,ms})},
@@ -30,7 +39,8 @@ function harness(responder) {
         fetch:async (url,options)=>{const payload=JSON.parse(options.body);requests.push(payload);return {ok:true,status:200,json:async()=>responder(payload)};}
     };
     vm.runInNewContext(source,context);
-    return {timer,count,status,requests,radio,revision,buttons,
+    return {timer,count,status,requests,radio,revision,buttons,questions,previous,next,pageStatus,finalSubmit,
+        nextPage:()=>listeners.next(),previousPage:()=>listeners.previous(),focused:()=>focused,
         setTime:value=>time=value,
         tick:()=>intervals.find(i=>i.ms===250).fn(),
         retry:()=>intervals.find(i=>i.ms===10000).fn(),
@@ -57,4 +67,23 @@ test('timeout locks inputs and requests server expiry without overwriting the dr
 test('closed server attempt navigates to its immutable result',async()=>{
     const h=harness(()=>({submitted:true,revision:0,remaining_ms:0,result_url:'/result'}));
     h.setTime(1800000);h.tick();await h.flush();assert.equal(h.destination(),'/result');
+});
+
+test('six pages show five questions and permit final submission only on the last page',()=>{
+    const h=harness(()=>({submitted:false,revision:0,remaining_ms:1800000}));
+    assert.deepEqual(h.questions.filter(q=>!q.hidden).map(q=>q.dataset.questionId),['1','2','3','4','5']);
+    assert.equal(h.previous.disabled,true);assert.equal(h.finalSubmit.hidden,true);
+    for(let page=0;page<5;page++) h.nextPage();
+    assert.deepEqual(h.questions.filter(q=>!q.hidden).map(q=>q.dataset.questionId),['26','27','28','29','30']);
+    assert.equal(h.next.disabled,true);assert.equal(h.finalSubmit.hidden,false);
+    assert.equal(h.pageStatus.textContent,'Page 6 of 6 · Questions 26–30');
+    h.previousPage();assert.equal(h.finalSubmit.hidden,true);assert.equal(h.focused(),21);
+});
+test('page navigation saves answers and keeps the same timer and selected answers',async()=>{
+    const h=harness(p=>({submitted:false,revision:p.draft_revision+1,remaining_ms:1740000}));
+    h.select(2);h.setTime(60000);h.nextPage();await h.flush();
+    assert.deepEqual(h.requests[0].answers,{'1':2});assert.equal(h.requests[0].action,'save');
+    h.previousPage();h.tick();assert.equal(h.timer.textContent,'29:00');assert.equal(h.radio.value,'2');
+    assert.equal(h.count.textContent,'1 / 30');
+    h.setTime(1800000);h.tick();h.nextPage();assert.equal(h.questions[0].hidden,false);
 });

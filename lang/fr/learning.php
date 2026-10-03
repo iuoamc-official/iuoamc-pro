@@ -141,4 +141,8 @@ return [
     'autosave_failed' => 'Enregistrement non confirmé. Vérifiez la connexion et sauvegardez ; le temps continue.',
     'stale_draft' => 'Le brouillon a changé dans une autre fenêtre. Rechargez pour reprendre la dernière version enregistrée.',
     'after_last_lesson' => 'Après les 30 leçons, ouvrez l’examen. Préparez une connexion stable avant les 30 minutes.',
+    'exam_pages' => 'Pages du test',
+    'previous_page' => 'Page précédente',
+    'next_page' => 'Page suivante',
+    'exam_page_status' => 'Page :page sur :total · Questions :first–:last',
 ];

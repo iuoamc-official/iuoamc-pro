@@ -141,4 +141,8 @@ return [
     'autosave_failed' => 'Saving was not confirmed. Check your connection and save the draft; the timer continues.',
     'stale_draft' => 'The draft changed in another window. Reload to continue from the latest saved version.',
     'after_last_lesson' => 'After completing all 30 lessons, open the exam. Ensure a stable connection before starting the 30-minute attempt.',
+    'exam_pages' => 'Exam pages',
+    'previous_page' => 'Previous page',
+    'next_page' => 'Next page',
+    'exam_page_status' => 'Page :page of :total · Questions :first–:last',
 ];

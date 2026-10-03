@@ -36,5 +36,6 @@ return Application::configure(basePath: dirname(__DIR__))
         });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->dontFlash(['access_code']);
         // Central exception reporting will be expanded in the observability phase.
     })->create();

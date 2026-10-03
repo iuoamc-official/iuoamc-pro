@@ -22,6 +22,7 @@ final class SensoryLearningTest extends TestCase
             '2026_09_07_160000_create_iuoamc_core_foundation.php',
             '2026_09_07_230000_add_integrity_to_audit_logs.php',
             '2026_10_02_100000_create_learning_enrollments.php',
+            '2026_10_03_093415_create_learning_invitations_table.php',
         ] as $file) {
             (require database_path('migrations/'.$file))->up();
         }

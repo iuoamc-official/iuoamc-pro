@@ -1,7 +1,7 @@
 
 @extends('layouts.control')
 @section('title', __('learning.review'))
-@push('styles')<link rel="stylesheet" href="{{ asset('assets/css/iuoamc-learning-1.0.0.css') }}">
+@push('styles')<link rel="stylesheet" href="{{ asset('assets/css/iuoamc-learning-1.0.0.css') }}?v={{ filemtime(public_path('assets/css/iuoamc-learning-1.0.0.css')) }}">
 @endpush
 @section('content')
 <div class="learning"><header class="learning-hero"><h1>{{ __('learning.review') }} — {{ $student->name }}</h1><p>{{ __('learning.grading_policy') }}</p></header>

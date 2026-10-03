@@ -9,11 +9,13 @@
 @foreach($lines as $line)<li><p>{{ $line }}</p></li>
 @endforeach</ol></div>
 @else
-<form method="post" action="{{ route('account.learning.assignment.submit',['locale'=>app()->getLocale()]) }}">
+<div class="learning-summary-meter" role="status">{{ __('learning.word_count') }}: <strong data-word-count>0</strong> / 180–250 · {{ __('learning.ten_lines') }}</div>
+<form data-learning-summary data-confirm="{{ __('learning.confirm_submission') }}" method="post" action="{{ route('account.learning.assignment.submit',['locale'=>app()->getLocale()]) }}">
 @csrf
 <div lang="ar" dir="rtl">
 @foreach($course['assignment']['line_prompts'] as $index=>$prompt)<div class="learning-card"><label for="summary-{{ $index }}">{{ $index+1 }}. {{ $prompt }}</label><textarea id="summary-{{ $index }}" name="lines[{{ $index }}]" maxlength="1500" required>{{ old('lines.'.$index,$lines[$index]??'') }}</textarea></div>
 @endforeach</div>
 <button type="submit">{{ __('learning.submit_assignment') }}</button></form>
 @endif</div>
+<script src="{{ asset('assets/js/iuoamc-learning-1.1.0.js') }}" defer></script>
 @endsection

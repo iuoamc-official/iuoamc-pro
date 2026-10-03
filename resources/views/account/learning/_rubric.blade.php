@@ -1,0 +1,3 @@
+<section class="learning-card learning-rubric"><h2>{{ __('learning.rubric_title') }}</h2><p>{{ __('learning.rubric_hint') }}</p><div class="learning-table-scroll"><table><thead><tr><th>{{ __('learning.criterion') }}</th><th>{{ __('learning.maximum') }}</th>@if($reviewed)<th>{{ __('learning.awarded') }}</th>@endif</tr></thead><tbody>
+@foreach($summaryCaps as $index=>$cap)<tr><td><strong>{{ __('learning.summary_criteria.'.$index) }}</strong><p>{{ __('learning.summary_descriptors.'.$index) }}</p></td><td>{{ $cap }}</td>@if($reviewed)<td>{{ $summaryScores[$index] ?? '—' }}</td>@endif</tr>@endforeach
+</tbody></table></div></section>

@@ -7,30 +7,55 @@ namespace App\Http\Controllers\Control;
 use App\Http\Controllers\Controller;
 use App\Services\AuditTrail;
 use App\Services\SensoryLearningContent;
+use App\Services\SensoryLearningProgress;
 use App\Services\SensoryObjectiveExam;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use stdClass;
 
 final class SensoryLearningController extends Controller
 {
-    public function __construct(private SensoryLearningContent $content, private SensoryObjectiveExam $objectiveExam) {}
+    public function __construct(private SensoryLearningContent $content, private SensoryObjectiveExam $objectiveExam, private SensoryLearningProgress $progress) {}
 
     public function index(Request $request, string $locale): Response
     {
         $this->authorizeAdmin($request);
-        $enrollments = DB::table('learning_enrollments')->join('users', 'users.id', '=', 'learning_enrollments.user_id')
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:120'],
+            'state' => ['nullable', Rule::in(['all', 'studying', 'exam', 'review', 'reviewed'])],
+        ]);
+        $stats = DB::table('learning_enrollments')->where('module_id', SensoryLearningContent::MODULE_ID)
+            ->selectRaw('COUNT(*) as total, SUM(CASE WHEN exam_started_at IS NULL THEN 1 ELSE 0 END) as studying, SUM(CASE WHEN exam_started_at IS NOT NULL AND exam_submitted_at IS NULL THEN 1 ELSE 0 END) as exam, SUM(CASE WHEN exam_submitted_at IS NOT NULL AND summary_submitted_at IS NOT NULL AND reviewed_at IS NULL THEN 1 ELSE 0 END) as review, SUM(CASE WHEN reviewed_at IS NOT NULL THEN 1 ELSE 0 END) as reviewed')->first();
+        $query = DB::table('learning_enrollments')->join('users', 'users.id', '=', 'learning_enrollments.user_id')
             ->where('module_id', SensoryLearningContent::MODULE_ID)
-            ->select('learning_enrollments.*', 'users.name', 'users.email')->orderByDesc('learning_enrollments.id')->paginate(25);
+            ->select(['learning_enrollments.id', 'learning_enrollments.completed_sections', 'learning_enrollments.exam_started_at', 'learning_enrollments.exam_submitted_at', 'learning_enrollments.summary_submitted_at', 'learning_enrollments.reviewed_at', 'learning_enrollments.exam_format', 'learning_enrollments.objective_score', 'learning_enrollments.final_score', 'users.name', 'users.email']);
+        if ($search = trim($filters['search'] ?? '')) {
+            $query->where(function ($query) use ($search): void {
+                $query->where('users.name', 'like', '%'.$search.'%')->orWhere('users.email', 'like', '%'.$search.'%');
+            });
+        }
+        match ($filters['state'] ?? 'all') {
+            'studying' => $query->whereNull('exam_started_at'),
+            'exam' => $query->whereNotNull('exam_started_at')->whereNull('exam_submitted_at'),
+            'review' => $query->whereNotNull('exam_submitted_at')->whereNotNull('summary_submitted_at')->whereNull('reviewed_at'),
+            'reviewed' => $query->whereNotNull('reviewed_at'),
+            default => null,
+        };
+        $enrollments = $query->orderByDesc('learning_enrollments.id')->paginate(25)->withQueryString();
+        foreach ($enrollments as $record) {
+            $record->learning_status = $this->progress->status($record);
+            $record->completed_count = count($this->decode($record->completed_sections));
+        }
 
         $invitations = DB::table('learning_invitations')->where('module_id', SensoryLearningContent::MODULE_ID)
             ->select('id', 'email', 'expires_at', 'used_at', 'revoked_at', 'student_name', 'student_phone', 'student_country')
             ->orderByDesc('id')->paginate(15, ['*'], 'invitations_page');
 
-        return response()->view('control.learning.index', compact('enrollments', 'invitations'))->header('Cache-Control', 'no-store, private');
+        return response()->view('control.learning.index', compact('enrollments', 'invitations', 'stats', 'filters'))->header('Cache-Control', 'no-store, private');
     }
 
     public function enroll(Request $request, string $locale): RedirectResponse
@@ -70,8 +95,21 @@ final class SensoryLearningController extends Controller
             'assessment' => $isObjective ? $this->objectiveExam->assessment() : $this->content->assessment(),
             'answers' => $this->decode($record->exam_answers), 'lines' => $this->decode($record->summary_lines),
             'questionScores' => $this->decode($record->question_scores), 'summaryScores' => $this->decode($record->summary_scores),
-            'summaryCaps' => $this->content->summaryCaps(),
+            'summaryCaps' => $this->content->summaryCaps(), 'canReport' => $this->progress->canReport($record),
         ]);
+    }
+
+    public function report(Request $request, string $locale, int $enrollment): Response
+    {
+        $this->authorizeAdmin($request);
+        $record = $this->record($enrollment);
+        abort_unless($this->progress->canReport($record), 409, __('learning.report_not_ready'));
+
+        return response()->view('account.learning.report', [
+            'returnUrl' => route('learning.control.show', ['locale' => $locale, 'enrollment' => $record->id]),
+            'record' => $record, 'student' => DB::table('users')->find($record->user_id), 'course' => $this->content->student(),
+            'summaryScores' => $this->decode($record->summary_scores), 'summaryCaps' => $this->content->summaryCaps(),
+        ])->header('Cache-Control', 'no-store, private');
     }
 
     public function review(Request $request, string $locale, int $enrollment): RedirectResponse

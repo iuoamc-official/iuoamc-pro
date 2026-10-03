@@ -6,12 +6,14 @@ namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
 use App\Services\SensoryLearningContent;
+use App\Services\SensoryLearningProgress;
 use App\Services\SensoryObjectiveExam;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -19,16 +21,23 @@ use stdClass;
 
 final class SensoryLearningController extends Controller
 {
-    public function __construct(private SensoryLearningContent $content, private SensoryObjectiveExam $objectiveExam) {}
+    public function __construct(private SensoryLearningContent $content, private SensoryObjectiveExam $objectiveExam, private SensoryLearningProgress $progress) {}
 
     public function index(Request $request, string $locale): View
     {
         $enrollment = DB::table('learning_enrollments')->where('user_id', $request->user()->id)
             ->where('module_id', SensoryLearningContent::MODULE_ID)->first();
 
+        if ($enrollment?->exam_format === SensoryObjectiveExam::FORMAT) {
+            $this->objectiveExam->assertVersion($enrollment);
+            $enrollment = $this->objectiveExam->closeExpired($enrollment->id);
+        }
+
         return view('account.learning.index', [
             'course' => $this->content->student(),
             'enrollment' => $enrollment,
+            'learningStatus' => $enrollment ? $this->progress->status($enrollment) : null,
+            'canReport' => $enrollment ? $this->progress->canReport($enrollment) : false,
             'completed' => $this->decode($enrollment?->completed_sections),
             'available' => $this->content->availableSections($this->decode($enrollment?->completed_sections)),
         ]);
@@ -51,7 +60,9 @@ final class SensoryLearningController extends Controller
         }
         $checkpoint = array_intersect_key($this->content->checkpoint($section), array_flip(['prompt', 'options']));
 
-        return view('account.learning.lesson', compact('course', 'lesson', 'enrollment', 'completed', 'available', 'checkpoint'));
+        $note = DB::table('learning_lesson_notes')->where('enrollment_id', $enrollment->id)->where('section', $section)->first();
+
+        return view('account.learning.lesson', compact('course', 'lesson', 'enrollment', 'completed', 'available', 'checkpoint', 'note'));
     }
 
     public function complete(Request $request, string $locale, int $section): RedirectResponse
@@ -76,11 +87,51 @@ final class SensoryLearningController extends Controller
             return $section === 30 && count($completed) === 30 && array_diff(range(1, 30), $completed) === [];
         });
         if ($ready) {
-            return redirect()->route('account.learning.exam', ['locale' => $locale])->with('success', __('learning.progress_saved'));
+            return redirect()->route('account.learning.exam', ['locale' => $locale])->with('success', __('learning.progress_saved'))
+                ->with('checkpoint_feedback', ['section' => $section, 'explanation' => $this->content->student()['sections'][$section - 1]['support']['takeaway']]);
         }
 
         return redirect()->route('account.learning.lesson', ['locale' => $locale, 'section' => min(30, $section + 1)])
-            ->with('success', __('learning.progress_saved'));
+            ->with('success', __('learning.progress_saved'))
+            ->with('checkpoint_feedback', ['section' => $section, 'explanation' => $this->content->student()['sections'][$section - 1]['support']['takeaway']]);
+    }
+
+    public function saveNote(Request $request, string $locale, int $section): RedirectResponse
+    {
+        abort_unless($section >= 1 && $section <= 30, 404);
+        $data = $request->validate([
+            'note_body' => ['present', 'nullable', 'string', 'max:12000'],
+            'note_revision' => ['required', 'integer', 'min:0'],
+        ]);
+        DB::transaction(function () use ($request, $section, $data): void {
+            $enrollment = $this->enrollment($request, true);
+            abort_unless(in_array($section, $this->content->availableSections($this->decode($enrollment->completed_sections)), true), 403);
+            $note = DB::table('learning_lesson_notes')->where('enrollment_id', $enrollment->id)->where('section', $section)->lockForUpdate()->first();
+            if ((int) $data['note_revision'] !== (int) ($note?->revision ?? 0)) {
+                throw ValidationException::withMessages(['note_revision' => __('learning.note_conflict')]);
+            }
+            $values = ['body' => $data['note_body'] ?? '', 'revision' => ($note?->revision ?? 0) + 1, 'updated_at' => now()];
+            if ($note) {
+                DB::table('learning_lesson_notes')->where('id', $note->id)->update($values);
+            } else {
+                DB::table('learning_lesson_notes')->insert($values + ['enrollment_id' => $enrollment->id, 'section' => $section, 'created_at' => now()]);
+            }
+        });
+
+        return redirect()->to(route('account.learning.lesson', ['locale' => $locale, 'section' => $section]).'#lesson-notes')
+            ->with('success', __('learning.note_saved'));
+    }
+
+    public function report(Request $request, string $locale): Response
+    {
+        $record = $this->enrollment($request);
+        abort_unless($this->progress->canReport($record), 409, __('learning.report_not_ready'));
+
+        return response()->view('account.learning.report', [
+            'returnUrl' => route('account.learning.index', ['locale' => $locale]),
+            'record' => $record, 'student' => $request->user(), 'course' => $this->content->student(),
+            'summaryScores' => $this->decode($record->summary_scores), 'summaryCaps' => $this->content->summaryCaps(),
+        ])->header('Cache-Control', 'no-store, private');
     }
 
     public function exam(Request $request, string $locale): View
@@ -204,6 +255,7 @@ final class SensoryLearningController extends Controller
         return view('account.learning.assignment', [
             'course' => $this->content->student(), 'enrollment' => $enrollment,
             'lines' => $this->decode($enrollment->summary_lines),
+            'summaryScores' => $this->decode($enrollment->summary_scores), 'summaryCaps' => $this->content->summaryCaps(),
         ]);
     }
 

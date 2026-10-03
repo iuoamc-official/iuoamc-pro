@@ -22,6 +22,8 @@ Route::prefix('{locale}/account/learning')->where(['locale' => 'ar|en|fr'])
         Route::get('/', [SensoryLearningController::class, 'index'])->name('index');
         Route::get('/lessons/{section}', [SensoryLearningController::class, 'lesson'])->whereNumber('section')->name('lesson');
         Route::post('/lessons/{section}/complete', [SensoryLearningController::class, 'complete'])->whereNumber('section')->middleware('throttle:60,1,learning-complete')->name('complete');
+        Route::post('/lessons/{section}/notes', [SensoryLearningController::class, 'saveNote'])->whereNumber('section')->middleware('throttle:30,1,learning-notes')->name('notes.save');
+        Route::get('/report', [SensoryLearningController::class, 'report'])->name('report');
         Route::get('/exam', [SensoryLearningController::class, 'exam'])->name('exam');
         Route::post('/exam/start', [SensoryLearningController::class, 'startExam'])->middleware('throttle:6,1')->name('exam.start');
         Route::post('/exam', [SensoryLearningController::class, 'saveExam'])->middleware('throttle:120,1')->name('exam.save');
@@ -37,5 +39,6 @@ Route::prefix('{locale}/control/learning')->where(['locale' => 'ar|en|fr'])
         Route::post('/invitations', [LearningInvitationController::class, 'store'])->middleware('throttle:20,1')->name('invitations.store');
         Route::delete('/invitations/{invitation}', [LearningInvitationController::class, 'destroy'])->whereNumber('invitation')->name('invitations.destroy');
         Route::get('/{enrollment}', [LearningControlController::class, 'show'])->whereNumber('enrollment')->name('show');
+        Route::get('/{enrollment}/report', [LearningControlController::class, 'report'])->whereNumber('enrollment')->name('report');
         Route::post('/{enrollment}/review', [LearningControlController::class, 'review'])->whereNumber('enrollment')->middleware('throttle:20,1')->name('review');
     });

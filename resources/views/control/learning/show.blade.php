@@ -5,6 +5,7 @@
 @endpush
 @section('content')
 <div class="learning"><header class="learning-hero"><h1>{{ __('learning.review') }} — {{ $student->name }}</h1><p>{{ $isObjective ? __('learning.objective_grading_policy') : __('learning.grading_policy') }}</p></header>
+@if($canReport)<p><a class="learning-button" href="{{ route('learning.control.report',['locale'=>app()->getLocale(),'enrollment'=>$record->id]) }}">{{ __('learning.report_title') }}</a></p>@endif
 @if($isObjective && $record->exam_submitted_at)<div class="learning-feedback"><strong>{{ __('learning.exam_result') }}: {{ $record->objective_score }} / 100 · {{ $record->exam_correct_count }} / 30</strong></div>@endif
 @if(!$record->exam_submitted_at || !$record->summary_submitted_at)<div class="learning-notice">{{ __('learning.wait_for_submissions') }}</div>
 @endif

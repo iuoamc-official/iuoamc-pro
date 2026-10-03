@@ -1,8 +1,10 @@
 @extends('layouts.account')
 @section('title', $lesson['title'])
 @section('content')
-<div class="learning learning-study">
+<div class="learning learning-study" data-learning-reader>
 @include('account.learning._nav')
+@include('account.learning._checkpoint_feedback')
+<nav class="learning-reader-tools" aria-label="{{ __('learning.reading_options') }}"><span>{{ __('learning.reading_options') }}</span><button type="button" data-reader-action="smaller" aria-label="{{ __('learning.font_smaller') }}">A−</button><button type="button" data-reader-action="larger" aria-label="{{ __('learning.font_larger') }}">A+</button><button type="button" data-reader-action="night" aria-pressed="false">{{ __('learning.night_mode') }}</button><button type="button" data-reader-action="reset">{{ __('learning.reset_reading') }}</button></nav>
 <div class="learning-reading-layout">
 <aside class="learning-lesson-sidebar"><div class="learning-study-progress"><span>{{ __('learning.completed_pages') }}</span><strong>{{ count($completed) }} / 30</strong><progress aria-label="{{ __('learning.progress') }}" value="{{ count($completed) }}" max="30"></progress><small>{{ __('learning.step_by_step') }}</small></div><details open><summary>{{ __('learning.lesson_outline') }}</summary><nav aria-label="{{ __('learning.lesson_outline') }}" lang="ar" dir="rtl">
 @foreach($course['sections'] as $item)
@@ -38,10 +40,12 @@
 </form>
 @endif
 </section>
+<section class="learning-notes" id="lesson-notes"><h2>{{ __('learning.private_notes') }}</h2><p>{{ __('learning.notes_hint') }}</p><form data-learning-notes data-dirty="{{ old('note_body') !== null && old('note_body') !== ($note?->body ?? '') ? 'true' : 'false' }}" data-unsaved="{{ __('learning.notes_unsaved') }}" method="post" action="{{ route('account.learning.notes.save',['locale'=>app()->getLocale(),'section'=>$lesson['id']]) }}">@csrf<input type="hidden" name="note_revision" value="{{ old('note_revision',$note?->revision ?? 0) }}"><label class="learning-visually-hidden" for="note-body">{{ __('learning.private_notes') }}</label><textarea id="note-body" name="note_body" maxlength="12000" rows="7">{{ old('note_body',$note?->body ?? '') }}</textarea>@error('note_body')<p role="alert">{{ $message }}</p>@enderror @error('note_revision')<p class="learning-checkpoint-error" role="alert">{{ $message }}</p>@enderror<button type="submit">{{ __('learning.save_notes') }}</button>@if($note)<small>{{ __('learning.note_saved_at') }}: <bdi>{{ $note->updated_at }} UTC</bdi></small>@endif</form></section>
 <div class="learning-row learning-study-footer">@if($lesson['id']>1 && in_array($lesson['id']-1,$available,true))<a class="learning-button secondary" href="{{ route('account.learning.lesson',['locale'=>app()->getLocale(),'section'=>$lesson['id']-1]) }}">{{ __('learning.previous') }}</a>@endif
 @if($lesson['id']<30)
 @if(in_array($lesson['id']+1,$available,true))<a class="learning-button" href="{{ route('account.learning.lesson',['locale'=>app()->getLocale(),'section'=>$lesson['id']+1]) }}">{{ __('learning.next') }} ←</a>@else<span class="learning-lock-note">{{ __('learning.lesson_locked') }}</span>@endif
 @elseif(count($completed)===30)<a class="learning-button" href="{{ route('account.learning.exam',['locale'=>app()->getLocale()]) }}">{{ __('learning.exam') }} ←</a>@endif
 </div>
 </article></div></div>
+<script src="{{ asset('assets/js/iuoamc-learning-experience-1.0.0.js') }}?v={{ filemtime(public_path('assets/js/iuoamc-learning-experience-1.0.0.js')) }}" defer></script>
 @endsection

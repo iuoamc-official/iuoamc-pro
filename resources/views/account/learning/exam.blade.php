@@ -3,6 +3,7 @@
 @section('content')
 <div class="learning">
 @include('account.learning._nav')
+@include('account.learning._checkpoint_feedback')
 <header class="learning-hero"><h1>{{ __('learning.exam') }}</h1><p>{{ $isObjective ? __('learning.objective_instructions') : __('learning.exam_instructions') }}</p><div class="learning-stats"><span>{{ $isObjective ? __('learning.objective_parts') : __('learning.exam_parts') }}</span></div></header>
 @if($enrollment->exam_submitted_at)
 <div class="learning-card learning-feedback"><h2>{{ __('learning.submitted') }}</h2>

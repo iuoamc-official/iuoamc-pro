@@ -25,6 +25,7 @@ final class SensoryObjectiveExamTest extends TestCase
             '2026_10_02_100000_create_learning_enrollments.php',
             '2026_10_03_093415_create_learning_invitations_table.php',
             '2026_10_03_101349_add_objective_exam_timing_to_learning_enrollments.php',
+            '2026_10_03_110905_create_learning_lesson_notes_table.php',
         ] as $file) {
             (require database_path('migrations/'.$file))->up();
         }

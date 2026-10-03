@@ -17,3 +17,8 @@ Schedule::command('journal:queue-review-reminders --days=3 --limit=100')
     ->dailyAt('08:00')
     ->withoutOverlapping(60)
     ->onOneServer();
+
+Schedule::command('learning:close-expired-exams')
+    ->everyMinute()
+    ->withoutOverlapping(2)
+    ->onOneServer();

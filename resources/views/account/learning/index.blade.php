@@ -11,7 +11,7 @@
 @php($nextSection = collect($course['sections'])->first(fn($section)=>!in_array($section['id'],$completed,true)))
 @if($nextSection)<a class="learning-button" href="{{ route('account.learning.lesson',['locale'=>app()->getLocale(),'section'=>$nextSection['id']]) }}">{{ __('learning.continue_from') }} {{ $nextSection['id'] }} ←</a>@endif
 @if($enrollment->reviewed_at)<div class="learning-feedback"><h2>{{ __('learning.final_score') }}: {{ $enrollment->final_score }} / 100</h2><strong>{{ $enrollment->final_score >= 75 ? __('learning.passed') : __('learning.needs_improvement') }}</strong><p class="learning-pre">{{ $enrollment->review_feedback }}</p></div>
-@elseif($enrollment->exam_submitted_at)<p>{{ __('learning.pending_review') }}</p>@endif
+@elseif($enrollment->exam_submitted_at)<p>{{ ($enrollment->exam_format===\App\Services\SensoryObjectiveExam::FORMAT ? __('learning.summary_pending') : __('learning.pending_review')) }}</p>@endif
 </div>
 <div lang="ar" dir="rtl">
 @foreach(array_chunk($course['sections'],5) as $phase=>$sections)

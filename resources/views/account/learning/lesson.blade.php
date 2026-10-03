@@ -21,6 +21,7 @@
 <section class="learning-takeaway"><h2>{{ __('learning.key_takeaway') }}</h2><p>{{ $lesson['support']['takeaway'] }}</p></section>
 <p class="learning-muted">{{ __('learning.references') }}: @foreach($lesson['support']['references'] as $reference)<a href="{{ route('account.learning.index',['locale'=>app()->getLocale()]) }}#references">[{{ $reference }}]</a> @endforeach</p>
 <form method="post" action="{{ route('account.learning.complete',['locale'=>app()->getLocale(),'section'=>$lesson['id']]) }}">@csrf<button type="submit">{{ __('learning.mark_complete') }}</button></form>
+@if($lesson['id']===30)<div class="learning-notice"><p>{{ __('learning.after_last_lesson') }}</p><a class="learning-button" href="{{ route('account.learning.exam',['locale'=>app()->getLocale()]) }}">{{ __('learning.exam') }} ←</a></div>@endif
 <div class="learning-nav">@if($lesson['id']>1)<a href="{{ route('account.learning.lesson',['locale'=>app()->getLocale(),'section'=>$lesson['id']-1]) }}">{{ __('learning.previous') }}</a>@endif
 @if($lesson['id']<30)<a href="{{ route('account.learning.lesson',['locale'=>app()->getLocale(),'section'=>$lesson['id']+1]) }}">{{ __('learning.next') }}</a>@endif</div>
 </article></div></div>

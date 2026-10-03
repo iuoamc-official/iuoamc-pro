@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Control;
 use App\Http\Controllers\Controller;
 use App\Services\AuditTrail;
 use App\Services\SensoryLearningContent;
+use App\Services\SensoryObjectiveExam;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,7 +17,7 @@ use stdClass;
 
 final class SensoryLearningController extends Controller
 {
-    public function __construct(private SensoryLearningContent $content) {}
+    public function __construct(private SensoryLearningContent $content, private SensoryObjectiveExam $objectiveExam) {}
 
     public function index(Request $request, string $locale): Response
     {
@@ -57,10 +58,16 @@ final class SensoryLearningController extends Controller
     {
         $this->authorizeAdmin($request);
         $record = $this->record($enrollment);
+        $isObjective = $record->exam_format === SensoryObjectiveExam::FORMAT;
+        if ($isObjective) {
+            $this->objectiveExam->assertVersion($record);
+            $record = $this->objectiveExam->closeExpired($record->id);
+        }
         $student = DB::table('users')->find($record->user_id);
 
         return view('control.learning.show', [
-            'record' => $record, 'student' => $student, 'assessment' => $this->content->assessment(),
+            'record' => $record, 'student' => $student, 'isObjective' => $isObjective,
+            'assessment' => $isObjective ? $this->objectiveExam->assessment() : $this->content->assessment(),
             'answers' => $this->decode($record->exam_answers), 'lines' => $this->decode($record->summary_lines),
             'questionScores' => $this->decode($record->question_scores), 'summaryScores' => $this->decode($record->summary_scores),
             'summaryCaps' => $this->content->summaryCaps(),
@@ -70,13 +77,15 @@ final class SensoryLearningController extends Controller
     public function review(Request $request, string $locale, int $enrollment): RedirectResponse
     {
         $this->authorizeAdmin($request);
+        $initial = $this->record($enrollment);
+        $isObjective = $initial->exam_format === SensoryObjectiveExam::FORMAT;
         $rules = [
-            'question_scores' => ['required', 'array:'.implode(',', range(25, 40)), 'size:16'],
+            'question_scores' => $isObjective ? ['prohibited'] : ['required', 'array:'.implode(',', range(25, 40)), 'size:16'],
             'summary_scores' => ['required', 'array:0,1,2,3,4', 'size:5'],
             'feedback' => ['required', 'string', 'max:6000'],
         ];
         foreach ($this->content->assessment()['questions'] as $question) {
-            if ($question['type'] !== 'single_choice') {
+            if (! $isObjective && $question['type'] !== 'single_choice') {
                 $rules['question_scores.'.$question['id']] = ['required', 'numeric', 'min:0', 'max:'.$question['points']];
             }
         }
@@ -84,13 +93,17 @@ final class SensoryLearningController extends Controller
             $rules['summary_scores.'.$index] = ['required', 'numeric', 'min:0', 'max:'.$cap];
         }
         $validated = $request->validate($rules);
-        DB::transaction(function () use ($request, $enrollment, $validated): void {
+        DB::transaction(function () use ($request, $enrollment, $validated, $isObjective): void {
             $record = $this->record($enrollment, true);
             abort_unless($record->exam_submitted_at && $record->summary_submitted_at, 409);
-            $examScore = $record->objective_score + array_sum($validated['question_scores']);
+            if ($isObjective) {
+                $this->objectiveExam->assertVersion($record);
+                abort_unless($record->exam_correct_count !== null, 409);
+            }
+            $examScore = $isObjective ? $record->exam_correct_count / 30 * 100 : $record->objective_score + array_sum($validated['question_scores']);
             $finalScore = round($examScore * 0.8 + array_sum($validated['summary_scores']), 2);
             DB::table('learning_enrollments')->where('id', $record->id)->update([
-                'question_scores' => json_encode($validated['question_scores'], JSON_THROW_ON_ERROR),
+                'question_scores' => json_encode($validated['question_scores'] ?? [], JSON_THROW_ON_ERROR),
                 'summary_scores' => json_encode($validated['summary_scores'], JSON_THROW_ON_ERROR),
                 'final_score' => $finalScore, 'review_feedback' => $validated['feedback'],
                 'reviewed_by' => $request->user()->id, 'reviewed_at' => now(), 'updated_at' => now(),

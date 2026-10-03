@@ -4,7 +4,8 @@
 @push('styles')<link rel="stylesheet" href="{{ asset('assets/css/iuoamc-learning-1.0.0.css') }}?v={{ filemtime(public_path('assets/css/iuoamc-learning-1.0.0.css')) }}">
 @endpush
 @section('content')
-<div class="learning"><header class="learning-hero"><h1>{{ __('learning.review') }} — {{ $student->name }}</h1><p>{{ __('learning.grading_policy') }}</p></header>
+<div class="learning"><header class="learning-hero"><h1>{{ __('learning.review') }} — {{ $student->name }}</h1><p>{{ $isObjective ? __('learning.objective_grading_policy') : __('learning.grading_policy') }}</p></header>
+@if($isObjective && $record->exam_submitted_at)<div class="learning-feedback"><strong>{{ __('learning.exam_result') }}: {{ $record->objective_score }} / 100 · {{ $record->exam_correct_count }} / 30</strong></div>@endif
 @if(!$record->exam_submitted_at || !$record->summary_submitted_at)<div class="learning-notice">{{ __('learning.wait_for_submissions') }}</div>
 @endif
 <form method="post" action="{{ route('learning.control.review',['locale'=>app()->getLocale(),'enrollment'=>$record->id]) }}">

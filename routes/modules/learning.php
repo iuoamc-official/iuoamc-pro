@@ -24,7 +24,7 @@ Route::prefix('{locale}/account/learning')->where(['locale' => 'ar|en|fr'])
         Route::post('/lessons/{section}/complete', [SensoryLearningController::class, 'complete'])->whereNumber('section')->middleware('throttle:60,1')->name('complete');
         Route::get('/exam', [SensoryLearningController::class, 'exam'])->name('exam');
         Route::post('/exam/start', [SensoryLearningController::class, 'startExam'])->middleware('throttle:6,1')->name('exam.start');
-        Route::post('/exam', [SensoryLearningController::class, 'saveExam'])->middleware('throttle:30,1')->name('exam.save');
+        Route::post('/exam', [SensoryLearningController::class, 'saveExam'])->middleware('throttle:120,1')->name('exam.save');
         Route::get('/assignment', [SensoryLearningController::class, 'assignment'])->name('assignment');
         Route::post('/assignment', [SensoryLearningController::class, 'submitAssignment'])->middleware('throttle:6,1')->name('assignment.submit');
     });

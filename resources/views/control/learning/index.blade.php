@@ -14,6 +14,6 @@
 @empty<p class="learning-muted">{{ __('learning.no_codes') }}</p>@endforelse
 {{ $invitations->links() }}
 <h2>{{ __('learning.enrolled_students') }}</h2>
-@foreach($enrollments as $record)<article class="learning-card learning-row"><div><h3>{{ $record->name }}</h3><bdi>{{ $record->email }}</bdi><p>{{ $record->reviewed_at ? __('learning.reviewed') : __('learning.pending_review') }}@if($record->final_score!==null) · {{ $record->final_score }} / 100 @endif</p></div><a class="learning-button" href="{{ route('learning.control.show',['locale'=>app()->getLocale(),'enrollment'=>$record->id]) }}">{{ __('learning.review') }}</a></article>@endforeach
+@foreach($enrollments as $record)<article class="learning-card learning-row"><div><h3>{{ $record->name }}</h3><bdi>{{ $record->email }}</bdi><p>{{ $record->reviewed_at ? __('learning.reviewed') : ($record->exam_format===\App\Services\SensoryObjectiveExam::FORMAT ? __('learning.summary_pending') : __('learning.pending_review')) }}@if($record->final_score!==null) · {{ $record->final_score }} / 100 @endif</p></div><a class="learning-button" href="{{ route('learning.control.show',['locale'=>app()->getLocale(),'enrollment'=>$record->id]) }}">{{ __('learning.review') }}</a></article>@endforeach
 {{ $enrollments->links() }}</div>
 @endsection

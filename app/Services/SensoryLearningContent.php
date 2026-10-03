@@ -10,7 +10,13 @@ final class SensoryLearningContent
 
     public function student(): array
     {
-        return json_decode(file_get_contents(resource_path('learning/sensory-foundation/student_content.json')), true, 512, JSON_THROW_ON_ERROR);
+        $course = $this->coreStudent();
+        $support = json_decode(file_get_contents(resource_path('learning/sensory-foundation/study_support.json')), true, 512, JSON_THROW_ON_ERROR);
+        foreach ($course['sections'] as &$section) {
+            $section['support'] = $support[$section['id']];
+        }
+
+        return $course;
     }
 
     public function assessment(): array
@@ -20,7 +26,7 @@ final class SensoryLearningContent
 
     public function version(): string
     {
-        return hash('sha256', json_encode([$this->student(), $this->assessment()], JSON_THROW_ON_ERROR));
+        return hash('sha256', json_encode([$this->coreStudent(), $this->assessment()], JSON_THROW_ON_ERROR));
     }
 
     public function objectiveScore(array $answers): float
@@ -40,5 +46,10 @@ final class SensoryLearningContent
     public function summaryCaps(): array
     {
         return [6, 4, 4, 4, 2];
+    }
+
+    private function coreStudent(): array
+    {
+        return json_decode(file_get_contents(resource_path('learning/sensory-foundation/student_content.json')), true, 512, JSON_THROW_ON_ERROR);
     }
 }

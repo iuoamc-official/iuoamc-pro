@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="{{ asset('assets/css/iuoamc-account-1.0.0.css') }}?v={{ filemtime(public_path('assets/css/iuoamc-account-1.0.0.css')) }}">
     <link rel="stylesheet" href="{{ asset('assets/css/iuoamc-account-journal-1.0.0.css') }}?v={{ filemtime(public_path('assets/css/iuoamc-account-journal-1.0.0.css')) }}">
     <link rel="stylesheet" href="{{ asset('assets/css/membership-policy.css') }}?v={{ filemtime(public_path('assets/css/membership-policy.css')) }}">
-    <link rel="stylesheet" href="{{ asset('assets/css/iuoamc-learning-1.0.0.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/iuoamc-learning-1.0.0.css') }}?v={{ filemtime(public_path('assets/css/iuoamc-learning-1.0.0.css')) }}">
 </head>
 <body class="account-body">
     <header class="account-header">

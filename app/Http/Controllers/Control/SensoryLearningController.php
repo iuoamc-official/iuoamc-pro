@@ -10,6 +10,7 @@ use App\Services\SensoryLearningContent;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use stdClass;
 
@@ -17,14 +18,18 @@ final class SensoryLearningController extends Controller
 {
     public function __construct(private SensoryLearningContent $content) {}
 
-    public function index(Request $request, string $locale): View
+    public function index(Request $request, string $locale): Response
     {
         $this->authorizeAdmin($request);
         $enrollments = DB::table('learning_enrollments')->join('users', 'users.id', '=', 'learning_enrollments.user_id')
             ->where('module_id', SensoryLearningContent::MODULE_ID)
             ->select('learning_enrollments.*', 'users.name', 'users.email')->orderByDesc('learning_enrollments.id')->paginate(25);
 
-        return view('control.learning.index', compact('enrollments'));
+        $invitations = DB::table('learning_invitations')->where('module_id', SensoryLearningContent::MODULE_ID)
+            ->select('id', 'email', 'expires_at', 'used_at', 'revoked_at', 'student_name', 'student_phone', 'student_country')
+            ->orderByDesc('id')->paginate(15, ['*'], 'invitations_page');
+
+        return response()->view('control.learning.index', compact('enrollments', 'invitations'))->header('Cache-Control', 'no-store, private');
     }
 
     public function enroll(Request $request, string $locale): RedirectResponse

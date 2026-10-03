@@ -51,7 +51,8 @@ final class SensoryLearningTest extends TestCase
         $user = $this->student();
         $this->enroll($user);
         $this->actingAs($user)->get('/ar/account/learning')->assertOk()->assertSee('من الخبرة المهنية إلى المعرفة');
-        $this->get('/ar/account/learning/lessons/30')->assertOk()->assertSee('صياغة التقرير والقرار التحكيمي المسبب');
+        $this->get('/ar/account/learning/lessons/1')->assertOk()->assertSee('سؤال إتمام الصفحة')->assertDontSee('correct_index');
+        $this->get('/ar/account/learning/lessons/30')->assertRedirect('/ar/account/learning/lessons/1');
         $this->get('/ar/account/learning/lessons/31')->assertNotFound();
         $this->get('/ar/account/learning/exam')->assertOk()->assertDontSee('correct_index')->assertDontSee('rationale');
     }
@@ -63,7 +64,7 @@ final class SensoryLearningTest extends TestCase
         $id = $this->enroll($user);
         $otherId = $this->enroll($other);
         $this->actingAs($user)->post('/ar/account/learning/exam/start')->assertForbidden();
-        $this->post('/ar/account/learning/lessons/1/complete')->assertRedirect();
+        $this->post('/ar/account/learning/lessons/1/complete', ['lesson_answer' => 0])->assertRedirect();
         $this->post('/ar/account/learning/lessons/1/complete')->assertRedirect();
         $this->assertSame([1], json_decode(DB::table('learning_enrollments')->find($id)->completed_sections, true));
         $this->assertNull(DB::table('learning_enrollments')->find($otherId)->completed_sections);
@@ -184,6 +185,65 @@ final class SensoryLearningTest extends TestCase
         $user = $this->student();
         $this->enroll($user, ['content_version' => str_repeat('0', 64)]);
         $this->actingAs($user)->get('/ar/account/learning/exam')->assertStatus(409);
+    }
+
+    public function test_checkpoint_requires_a_correct_answer_and_blocks_direct_skipping(): void
+    {
+        $user = $this->student();
+        $id = $this->enroll($user);
+        $this->actingAs($user)->from('/ar/account/learning/lessons/1')
+            ->post('/ar/account/learning/lessons/1/complete')
+            ->assertSessionHasErrors(['lesson_answer' => 'اختر إجابة قبل إتمام الصفحة.']);
+        $this->post('/ar/account/learning/lessons/1/complete', ['lesson_answer' => 2])
+            ->assertSessionHasErrors(['lesson_answer' => 'الإجابة غير صحيحة. راجع المادة ثم حاول مجددًا؛ لم تُفتح الصفحة التالية بعد.']);
+        $this->assertNull(DB::table('learning_enrollments')->find($id)->completed_sections);
+        $this->get('/ar/account/learning/lessons/2')->assertRedirect('/ar/account/learning/lessons/1');
+        $this->post('/ar/account/learning/lessons/2/complete', ['lesson_answer' => 1])->assertForbidden();
+        $this->post('/ar/account/learning/lessons/1/complete', ['lesson_answer' => [0]])->assertSessionHasErrors('lesson_answer');
+        $this->post('/ar/account/learning/lessons/1/complete', ['lesson_answer' => 4])->assertSessionHasErrors('lesson_answer');
+        $this->assertNull(DB::table('learning_enrollments')->find($id)->completed_sections);
+
+        $this->post('/ar/account/learning/lessons/1/complete', ['lesson_answer' => 0, 'completed_sections' => range(1, 30)])
+            ->assertRedirect('/ar/account/learning/lessons/2');
+        $this->assertSame([1], json_decode(DB::table('learning_enrollments')->find($id)->completed_sections, true));
+        $this->get('/ar/account/learning/lessons/2')->assertOk()->assertSee('سؤال إتمام الصفحة');
+        $this->get('/ar/account/learning/lessons/3')->assertRedirect('/ar/account/learning/lessons/2');
+        $this->post('/ar/account/learning/exam/start')->assertForbidden();
+    }
+
+    public function test_all_thirty_checkpoints_unlock_in_order_without_leaking_final_exam_answers(): void
+    {
+        $user = $this->student();
+        $id = $this->enroll($user);
+        $content = new SensoryLearningContent;
+        $this->actingAs($user);
+        for ($section = 1; $section <= 30; $section++) {
+            $checkpoint = $content->checkpoint($section);
+            $response = $this->get('/ar/account/learning/lessons/'.$section)->assertOk()->assertSee($checkpoint['prompt']);
+            $response->assertViewHas('checkpoint', fn (array $value): bool => array_keys($value) === ['prompt', 'options']);
+            $this->assertCount(4, $checkpoint['options']);
+            $destination = $section === 30 ? '/ar/account/learning/exam' : '/ar/account/learning/lessons/'.($section + 1);
+            $this->post('/ar/account/learning/lessons/'.$section.'/complete', ['lesson_answer' => $checkpoint['correct_index']])
+                ->assertRedirect($destination);
+        }
+        $this->assertSame(range(1, 30), json_decode(DB::table('learning_enrollments')->find($id)->completed_sections, true));
+        $this->assertNull(DB::table('learning_enrollments')->find($id)->exam_started_at);
+        $this->get('/ar/account/learning/lessons/30')->assertSee('تم إتمام هذه الصفحة')->assertDontSee('name="lesson_answer"', false);
+        $this->post('/ar/account/learning/exam/start')->assertRedirect('/ar/account/learning/exam');
+    }
+
+    public function test_existing_completed_pages_remain_available_while_first_missing_page_gates_future_pages(): void
+    {
+        $user = $this->student();
+        $id = $this->enroll($user, ['completed_sections' => '[1,3,30]']);
+        $this->actingAs($user)->get('/ar/account/learning/lessons/30')->assertOk()->assertSee('تم إتمام هذه الصفحة');
+        $this->get('/ar/account/learning/lessons/2')->assertOk();
+        $this->get('/ar/account/learning/lessons/4')->assertRedirect('/ar/account/learning/lessons/2');
+        $this->get('/ar/account/learning')->assertSee('مقفلة')->assertDontSee('href="http://localhost/ar/account/learning/lessons/4"', false);
+        $this->post('/ar/account/learning/lessons/1/complete')->assertRedirect('/ar/account/learning/lessons/2');
+        $this->assertSame([1, 3, 30], json_decode(DB::table('learning_enrollments')->find($id)->completed_sections, true));
+        $this->post('/ar/account/learning/lessons/2/complete', ['lesson_answer' => 1])->assertRedirect('/ar/account/learning/lessons/3');
+        $this->get('/ar/account/learning/lessons/4')->assertOk();
     }
 
     private function student(): User

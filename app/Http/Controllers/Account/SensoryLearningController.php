@@ -30,17 +30,28 @@ final class SensoryLearningController extends Controller
             'course' => $this->content->student(),
             'enrollment' => $enrollment,
             'completed' => $this->decode($enrollment?->completed_sections),
+            'available' => $this->content->availableSections($this->decode($enrollment?->completed_sections)),
         ]);
     }
 
-    public function lesson(Request $request, string $locale, int $section): View
+    public function lesson(Request $request, string $locale, int $section): View|RedirectResponse
     {
         $enrollment = $this->enrollment($request);
         $course = $this->content->student();
         $lesson = collect($course['sections'])->firstWhere('id', $section);
         abort_unless($lesson, 404);
 
-        return view('account.learning.lesson', compact('course', 'lesson', 'enrollment'));
+        $completed = $this->decode($enrollment->completed_sections);
+        $available = $this->content->availableSections($completed);
+        if (! in_array($section, $available, true)) {
+            $next = array_values(array_diff(range(1, 30), $completed))[0];
+
+            return redirect()->route('account.learning.lesson', ['locale' => $locale, 'section' => $next])
+                ->withErrors(['lesson' => __('learning.lesson_locked')]);
+        }
+        $checkpoint = array_intersect_key($this->content->checkpoint($section), array_flip(['prompt', 'options']));
+
+        return view('account.learning.lesson', compact('course', 'lesson', 'enrollment', 'completed', 'available', 'checkpoint'));
     }
 
     public function complete(Request $request, string $locale, int $section): RedirectResponse
@@ -49,6 +60,15 @@ final class SensoryLearningController extends Controller
         $ready = DB::transaction(function () use ($request, $section): bool {
             $enrollment = $this->enrollment($request, true);
             $completed = $this->decode($enrollment->completed_sections);
+            abort_unless(in_array($section, $this->content->availableSections($completed), true), 403, __('learning.lesson_locked'));
+            if (! in_array($section, $completed, true)) {
+                $validated = $request->validate([
+                    'lesson_answer' => ['required', 'integer', Rule::in([0, 1, 2, 3])],
+                ], ['lesson_answer.required' => __('learning.checkpoint_required')]);
+                if ((int) $validated['lesson_answer'] !== $this->content->checkpoint($section)['correct_index']) {
+                    throw ValidationException::withMessages(['lesson_answer' => __('learning.checkpoint_wrong')]);
+                }
+            }
             $completed[] = $section;
             $completed = array_values(array_unique($completed));
             $this->update($enrollment->id, ['completed_sections' => json_encode($completed, JSON_THROW_ON_ERROR)]);

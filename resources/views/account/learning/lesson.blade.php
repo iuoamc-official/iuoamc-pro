@@ -1,16 +1,20 @@
 @extends('layouts.account')
 @section('title', $lesson['title'])
 @section('content')
-<div class="learning">
+<div class="learning learning-study">
 @include('account.learning._nav')
 <div class="learning-reading-layout">
-<aside class="learning-lesson-sidebar"><details open><summary>{{ __('learning.lesson_outline') }}</summary><nav aria-label="{{ __('learning.lesson_outline') }}" lang="ar" dir="rtl">@foreach($course['sections'] as $item)<a href="{{ route('account.learning.lesson',['locale'=>app()->getLocale(),'section'=>$item['id']]) }}" @if($item['id']===$lesson['id']) aria-current="page" @endif><span>{{ $item['id'] }}</span>{{ $item['title'] }}</a>@endforeach</nav></details></aside>
-<article class="learning-card learning-reading" lang="ar" dir="rtl"><header><span class="learning-kicker">صفحة {{ $lesson['id'] }} من 30</span><h1>{{ $lesson['title'] }}</h1>
+<aside class="learning-lesson-sidebar"><div class="learning-study-progress"><span>{{ __('learning.completed_pages') }}</span><strong>{{ count($completed) }} / 30</strong><progress aria-label="{{ __('learning.progress') }}" value="{{ count($completed) }}" max="30"></progress><small>{{ __('learning.step_by_step') }}</small></div><details open><summary>{{ __('learning.lesson_outline') }}</summary><nav aria-label="{{ __('learning.lesson_outline') }}" lang="ar" dir="rtl">
+@foreach($course['sections'] as $item)
+@if(in_array($item['id'],$available,true))<a href="{{ route('account.learning.lesson',['locale'=>app()->getLocale(),'section'=>$item['id']]) }}" @if($item['id']===$lesson['id']) aria-current="page" @endif><span>{{ $item['id'] }}</span><div>{{ $item['title'] }}@if(in_array($item['id'],$completed,true))<small class="learning-check">✓ {{ __('learning.completed') }}</small>@endif</div></a>
+@else<div class="learning-sidebar-locked" aria-disabled="true"><span>{{ $item['id'] }}</span><div>{{ $item['title'] }}<small>{{ __('learning.locked') }}</small></div></div>@endif
+@endforeach</nav></details></aside>
+<article class="learning-card learning-reading" lang="ar" dir="rtl"><header class="learning-study-header"><span class="learning-kicker">صفحة {{ $lesson['id'] }} من 30</span><h1>{{ $lesson['title'] }}</h1>
 @php($readingWords = count(preg_split('/\s+/u', implode(' ', $lesson['paragraphs']).' '.$lesson['support']['explanation'].' '.$lesson['support']['example'], -1, PREG_SPLIT_NO_EMPTY)))
-<p class="learning-muted">{{ max(3, (int)ceil($readingWords / 150)) }} {{ __('learning.read_minutes') }}</p></header>
+<p class="learning-muted">{{ max(3, (int)ceil($readingWords / 150)) }} {{ __('learning.read_minutes') }} · {{ __('learning.checkpoint_meta') }}</p></header>
 <section class="learning-goal"><h2>{{ __('learning.learning_goal') }}</h2><p>{{ $lesson['support']['goal'] }}</p></section>
 <figure class="learning-figure"><img src="{{ asset('assets/images/learning/'.$lesson['support']['figure'].'.svg') }}" alt="{{ $lesson['support']['caption'] }}" width="900" height="460" decoding="async"><figcaption>{{ $lesson['support']['caption'] }}<small>{{ __('learning.figure_note') }}</small></figcaption></figure>
-<nav class="learning-content-links" aria-label="{{ __('learning.contents') }}"><a href="#core-lesson">{{ __('learning.core_explanation') }}</a><a href="#further-explanation">{{ __('learning.deeper_explanation') }}</a><a href="#worked-example">{{ __('learning.worked_example') }}</a><a href="#practice">{{ __('learning.practice_task') }}</a></nav>
+<nav class="learning-content-links" aria-label="{{ __('learning.contents') }}"><a href="#core-lesson">{{ __('learning.core_explanation') }}</a><a href="#further-explanation">{{ __('learning.deeper_explanation') }}</a><a href="#worked-example">{{ __('learning.worked_example') }}</a><a href="#practice">{{ __('learning.practice_task') }}</a><a href="#lesson-checkpoint">{{ __('learning.checkpoint_title') }}</a></nav>
 <section id="core-lesson">
 @foreach($lesson['paragraphs'] as $paragraph)
 @if(in_array($paragraph,['تحليل متقدم','تطبيق مهني','سؤال للتفكير','مخرج الصفحة'],true))<h2>{{ $paragraph }}</h2>@else<p>{{ $paragraph }}</p>@endif
@@ -20,9 +24,24 @@
 <section class="learning-practice" id="practice"><h2>{{ __('learning.practice_task') }}</h2><p>{{ $lesson['support']['practice'] }}</p></section>
 <section class="learning-takeaway"><h2>{{ __('learning.key_takeaway') }}</h2><p>{{ $lesson['support']['takeaway'] }}</p></section>
 <p class="learning-muted">{{ __('learning.references') }}: @foreach($lesson['support']['references'] as $reference)<a href="{{ route('account.learning.index',['locale'=>app()->getLocale()]) }}#references">[{{ $reference }}]</a> @endforeach</p>
-<form method="post" action="{{ route('account.learning.complete',['locale'=>app()->getLocale(),'section'=>$lesson['id']]) }}">@csrf<button type="submit">{{ __('learning.mark_complete') }}</button></form>
-@if($lesson['id']===30)<div class="learning-notice"><p>{{ __('learning.after_last_lesson') }}</p><a class="learning-button" href="{{ route('account.learning.exam',['locale'=>app()->getLocale()]) }}">{{ __('learning.exam') }} ←</a></div>@endif
-<div class="learning-nav">@if($lesson['id']>1)<a href="{{ route('account.learning.lesson',['locale'=>app()->getLocale(),'section'=>$lesson['id']-1]) }}">{{ __('learning.previous') }}</a>@endif
-@if($lesson['id']<30)<a href="{{ route('account.learning.lesson',['locale'=>app()->getLocale(),'section'=>$lesson['id']+1]) }}">{{ __('learning.next') }}</a>@endif</div>
+<section class="learning-checkpoint" id="lesson-checkpoint" aria-labelledby="checkpoint-title">
+@if(in_array($lesson['id'],$completed,true))
+<div class="learning-completed-banner"><span aria-hidden="true">✓</span><div><h2 id="checkpoint-title">{{ __('learning.completed') }}</h2><p>{{ __('learning.lesson_already_completed') }}</p></div></div>
+@else
+<header><span class="learning-checkpoint-number">{{ $lesson['id'] }} / 30</span><h2 id="checkpoint-title">{{ __('learning.checkpoint_title') }}</h2><p>{{ __('learning.checkpoint_hint') }}</p></header>
+<form method="post" action="{{ route('account.learning.complete',['locale'=>app()->getLocale(),'section'=>$lesson['id']]) }}">@csrf
+<fieldset><legend>{{ $checkpoint['prompt'] }}</legend>
+@foreach($checkpoint['options'] as $index=>$option)<label class="learning-option learning-checkpoint-option"><input type="radio" name="lesson_answer" value="{{ $index }}" required @checked((string)old('lesson_answer','')===(string)$index) @error('lesson_answer') aria-invalid="true" aria-describedby="checkpoint-error" @enderror><span>{{ $option }}</span></label>@endforeach
+</fieldset>
+@error('lesson_answer')<p class="learning-checkpoint-error" id="checkpoint-error" role="alert">{{ $message }}</p>@enderror
+<button type="submit">{{ $lesson['id']===30 ? __('learning.checkpoint_finish') : __('learning.checkpoint_continue') }} ←</button>
+</form>
+@endif
+</section>
+<div class="learning-row learning-study-footer">@if($lesson['id']>1 && in_array($lesson['id']-1,$available,true))<a class="learning-button secondary" href="{{ route('account.learning.lesson',['locale'=>app()->getLocale(),'section'=>$lesson['id']-1]) }}">{{ __('learning.previous') }}</a>@endif
+@if($lesson['id']<30)
+@if(in_array($lesson['id']+1,$available,true))<a class="learning-button" href="{{ route('account.learning.lesson',['locale'=>app()->getLocale(),'section'=>$lesson['id']+1]) }}">{{ __('learning.next') }} ←</a>@else<span class="learning-lock-note">{{ __('learning.lesson_locked') }}</span>@endif
+@elseif(count($completed)===30)<a class="learning-button" href="{{ route('account.learning.exam',['locale'=>app()->getLocale()]) }}">{{ __('learning.exam') }} ←</a>@endif
+</div>
 </article></div></div>
 @endsection

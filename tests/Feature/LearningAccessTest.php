@@ -221,13 +221,13 @@ final class LearningAccessTest extends TestCase
         $assessment = json_decode(file_get_contents(resource_path('learning/sensory-foundation/server_assessment.json')), true);
         $this->assertSame(hash('sha256', json_encode([$core, $assessment], JSON_THROW_ON_ERROR)), (new SensoryLearningContent)->version());
         $user = User::factory()->create(['status' => 'active']);
-        DB::table('learning_enrollments')->insert(['user_id' => $user->id, 'module_id' => SensoryLearningContent::MODULE_ID, 'content_version' => (new SensoryLearningContent)->version(), 'enrolled_by' => $user->id, 'completed_sections' => '[1]', 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('learning_enrollments')->insert(['user_id' => $user->id, 'module_id' => SensoryLearningContent::MODULE_ID, 'content_version' => (new SensoryLearningContent)->version(), 'enrolled_by' => $user->id, 'completed_sections' => json_encode(range(1, 30)), 'created_at' => now(), 'updated_at' => now()]);
         foreach ((new SensoryLearningContent)->student()['sections'] as $lesson) {
             $this->actingAs($user)->get('/ar/account/learning/lessons/'.$lesson['id'])->assertOk()
                 ->assertSee($lesson['support']['goal'])->assertSee($lesson['support']['example'])
                 ->assertSee('assets/images/learning/'.$lesson['support']['figure'].'.svg', false);
         }
-        $this->assertDatabaseHas('learning_enrollments', ['user_id' => $user->id, 'completed_sections' => '[1]']);
+        $this->assertDatabaseHas('learning_enrollments', ['user_id' => $user->id, 'completed_sections' => json_encode(range(1, 30))]);
     }
 
     public function test_admin_escapes_profile_details_in_invitation_list(): void

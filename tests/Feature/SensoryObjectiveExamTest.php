@@ -36,7 +36,7 @@ final class SensoryObjectiveExamTest extends TestCase
         $id = $this->enroll($user, ['completed_sections' => json_encode(range(1, 29))]);
         $this->actingAs($user)->post('/ar/account/learning/exam/start')->assertForbidden();
         $this->assertNull(DB::table('learning_enrollments')->find($id)->exam_started_at);
-        $this->post('/ar/account/learning/lessons/30/complete')->assertRedirect('/ar/account/learning/exam');
+        $this->post('/ar/account/learning/lessons/30/complete', ['lesson_answer' => 1])->assertRedirect('/ar/account/learning/exam');
         $this->assertSame(range(1, 30), json_decode(DB::table('learning_enrollments')->find($id)->completed_sections, true));
     }
 

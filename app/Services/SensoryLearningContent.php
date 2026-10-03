@@ -19,6 +19,20 @@ final class SensoryLearningContent
         return $course;
     }
 
+    public function checkpoint(int $section): array
+    {
+        $checkpoints = json_decode(file_get_contents(resource_path('learning/sensory-foundation/lesson_checkpoints.json')), true, 512, JSON_THROW_ON_ERROR);
+
+        return $checkpoints[$section];
+    }
+
+    public function availableSections(array $completed): array
+    {
+        $next = array_values(array_diff(range(1, 30), $completed))[0] ?? null;
+
+        return array_values(array_unique(array_merge($completed, $next ? [$next] : [])));
+    }
+
     public function assessment(): array
     {
         return json_decode(file_get_contents(resource_path('learning/sensory-foundation/server_assessment.json')), true, 512, JSON_THROW_ON_ERROR);

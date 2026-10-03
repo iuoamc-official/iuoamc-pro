@@ -43,4 +43,7 @@
     @endif
     {{-- IUOAMC_WICP_SIDEBAR_1_0_0_END --}}
 
+    @if(auth()->user()?->hasRole('super-admin'))
+        <a href="{{ route('learning.control.index', ['locale'=>app()->getLocale()]) }}" class="{{ request()->routeIs('learning.control.*') ? 'active' : '' }}">{{ __('learning.title') }}</a>
+    @endif
 </nav>

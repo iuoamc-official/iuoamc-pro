@@ -27,6 +27,7 @@ final class SensoryLearningTest extends TestCase
             '2026_10_03_110905_create_learning_lesson_notes_table.php',
             '2026_10_03_180351_create_learning_projects_and_events_tables.php',
             '2026_10_04_094115_add_summary_draft_revision_to_learning_enrollments.php',
+            '2026_10_04_100941_add_archived_at_to_learning_invitations.php',
         ] as $file) {
             (require database_path('migrations/'.$file))->up();
         }
@@ -298,6 +299,50 @@ final class SensoryLearningTest extends TestCase
         $this->assertSame([1, 3, 30], json_decode(DB::table('learning_enrollments')->find($id)->completed_sections, true));
         $this->post('/ar/account/learning/lessons/2/complete', ['lesson_answer' => 1])->assertRedirect('/ar/account/learning/lessons/3');
         $this->get('/ar/account/learning/lessons/4')->assertOk();
+    }
+
+    public function test_admin_can_delete_test_enrollment_and_drafts_without_deleting_account(): void
+    {
+        $admin = $this->admin();
+        $student = $this->student();
+        $id = $this->enroll($student, ['completed_sections' => '[1,2]', 'summary_lines' => '["draft"]']);
+        DB::table('learning_lesson_notes')->insert(['enrollment_id' => $id, 'section' => 1, 'body' => 'note', 'created_at' => now(), 'updated_at' => now()]);
+        $project = DB::table('learning_projects')->insertGetId(['enrollment_id' => $id, 'status' => 'draft', 'fields' => '{}', 'created_at' => now(), 'updated_at' => now()]);
+        $invitation = DB::table('learning_invitations')->insertGetId(['email' => $student->email, 'module_id' => SensoryLearningContent::MODULE_ID, 'code_hash' => hash('sha256', 'trial'), 'expires_at' => now()->addDays(30), 'created_by' => $admin->id]);
+        $this->actingAs($admin)->get('/ar/control/learning/'.$id.'/delete')->assertOk()->assertSee($student->email);
+        $this->delete('/ar/control/learning/'.$id, ['confirmation_email' => 'wrong@example.test'])->assertStatus(422);
+        $this->assertDatabaseHas('learning_enrollments', ['id' => $id]);
+        $this->delete('/ar/control/learning/'.$id, ['confirmation_email' => $student->email])->assertRedirect('/ar/control/learning');
+        $this->assertDatabaseMissing('learning_enrollments', ['id' => $id]);
+        $this->assertDatabaseMissing('learning_projects', ['id' => $project]);
+        $this->assertDatabaseMissing('learning_lesson_notes', ['enrollment_id' => $id]);
+        $this->assertDatabaseHas('users', ['id' => $student->id, 'email' => $student->email]);
+        $this->assertNotNull(DB::table('learning_invitations')->find($invitation)->archived_at);
+        $this->assertNotNull(DB::table('learning_invitations')->find($invitation)->revoked_at);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'learning.test_enrollment_deleted']);
+        $this->get('/ar/control/learning')->assertDontSee($student->email);
+        $this->actingAs($student)->get('/ar/account/learning/lessons/1')->assertNotFound();
+    }
+
+    public function test_cleanup_is_admin_only_module_scoped_and_protects_started_exams_and_submissions(): void
+    {
+        $admin = $this->admin();
+        $student = $this->student();
+        $id = $this->enroll($student);
+        $this->delete('/ar/control/learning/'.$id)->assertRedirect('/ar/login');
+        $this->actingAs($student)->delete('/ar/control/learning/'.$id, ['confirmation_email' => $student->email])->assertForbidden();
+        $this->actingAs($admin)->delete('/ar/control/learning/'.$id)->assertSessionHasErrors('confirmation_email');
+        foreach (['exam_started_at', 'exam_submitted_at', 'summary_submitted_at', 'reviewed_at'] as $field) {
+            DB::table('learning_enrollments')->where('id', $id)->update([$field => now()]);
+            $this->delete('/ar/control/learning/'.$id, ['confirmation_email' => $student->email])->assertStatus(409);
+            $this->assertDatabaseHas('learning_enrollments', ['id' => $id]);
+            DB::table('learning_enrollments')->where('id', $id)->update([$field => null]);
+        }
+        DB::table('learning_projects')->insert(['enrollment_id' => $id, 'status' => 'submitted', 'submission_number' => 1, 'fields' => '{}']);
+        $this->delete('/ar/control/learning/'.$id, ['confirmation_email' => $student->email])->assertStatus(409);
+        $this->assertDatabaseHas('learning_projects', ['enrollment_id' => $id]);
+        DB::table('learning_enrollments')->where('id', $id)->update(['module_id' => 'other-module']);
+        $this->delete('/ar/control/learning/'.$id, ['confirmation_email' => $student->email])->assertNotFound();
     }
 
     private function student(): User

@@ -33,6 +33,7 @@ final class LearningAccessTest extends TestCase
             '2026_10_03_110905_create_learning_lesson_notes_table.php',
             '2026_10_03_180351_create_learning_projects_and_events_tables.php',
             '2026_10_04_094115_add_summary_draft_revision_to_learning_enrollments.php',
+            '2026_10_04_100941_add_archived_at_to_learning_invitations.php',
         ] as $file) {
             (require database_path('migrations/'.$file))->up();
         }
@@ -238,6 +239,45 @@ final class LearningAccessTest extends TestCase
         $this->invitation(['used_at' => now(), 'student_name' => '<script>alert(1)</script>', 'student_country' => '<img src=x onerror=alert(1)>']);
         $this->actingAs($this->admin())->get('/ar/control/learning')->assertSee('&lt;script&gt;', false)
             ->assertDontSee('<script>alert(1)</script>', false)->assertDontSee('<img src=x onerror=alert(1)>', false);
+    }
+
+    public function test_invitation_email_edit_rotates_code_and_archive_disables_and_hides_it(): void
+    {
+        $id = $this->invitation();
+        $admin = $this->admin();
+        $oldHash = DB::table('learning_invitations')->find($id)->code_hash;
+        $this->actingAs($admin)->get('/ar/control/learning/invitations/'.$id.'/edit')->assertOk();
+        $this->put('/ar/control/learning/invitations/'.$id, ['confirmation_email' => 'wrong@example.test', 'email' => 'new@example.test'])->assertStatus(422);
+        $this->put('/ar/control/learning/invitations/'.$id, ['confirmation_email' => 'student@example.test', 'email' => 'NEW@example.test'])
+            ->assertRedirect('/ar/control/learning')->assertSessionHas('learning_invitation.email', 'new@example.test');
+        $record = DB::table('learning_invitations')->find($id);
+        $this->assertSame('new@example.test', $record->email);
+        $this->assertNotSame($oldHash, $record->code_hash);
+        $this->assertSame(hash('sha256', session('learning_invitation.code')), $record->code_hash);
+        $this->post('/ar/control/learning/invitations/'.$id.'/archive', ['confirmation_email' => 'new@example.test'])->assertRedirect('/ar/control/learning');
+        $record = DB::table('learning_invitations')->find($id);
+        $this->assertNotNull($record->archived_at);
+        $this->assertNotNull($record->revoked_at);
+        $this->get('/ar/control/learning')->assertDontSee('new@example.test');
+        $this->put('/ar/control/learning/invitations/'.$id, ['confirmation_email' => 'new@example.test', 'email' => 'another@example.test'])->assertNotFound();
+        $this->assertDatabaseHas('audit_logs', ['event' => 'learning.code_updated']);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'learning.code_archived']);
+    }
+
+    public function test_used_invitation_email_cannot_change_and_management_is_admin_only_and_module_scoped(): void
+    {
+        $id = $this->invitation(['used_at' => now()]);
+        $admin = $this->admin();
+        $student = User::factory()->create(['status' => 'active', 'must_change_password' => false]);
+        $payload = ['confirmation_email' => 'student@example.test', 'email' => 'new@example.test'];
+        $this->actingAs($student)->put('/ar/control/learning/invitations/'.$id, $payload)->assertForbidden();
+        $this->post('/ar/control/learning/invitations/'.$id.'/archive', $payload)->assertForbidden();
+        $this->actingAs($admin)->put('/ar/control/learning/invitations/'.$id, $payload)->assertStatus(409);
+        $this->get('/ar/control/learning/invitations/'.$id.'/edit')->assertDontSee('name="email"', false);
+        $this->assertDatabaseHas('learning_invitations', ['id' => $id, 'email' => 'student@example.test']);
+        $this->post('/ar/control/learning/invitations/'.$id.'/archive', ['confirmation_email' => 'student@example.test'])->assertRedirect();
+        DB::table('learning_invitations')->where('id', $id)->update(['archived_at' => null, 'module_id' => 'other-module']);
+        $this->post('/ar/control/learning/invitations/'.$id.'/archive', ['confirmation_email' => 'student@example.test'])->assertNotFound();
     }
 
     private function invitation(array $state = []): int

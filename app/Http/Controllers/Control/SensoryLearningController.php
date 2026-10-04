@@ -54,7 +54,7 @@ final class SensoryLearningController extends Controller
             $record->completed_count = count($this->decode($record->completed_sections));
         }
 
-        $invitations = DB::table('learning_invitations')->where('module_id', SensoryLearningContent::MODULE_ID)
+        $invitations = DB::table('learning_invitations')->where('module_id', SensoryLearningContent::MODULE_ID)->whereNull('archived_at')
             ->select('id', 'email', 'expires_at', 'used_at', 'revoked_at', 'student_name', 'student_phone', 'student_country')
             ->orderByDesc('id')->paginate(15, ['*'], 'invitations_page');
 
@@ -156,6 +156,46 @@ final class SensoryLearningController extends Controller
         });
 
         return redirect()->route('learning.control.show', ['locale' => $locale, 'enrollment' => $enrollment])->with('success', __('learning.review_saved'));
+    }
+
+    public function confirmDelete(Request $request, string $locale, int $enrollment): Response
+    {
+        $this->authorizeAdmin($request);
+        $record = $this->record($enrollment);
+        $student = DB::table('users')->find($record->user_id);
+
+        return response()->view('control.learning.manage', [
+            'email' => $student->email,
+            'deleteUrl' => route('learning.control.destroy', ['locale' => $locale, 'enrollment' => $enrollment]),
+            'editUrl' => null, 'isEnrollment' => true,
+        ])->header('Cache-Control', 'no-store, private');
+    }
+
+    public function destroy(Request $request, string $locale, int $enrollment): RedirectResponse
+    {
+        $this->authorizeAdmin($request);
+        $data = $request->validate(['confirmation_email' => ['required', 'string', 'max:254']]);
+        DB::transaction(function () use ($data, $enrollment): void {
+            $record = $this->record($enrollment, true);
+            $student = DB::table('users')->find($record->user_id);
+            abort_unless(hash_equals($student->email, $data['confirmation_email']), 422, __('learning.confirm_email_mismatch'));
+            abort_if($record->exam_started_at || $record->exam_submitted_at || $record->summary_submitted_at
+                || $record->reviewed_at || $record->final_score !== null, 409, __('learning.delete_protected'));
+            $project = DB::table('learning_projects')->where('enrollment_id', $record->id)->lockForUpdate()->first();
+            if ($project) {
+                abort_if($project->status !== 'draft' || $project->submission_number > 0
+                    || DB::table('learning_project_events')->where('project_id', $project->id)->exists(), 409, __('learning.delete_protected'));
+                DB::table('learning_projects')->where('id', $project->id)->delete();
+            }
+            DB::table('learning_invitations')->where('module_id', SensoryLearningContent::MODULE_ID)
+                ->where(function ($query) use ($student): void {
+                    $query->where('email', $student->email)->orWhere('used_by', $student->id);
+                })->update(['archived_at' => now(), 'revoked_at' => now(), 'updated_at' => now()]);
+            DB::table('learning_enrollments')->where('id', $record->id)->delete();
+            AuditTrail::record('learning.test_enrollment_deleted', null, [], ['enrollment_id' => $record->id, 'user_id' => $record->user_id]);
+        });
+
+        return redirect()->route('learning.control.index', ['locale' => $locale])->with('success', __('learning.registration_deleted'));
     }
 
     private function authorizeAdmin(Request $request): void

@@ -35,6 +35,7 @@ final class CheckLearningReadiness extends Command
             foreach (['learning_enrollments', 'learning_invitations', 'learning_lesson_notes', 'learning_projects', 'learning_project_events'] as $table) {
                 $checks['Database table: '.$table] = Schema::hasTable($table);
             }
+            $checks['Invitation archive column'] = Schema::hasColumn('learning_invitations', 'archived_at');
             $checks['Summary draft revision column'] = Schema::hasColumn('learning_enrollments', 'summary_draft_revision');
             $checks['Exam deadline column'] = Schema::hasColumn('learning_enrollments', 'exam_deadline_at');
             $expired = DB::table('learning_enrollments')->where('module_id', SensoryLearningContent::MODULE_ID)

@@ -28,6 +28,7 @@ final class SensoryObjectiveExamTest extends TestCase
             '2026_10_03_110905_create_learning_lesson_notes_table.php',
             '2026_10_03_180351_create_learning_projects_and_events_tables.php',
             '2026_10_04_094115_add_summary_draft_revision_to_learning_enrollments.php',
+            '2026_10_04_100941_add_archived_at_to_learning_invitations.php',
         ] as $file) {
             (require database_path('migrations/'.$file))->up();
         }

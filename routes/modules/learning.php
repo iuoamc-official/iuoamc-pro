@@ -42,6 +42,11 @@ Route::prefix('{locale}/control/learning')->where(['locale' => 'ar|en|fr'])
         Route::post('/enroll', [LearningControlController::class, 'enroll'])->middleware('throttle:20,1')->name('enroll');
         Route::post('/invitations', [LearningInvitationController::class, 'store'])->middleware('throttle:20,1')->name('invitations.store');
         Route::delete('/invitations/{invitation}', [LearningInvitationController::class, 'destroy'])->whereNumber('invitation')->name('invitations.destroy');
+        Route::get('/invitations/{invitation}/edit', [LearningInvitationController::class, 'edit'])->whereNumber('invitation')->name('invitations.edit');
+        Route::put('/invitations/{invitation}', [LearningInvitationController::class, 'update'])->whereNumber('invitation')->middleware('throttle:20,1')->name('invitations.update');
+        Route::post('/invitations/{invitation}/archive', [LearningInvitationController::class, 'archive'])->whereNumber('invitation')->middleware('throttle:20,1')->name('invitations.archive');
+        Route::get('/{enrollment}/delete', [LearningControlController::class, 'confirmDelete'])->whereNumber('enrollment')->name('delete');
+        Route::delete('/{enrollment}', [LearningControlController::class, 'destroy'])->whereNumber('enrollment')->middleware('throttle:20,1')->name('destroy');
         Route::get('/{enrollment}', [LearningControlController::class, 'show'])->whereNumber('enrollment')->name('show');
         Route::get('/{enrollment}/project', [LearningProjectControlController::class, 'show'])->whereNumber('enrollment')->name('project');
         Route::post('/{enrollment}/project/review', [LearningProjectControlController::class, 'review'])->whereNumber('enrollment')->middleware('throttle:30,1,learning-project-review')->name('project.review');

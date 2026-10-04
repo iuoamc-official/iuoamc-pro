@@ -12,12 +12,15 @@
 @endforeach</ol></div>
 @else
 <div class="learning-summary-meter" role="status">{{ __('learning.word_count') }}: <strong data-word-count>0</strong> / 180–250 · {{ __('learning.ten_lines') }}</div>
-<form data-learning-summary data-confirm="{{ __('learning.confirm_submission') }}" method="post" action="{{ route('account.learning.assignment.submit',['locale'=>app()->getLocale()]) }}">
+<form data-learning-summary data-dirty="{{ session()->hasOldInput('lines') ? 'true' : 'false' }}" data-confirm="{{ __('learning.confirm_submission') }}" method="post" action="{{ route('account.learning.assignment.submit',['locale'=>app()->getLocale()]) }}">
 @csrf
+<input type="hidden" name="summary_revision" value="{{ old('summary_revision',$enrollment->summary_draft_revision) }}">
+<p>{{ __('learning.summary_draft_hint') }}</p>
 <div lang="ar" dir="rtl">
 @foreach($course['assignment']['line_prompts'] as $index=>$prompt)<div class="learning-card"><label for="summary-{{ $index }}">{{ $index+1 }}. {{ $prompt }}</label><textarea id="summary-{{ $index }}" name="lines[{{ $index }}]" maxlength="1500" required>{{ old('lines.'.$index,$lines[$index]??'') }}</textarea></div>
 @endforeach</div>
-<button type="submit">{{ __('learning.submit_assignment') }}</button></form>
+<button type="submit" name="action" value="save" formnovalidate>{{ __('learning.project_save') }}</button>
+<button type="submit" name="action" value="submit">{{ __('learning.submit_assignment') }}</button></form>
 @endif</div>
-<script src="{{ asset('assets/js/iuoamc-learning-1.1.0.js') }}" defer></script>
+<script src="{{ asset('assets/js/iuoamc-learning-1.1.0.js').'?v='.filemtime(public_path('assets/js/iuoamc-learning-1.1.0.js')) }}" defer></script>
 @endsection

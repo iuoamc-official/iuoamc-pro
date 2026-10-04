@@ -52,9 +52,16 @@
             if (output) output.textContent = String(count);
             if (meter) meter.dataset.valid = String(count >= 180 && count <= 250);
         };
-        summary.addEventListener('input', updateWords);
+        let dirty = summary.dataset.dirty === 'true';
+        summary.addEventListener('input', () => { dirty = true; updateWords(); });
         summary.addEventListener('submit', event => {
-            if (!window.confirm(summary.dataset.confirm)) event.preventDefault();
+            if (event.submitter?.value !== 'save' && !window.confirm(summary.dataset.confirm)) {
+                event.preventDefault(); return;
+            }
+            dirty = false;
+        });
+        window.addEventListener('beforeunload', event => {
+            if (dirty) { event.preventDefault(); event.returnValue = ''; }
         });
         updateWords();
     }

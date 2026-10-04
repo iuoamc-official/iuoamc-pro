@@ -26,6 +26,7 @@ final class SensoryLearningTest extends TestCase
             '2026_10_03_101349_add_objective_exam_timing_to_learning_enrollments.php',
             '2026_10_03_110905_create_learning_lesson_notes_table.php',
             '2026_10_03_180351_create_learning_projects_and_events_tables.php',
+            '2026_10_04_094115_add_summary_draft_revision_to_learning_enrollments.php',
         ] as $file) {
             (require database_path('migrations/'.$file))->up();
         }
@@ -127,6 +128,57 @@ final class SensoryLearningTest extends TestCase
         $this->post('/ar/account/learning/assignment', ['lines' => $lines])->assertRedirect();
         $this->assertSame($lines, json_decode(DB::table('learning_enrollments')->find($id)->summary_lines, true));
         $this->post('/ar/account/learning/assignment', ['lines' => $lines])->assertStatus(409);
+    }
+
+    public function test_summary_drafts_are_private_and_stale_changes_cannot_overwrite_or_submit(): void
+    {
+        $student = $this->student();
+        $other = $this->student();
+        $id = $this->enroll($student);
+        $otherId = $this->enroll($other);
+        $this->actingAs($student)->post('/ar/account/learning/assignment', [
+            'action' => 'save', 'summary_revision' => 0, 'lines' => [0 => 'مسودة خاصة', 3 => 'فكرة البحث'],
+        ])->assertRedirect('/ar/account/learning/assignment')->assertSessionHasNoErrors();
+        $record = DB::table('learning_enrollments')->find($id);
+        $this->assertNull($record->summary_submitted_at);
+        $this->assertSame(1, $record->summary_draft_revision);
+        $this->assertSame('فكرة البحث', json_decode($record->summary_lines, true)[3]);
+        $this->assertNull(DB::table('learning_enrollments')->find($otherId)->summary_lines);
+        $this->get('/ar/account/learning/assignment')->assertSee('مسودة خاصة');
+        $this->actingAs($other)->get('/ar/account/learning/assignment')->assertDontSee('مسودة خاصة');
+        $this->actingAs($student)->post('/ar/account/learning/assignment', [
+            'action' => 'save', 'summary_revision' => 0, 'lines' => [0 => 'تعديل متعارض'],
+        ])->assertSessionHasErrors('summary_revision')->assertSessionHasInput('lines.0', 'تعديل متعارض');
+        $lines = array_fill(0, 10, trim(str_repeat('بحث علمي ', 10)));
+        $this->post('/ar/account/learning/assignment', ['action' => 'submit', 'lines' => $lines])
+            ->assertSessionHasErrors('summary_revision');
+        $this->assertNull(DB::table('learning_enrollments')->find($id)->summary_submitted_at);
+        $this->post('/ar/account/learning/assignment', ['action' => 'submit', 'summary_revision' => 1, 'lines' => $lines])
+            ->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertNotNull(DB::table('learning_enrollments')->find($id)->summary_submitted_at);
+        $this->post('/ar/account/learning/assignment', ['action' => 'save', 'summary_revision' => 2, 'lines' => [0 => 'تعديل']])->assertStatus(409);
+    }
+
+    public function test_summary_draft_validation_rejects_extra_keys_multiline_and_invalid_action(): void
+    {
+        $student = $this->student();
+        $id = $this->enroll($student);
+        $this->actingAs($student)->post('/ar/account/learning/assignment', ['action' => 'save', 'lines' => [10 => 'extra']])->assertSessionHasErrors('lines');
+        $this->post('/ar/account/learning/assignment', ['action' => 'save', 'lines' => [0 => "line one\nline two"]])->assertSessionHasErrors('lines.0');
+        $this->post('/ar/account/learning/assignment', ['action' => 'invalid', 'lines' => array_fill(0, 10, 'text')])->assertSessionHasErrors('action');
+        $this->assertNull(DB::table('learning_enrollments')->find($id)->summary_lines);
+    }
+
+    public function test_launch_checks_are_read_only_and_detect_unsafe_configuration(): void
+    {
+        $this->app->instance('env', 'production');
+        config(['app.env' => 'production', 'app.debug' => false, 'app.url' => 'https://iuoamc.pro', 'session.secure' => true, 'session.http_only' => true, 'session.driver' => 'file', 'mail.default' => 'smtp']);
+        $id = $this->enroll($this->student());
+        $before = DB::table('learning_enrollments')->find($id);
+        $this->artisan('learning:check-readiness')->assertExitCode(0);
+        $this->assertEquals($before, DB::table('learning_enrollments')->find($id));
+        config(['app.debug' => true, 'mail.default' => 'log']);
+        $this->artisan('learning:check-readiness')->assertExitCode(1);
     }
 
     public function test_students_cannot_access_control_or_another_enrollment(): void

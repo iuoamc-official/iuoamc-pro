@@ -264,21 +264,37 @@ final class SensoryLearningController extends Controller
 
     public function submitAssignment(Request $request, string $locale): RedirectResponse
     {
+        $action = $request->input('action', 'submit');
+        $isDraft = $action === 'save';
         $validated = $request->validate([
-            'lines' => ['required', 'array:0,1,2,3,4,5,6,7,8,9', 'size:10'],
-            'lines.*' => ['required', 'string', 'max:1500', 'not_regex:/[\r\n]/u'],
+            'action' => ['sometimes', 'required', 'in:save,submit'],
+            'summary_revision' => ['sometimes', 'required', 'integer', 'min:0'],
+            'lines' => ['required', 'array:0,1,2,3,4,5,6,7,8,9', $isDraft ? 'max:10' : 'size:10'],
+            'lines.*' => [$isDraft ? 'nullable' : 'required', 'string', 'max:1500', 'not_regex:/[\r\n]/u'],
         ]);
-        $wordCount = count(preg_split('/\s+/u', trim(implode(' ', $validated['lines'])), -1, PREG_SPLIT_NO_EMPTY));
-        if ($wordCount < 180 || $wordCount > 250) {
+        $lines = array_map(fn (int $index): string => $validated['lines'][$index] ?? '', range(0, 9));
+        $wordCount = count(preg_split('/\s+/u', trim(implode(' ', $lines)), -1, PREG_SPLIT_NO_EMPTY));
+        if (! $isDraft && ($wordCount < 180 || $wordCount > 250)) {
             throw ValidationException::withMessages(['lines' => __('learning.word_range')]);
         }
-        DB::transaction(function () use ($request, $validated): void {
+        DB::transaction(function () use ($request, $validated, $lines, $isDraft): void {
             $enrollment = $this->enrollment($request, true);
             abort_if($enrollment->summary_submitted_at, 409);
-            $this->update($enrollment->id, ['summary_lines' => json_encode(array_values($validated['lines']), JSON_THROW_ON_ERROR), 'summary_submitted_at' => now()]);
+            if ((int) ($validated['summary_revision'] ?? 0) !== (int) $enrollment->summary_draft_revision) {
+                throw ValidationException::withMessages(['summary_revision' => __('learning.summary_conflict')]);
+            }
+            $updates = [
+                'summary_lines' => json_encode($lines, JSON_THROW_ON_ERROR),
+                'summary_draft_revision' => $enrollment->summary_draft_revision + 1,
+            ];
+            if (! $isDraft) {
+                $updates['summary_submitted_at'] = now();
+            }
+            $this->update($enrollment->id, $updates);
         });
 
-        return redirect()->route('account.learning.assignment', ['locale' => $locale])->with('success', __('learning.assignment_submitted'));
+        return redirect()->route('account.learning.assignment', ['locale' => $locale])
+            ->with('success', __($isDraft ? 'learning.summary_draft_saved' : 'learning.assignment_submitted'));
     }
 
     private function enrollment(Request $request, bool $lock = false): stdClass

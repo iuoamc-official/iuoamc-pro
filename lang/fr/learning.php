@@ -248,4 +248,7 @@ return [
     'project_levels' => '0 : absent · 1 : lacunes majeures · 2 : partiel · 3 : cohérent avec réserves mineures · 4 : clair, justifié, réalisable et vérifiable.',
     'project_confirm' => 'La version sera verrouillée jusqu’à une demande de révision. Soumettre maintenant ?',
     'project_await_submission' => 'Aucune nouvelle version soumise ; les versions précédentes sont dans l’historique.',
+    'summary_draft_saved' => 'Brouillon du résumé enregistré.',
+    'summary_conflict' => 'Le résumé a changé dans une autre fenêtre. Copiez vos modifications puis rechargez avant d’enregistrer.',
+    'summary_draft_hint' => 'Vous pouvez enregistrer des lignes incomplètes et revenir plus tard. Le dépôt final exige 10 lignes et 180–250 mots et verrouille le résumé.',
 ];

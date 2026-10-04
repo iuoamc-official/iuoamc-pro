@@ -248,4 +248,7 @@ return [
     'project_levels' => '0: absent · 1: major gaps · 2: partially met · 3: coherent with minor gaps · 4: clear, justified, feasible and reviewable.',
     'project_confirm' => 'The submitted version locks until the supervisor requests revisions. Submit now?',
     'project_await_submission' => 'No new version has been submitted for review; submitted versions are available in the history.',
+    'summary_draft_saved' => 'Summary draft saved.',
+    'summary_conflict' => 'The summary changed in another window. Copy your changes, then reload before saving.',
+    'summary_draft_hint' => 'You can save incomplete lines and return later. Saving is not submission. Final submission requires 10 lines and 180–250 words and locks the summary.',
 ];
